@@ -348,34 +348,48 @@
           <h2 class="section__title">お問い合わせ</h2>
           <p class="section__lead">キャスティングのご相談・お見積りは無料です。<br class="pc-only">お気軽にお問い合わせください。</p>
         </div>
-        <form class="form" action="#" method="post">
+        <!-- TODO: Formspreeで作成したフォームIDに置き換え（例: https://formspree.io/f/abcdwxyz） -->
+        <form class="form" id="contactForm" action="https://formspree.io/f/YOUR_FORM_ID" method="post" novalidate>
+          <input type="hidden" name="_subject" value="【NAMARA】Webサイトからのお問い合わせ">
+          <!-- スパム対策（人には見えない項目。入力があれば送信されない） -->
+          <div class="form__hp" aria-hidden="true">
+            <label for="gotcha">この欄は空のままにしてください</label>
+            <input type="text" id="gotcha" name="_gotcha" tabindex="-1" autocomplete="off">
+          </div>
           <div class="form__row">
             <label for="company" class="form__label">会社名・店舗名</label>
-            <input type="text" id="company" name="company" class="form__input">
+            <input type="text" id="company" name="company" class="form__input" autocomplete="organization">
           </div>
           <div class="form__row">
             <label for="name" class="form__label">お名前<span class="form__required">必須</span></label>
-            <input type="text" id="name" name="name" class="form__input" required>
+            <input type="text" id="name" name="name" class="form__input" autocomplete="name" required>
           </div>
           <div class="form__row">
             <label for="email" class="form__label">メールアドレス<span class="form__required">必須</span></label>
-            <input type="email" id="email" name="email" class="form__input" required>
+            <input type="email" id="email" name="email" class="form__input" autocomplete="email" required>
           </div>
           <div class="form__row">
             <label for="type" class="form__label">お問い合わせ種別</label>
             <select id="type" name="type" class="form__input">
-              <option value="casting">キャスティングのご依頼</option>
-              <option value="estimate">お見積り</option>
-              <option value="influencer">インフルエンサー登録希望</option>
-              <option value="other">その他</option>
+              <option>キャスティングのご依頼</option>
+              <option>お見積り</option>
+              <option>インフルエンサー登録希望</option>
+              <option>その他</option>
             </select>
           </div>
           <div class="form__row">
             <label for="message" class="form__label">お問い合わせ内容<span class="form__required">必須</span></label>
             <textarea id="message" name="message" rows="6" class="form__input" required></textarea>
           </div>
+          <div class="form__row form__agree">
+            <label class="form__check">
+              <input type="checkbox" name="privacy_agree" value="同意する" required>
+              <span><a href="privacy.html" target="_blank" rel="noopener">プライバシーポリシー</a>に同意する</span>
+            </label>
+          </div>
           <div class="form__submit">
-            <button type="submit" class="btn btn--light btn--wide">送信する</button>
+            <button type="submit" class="btn btn--light btn--wide" id="contactSubmit">送信する</button>
+            <p class="form__status" id="contactStatus" role="status" aria-live="polite"></p>
           </div>
         </form>
       </div>
@@ -393,6 +407,7 @@
         <li><a href="#price">料金</a></li>
         <li><a href="#company">会社情報</a></li>
         <li><a href="#contact">お問い合わせ</a></li>
+        <li><a href="privacy.html">プライバシーポリシー</a></li>
       </ul>
       <p class="footer__copy">&copy; 2026 NAMARA Inc. All Rights Reserved.</p>
     </div>

@@ -551,7 +551,67 @@ body.is-locked { overflow: hidden; }
 .form__input:focus { outline: none; border-color: #8a8b8d; }
 select.form__input { appearance: none; background-image: linear-gradient(45deg, transparent 50%, #aaa 50%), linear-gradient(135deg, #aaa 50%, transparent 50%); background-position: calc(100% - 22px) 50%, calc(100% - 16px) 50%; background-size: 6px 6px; background-repeat: no-repeat; }
 textarea.form__input { resize: vertical; }
-.form__submit { margin-top: 40px; text-align: center; }
+.form__row.is-error .form__input { border-color: #e08a8a; }
+.form__row.is-error .form__check { color: #f0b0b0; }
+
+.form__agree { margin-top: 32px; text-align: center; }
+.form__check {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 14px;
+  cursor: pointer;
+}
+.form__check input { width: 18px; height: 18px; margin: 0; accent-color: var(--color-white); }
+.form__check a { text-decoration: underline; text-underline-offset: 3px; }
+.form__check a:hover { opacity: 0.7; }
+
+/* スパム対策用の項目（画面外に隠す） */
+.form__hp { position: absolute; left: -9999px; width: 1px; height: 1px; overflow: hidden; }
+
+.form__submit { margin-top: 32px; text-align: center; }
+.btn:disabled { opacity: 0.5; cursor: wait; }
+.form__status { margin-top: 20px; font-size: 14px; min-height: 1.9em; }
+.form__status.is-success { color: #b9e3c6; }
+.form__status.is-error { color: #f0b0b0; }
+
+/* ---------- Sub page (privacy etc.) ---------- */
+.page-head {
+  background: var(--color-dark);
+  color: var(--color-white);
+  padding: calc(var(--header-h) + 56px) 0 56px;
+}
+.page-head .section__en { color: #a5a6a8; }
+
+.policy { font-size: 15px; }
+.policy__intro { margin-bottom: 8px; }
+.policy h2 {
+  font-size: 18px;
+  font-weight: 500;
+  margin: 48px 0 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--color-line);
+}
+.policy p + p { margin-top: 1em; }
+.policy ul { margin: 12px 0 16px; }
+.policy ul li {
+  position: relative;
+  padding-left: 1.2em;
+  color: var(--color-text-sub);
+}
+.policy ul li + li { margin-top: 6px; }
+.policy ul li::before { content: "・"; position: absolute; left: 0; }
+.policy__contact {
+  margin-top: 16px;
+  padding: 24px;
+  background: var(--color-bg-gray);
+  border-radius: var(--radius);
+  font-size: 14px;
+}
+.policy__contact div + div { margin-top: 8px; }
+.policy__contact dt { font-weight: 500; }
+.policy__contact dd { color: var(--color-text-sub); }
+.policy__date { margin-top: 48px; text-align: right; font-size: 13px; color: var(--color-text-sub); }
 
 /* ---------- Footer ---------- */
 .footer {
@@ -610,6 +670,10 @@ textarea.form__input { resize: vertical; }
 
   .company__row { display: flex; padding: 24px 0; }
   .company__row dt { flex: 0 0 180px; margin-bottom: 0; }
+
+  .page-head { padding: calc(var(--header-h) + 80px) 0 80px; }
+  .policy__contact div { display: flex; gap: 16px; }
+  .policy__contact dt { flex: 0 0 160px; }
 
   .footer__inner { flex-direction: row; flex-wrap: wrap; justify-content: space-between; }
   .footer__copy { flex-basis: 100%; text-align: center; margin-top: 16px; }
