@@ -1,0 +1,112 @@
+import type { Metadata } from "next";
+import { notFound } from "next/navigation";
+import { ArrowRight } from "lucide-react";
+import { getCase, getVisibleCases } from "@/data/cases";
+import { pageMetadata } from "@/lib/metadata";
+import { ScrollReveal } from "@/components/animation/ScrollReveal";
+import { FinalCTA } from "@/components/sections/FinalCTA";
+import { CTAButton } from "@/components/ui/CTAButton";
+import { PageHero } from "@/components/ui/PageHero";
+
+type Props = { params: Promise<{ slug: string }> };
+
+export const dynamicParams = false;
+
+export function generateStaticParams() {
+  return getVisibleCases().map((c) => ({ slug: c.slug }));
+}
+
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const { slug } = await params;
+  const item = getCase(slug);
+  if (!item) return {};
+  return pageMetadata({
+    title: `${item.title}｜PR実績`,
+    description: item.summary,
+    path: `/works/${item.slug}`,
+    noindex: !item.published,
+  });
+}
+
+export default async function WorkDetailPage({ params }: Props) {
+  const { slug } = await params;
+  const item = getCase(slug);
+  if (!item) notFound();
+
+  const sections = [
+    { no: "01", title: "業種・案件概要", body: [item.industry, item.summary] },
+    { no: "02", title: "PR実施前の課題", body: [item.challenge] },
+    { no: "03", title: "実施した施策", body: item.actions },
+    { no: "04", title: "投稿媒体・発信者起用内容", body: [item.media] },
+    { no: "05", title: "成果", body: [item.result] },
+    { no: "06", title: "実施後の考察", body: [item.insight] },
+  ];
+
+  return (
+    <>
+      <PageHero
+        en={`CASE ${item.no}`}
+        title={item.title}
+        lead={item.industry}
+        breadcrumb={[
+          { label: "PR実績", href: "/works" },
+          { label: item.title, href: `/works/${item.slug}` },
+        ]}
+      />
+
+      {!item.published && (
+        <div className="bg-brand py-3 text-center text-sm font-bold text-white">
+          非公開プレビュー：この事例は公開されていません（確認事項：{item.todo.join("、")}）
+        </div>
+      )}
+
+      <section className="section">
+        <div className="container-x max-w-5xl!">
+          <ScrollReveal className="rounded-[28px] bg-ink p-8 text-white md:p-14">
+            <p className="text-sm text-white/60">{item.metric.label}</p>
+            <div className="mt-4 flex flex-wrap items-center gap-x-6 gap-y-2">
+              <span className="num text-3xl font-bold text-white/60 md:text-5xl">{item.metric.before}</span>
+              <ArrowRight size={36} aria-label="から" className="text-brand" />
+              <span className="num text-5xl font-extrabold md:text-7xl">{item.metric.after}</span>
+              {item.metric.highlight && (
+                <span className="rounded-full bg-brand px-4 py-1.5 text-sm font-bold">{item.metric.highlight}</span>
+              )}
+            </div>
+            <p className="mt-6 border-t border-white/15 pt-4 text-xs text-white/60">
+              測定単位・比較期間：{item.metric.period}
+            </p>
+          </ScrollReveal>
+
+          <div className="mt-16 space-y-12">
+            {sections.map((s) => (
+              <ScrollReveal key={s.no} className="grid gap-4 border-t border-line pt-8 md:grid-cols-[240px_1fr] md:gap-10">
+                <h2 className="flex items-baseline gap-3 font-bold">
+                  <span className="num text-sm text-brand">{s.no}</span>
+                  {s.title}
+                </h2>
+                <div className="space-y-3 text-[15px] leading-[2] text-ink/80">
+                  {s.body.map((b) => (
+                    <p key={b}>{b}</p>
+                  ))}
+                </div>
+              </ScrollReveal>
+            ))}
+          </div>
+
+          <p className="mt-12 text-xs leading-relaxed text-muted">
+            ※成果はPR以外の要因（季節、他の販促施策など）を含む場合があります。
+          </p>
+
+          <div className="mt-16 flex flex-col items-center gap-4 rounded-[28px] bg-mist p-8 text-center md:p-14">
+            <p className="text-xl font-bold md:text-2xl">同じような課題をお持ちの方へ</p>
+            <p className="text-sm text-muted">目的やご予算をお伺いし、最適なPRをご提案します。</p>
+            <CTAButton href="/contact" size="lg" trackLocation="work_detail" className="mt-4">
+              無料相談・お見積もり
+            </CTAButton>
+          </div>
+        </div>
+      </section>
+      <FinalCTA />
+    </>
+  );
+}

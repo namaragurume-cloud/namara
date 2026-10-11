@@ -1,0 +1,264 @@
+@import "tailwindcss";
+
+/*
+ * デザイントークン
+ * ブランドカラーは暫定値です。ここを変更するとサイト全体に反映されます。
+ */
+:root {
+  --brand: #c91f2d;
+  --brand-dark: #a51825;
+  --ink: #111111;
+  --paper: #ffffff;
+  --mist: #f5f5f3;
+  --muted: #666666;
+  --line: #e6e5e1;
+  --header-h: 72px;
+}
+
+@theme inline {
+  --color-brand: var(--brand);
+  --color-brand-dark: var(--brand-dark);
+  --color-ink: var(--ink);
+  --color-paper: var(--paper);
+  --color-mist: var(--mist);
+  --color-muted: var(--muted);
+  --color-line: var(--line);
+
+  --font-sans: var(--font-inter), var(--font-noto), "Hiragino Sans", "Hiragino Kaku Gothic ProN", Meiryo, sans-serif;
+  --font-en: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+    scroll-padding-top: calc(var(--header-h) + 16px);
+  }
+
+  body {
+    background: var(--paper);
+    color: var(--ink);
+    font-feature-settings: "palt" 1;
+    letter-spacing: 0.02em;
+    line-height: 1.9;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    overflow-x: clip;
+  }
+
+  ::selection {
+    background: var(--brand);
+    color: #fff;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--brand);
+    outline-offset: 3px;
+    border-radius: 4px;
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    html {
+      scroll-behavior: smooth;
+    }
+  }
+}
+
+@layer components {
+  .container-x {
+    width: 100%;
+    max-width: 1240px;
+    margin-inline: auto;
+    padding-inline: 20px;
+  }
+  @media (min-width: 768px) {
+    .container-x {
+      padding-inline: 40px;
+    }
+  }
+
+  .section {
+    padding-block: 96px;
+  }
+  @media (min-width: 768px) {
+    .section {
+      padding-block: 144px;
+    }
+  }
+
+  .heading-xl {
+    font-size: clamp(2.25rem, 1.4rem + 4.2vw, 5rem);
+    font-weight: 800;
+    line-height: 1.25;
+    letter-spacing: 0.01em;
+  }
+  .heading-lg {
+    font-size: clamp(1.625rem, 1.2rem + 1.9vw, 2.875rem);
+    font-weight: 800;
+    line-height: 1.45;
+    letter-spacing: 0.02em;
+  }
+  .heading-md {
+    font-size: clamp(1.25rem, 1.1rem + 0.6vw, 1.5rem);
+    font-weight: 700;
+    line-height: 1.6;
+  }
+  .lead {
+    font-size: clamp(0.9375rem, 0.9rem + 0.2vw, 1.0625rem);
+    line-height: 2;
+    color: var(--muted);
+  }
+
+  .num {
+    font-family: var(--font-en);
+    font-feature-settings: "tnum" 1;
+    letter-spacing: -0.02em;
+  }
+
+  /* フォーム */
+  .field-label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.9375rem;
+    font-weight: 700;
+    margin-bottom: 8px;
+  }
+  .field-input {
+    width: 100%;
+    min-height: 52px;
+    border: 1px solid var(--line);
+    background: #fff;
+    border-radius: 10px;
+    padding: 12px 16px;
+    font-size: 1rem;
+    line-height: 1.6;
+    transition:
+      border-color 0.2s,
+      box-shadow 0.2s;
+  }
+  .field-input:hover {
+    border-color: #cfcdc7;
+  }
+  .field-input:focus {
+    outline: none;
+    border-color: var(--ink);
+    box-shadow: 0 0 0 3px rgb(17 17 17 / 0.08);
+  }
+  .field-input[aria-invalid="true"] {
+    border-color: var(--brand);
+    background: #fff8f8;
+  }
+  .badge-required {
+    font-size: 0.6875rem;
+    font-weight: 700;
+    color: #fff;
+    background: var(--brand);
+    border-radius: 4px;
+    padding: 1px 6px;
+    line-height: 1.6;
+  }
+  .badge-optional {
+    font-size: 0.6875rem;
+    font-weight: 700;
+    color: var(--muted);
+    background: var(--mist);
+    border-radius: 4px;
+    padding: 1px 6px;
+    line-height: 1.6;
+  }
+}
+
+/* ===== アニメーション ===== */
+@keyframes fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(24px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes slow-zoom {
+  from {
+    transform: scale(1.12);
+  }
+  to {
+    transform: scale(1);
+  }
+}
+@keyframes marquee {
+  to {
+    transform: translateX(-50%);
+  }
+}
+@keyframes scroll-line {
+  0% {
+    transform: scaleY(0);
+    transform-origin: top;
+  }
+  50% {
+    transform: scaleY(1);
+    transform-origin: top;
+  }
+  51% {
+    transform-origin: bottom;
+  }
+  100% {
+    transform: scaleY(0);
+    transform-origin: bottom;
+  }
+}
+@keyframes page-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.anim-fade-up {
+  animation: fade-up 1s var(--ease-out-expo) both;
+}
+.anim-slow-zoom {
+  animation: slow-zoom 14s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.anim-marquee {
+  animation: marquee 40s linear infinite;
+}
+.anim-scroll-line {
+  animation: scroll-line 2.4s cubic-bezier(0.65, 0, 0.35, 1) infinite;
+}
+.page-enter {
+  animation: page-in 0.4s ease-out both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+  .anim-marquee {
+    animation: none;
+  }
+}
+
+/* 仮素材のプレースホルダー質感 */
+.placeholder-grain {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.5'/%3E%3C/svg%3E");
+  mix-blend-mode: overlay;
+  opacity: 0.35;
+}
+
+.scrollbar-none {
+  scrollbar-width: none;
+}
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
+}
