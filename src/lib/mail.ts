@@ -54,10 +54,11 @@ export function isMailConfigured(kind: FormKind): boolean {
   }
 }
 
+/** 発信者登録用の ID が未設定なら、企業問い合わせ用のフォームを共用（件名で区別） */
 function formspreeId(kind: FormKind): string | undefined {
-  const id =
-    kind === "contact" ? process.env.FORMSPREE_CONTACT_FORM_ID : process.env.FORMSPREE_PARTNER_FORM_ID;
-  return id?.trim() || undefined;
+  const contact = process.env.FORMSPREE_CONTACT_FORM_ID?.trim();
+  const partner = process.env.FORMSPREE_PARTNER_FORM_ID?.trim();
+  return (kind === "partner" ? partner || contact : contact) || undefined;
 }
 
 function toText(msg: MailMessage): string {

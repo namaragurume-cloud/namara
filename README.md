@@ -53,7 +53,7 @@ npm run dev                  # http://localhost:3000
 | `RESEND_API_KEY` | resend 時 | Resend の API キー |
 | `MAIL_FROM` | resend 時 | 送信元（Resend で認証済みのドメインのアドレス） |
 | `FORMSPREE_CONTACT_FORM_ID` | formspree 時 | 企業問い合わせ用フォーム ID |
-| `FORMSPREE_PARTNER_FORM_ID` | formspree 時 | 発信者登録用フォーム ID |
+| `FORMSPREE_PARTNER_FORM_ID` | 任意 | 発信者登録用フォーム ID（空なら企業問い合わせ用と共用） |
 | `NEXT_PUBLIC_TURNSTILE_SITE_KEY` / `TURNSTILE_SECRET_KEY` | 任意（推奨） | Cloudflare Turnstile（Bot 対策） |
 | `NEXT_PUBLIC_GA_ID` | 任意 | Google Analytics 4 の測定 ID |
 | `CONTENT_PREVIEW` | 任意 | `true` で非公開の実績・発信者をプレビュー表示（ローカル／Vercel プレビュー環境のみ有効） |
@@ -77,9 +77,9 @@ npm run dev                  # http://localhost:3000
 4. 環境変数を設定：`MAIL_PROVIDER=resend` / `RESEND_API_KEY` / `MAIL_FROM="なまらグルメ <noreply@独自ドメイン>"` / `MAIL_TO=namaragurume@gmail.com`
 
 ### B. Formspree を使う（ドメイン未決定の間の暫定案）
-1. https://formspree.io でフォームを 2 つ（企業問い合わせ用・発信者登録用）作成し、通知先を `namaragurume@gmail.com` に設定
-   - 旧サイトで使っていたフォーム ID（`xppqller`）を企業問い合わせ用に流用することもできます
-2. 環境変数を設定：`MAIL_PROVIDER=formspree` / `FORMSPREE_CONTACT_FORM_ID` / `FORMSPREE_PARTNER_FORM_ID`
+1. https://formspree.io でフォームを作成し、通知先を `namaragurume@gmail.com` に設定（旧サイトのフォーム ID `xppqller` も使えます）
+2. 環境変数を設定：`MAIL_PROVIDER=formspree` / `FORMSPREE_CONTACT_FORM_ID`
+   - 発信者登録を別のフォームで受けたい場合のみ `FORMSPREE_PARTNER_FORM_ID` も設定（空なら同じフォームに届き、件名で区別）
 
 ### スパム対策
 - ハニーポット（人には見えない入力欄）
