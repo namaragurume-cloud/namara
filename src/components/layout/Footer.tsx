@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { brand } from "@/data/brand";
 import { footerNav, mainNav, site } from "@/data/site";
 import { CTAButton } from "@/components/ui/CTAButton";
 import { InstagramIcon } from "@/components/ui/InstagramIcon";
@@ -14,8 +15,9 @@ export function Footer() {
             <Link href="/" aria-label={`${site.brand} トップページ`} className="inline-block">
               <Logo light />
             </Link>
-            <p className="mt-6 max-w-sm text-sm leading-relaxed text-white/60">
-              北海道のグルメに特化したインフルエンサーキャスティング。企画から発信者の選定、投稿管理、効果報告までワンストップで対応します。
+            <p className="mt-6 text-lg font-bold">{brand.slogan}</p>
+            <p className="mt-3 max-w-sm text-sm leading-relaxed text-white/60">
+              北海道発のクリエイターキャスティングサービス。企画から発信者の選定、投稿管理、効果報告までワンストップで対応します。
             </p>
             <a
               href={site.instagram.url}
@@ -25,6 +27,7 @@ export function Footer() {
             >
               <InstagramIcon size={18} />
               {site.instagram.handle}
+              <span className="text-xs font-normal text-white/50">（運営メディア なまらグルメ）</span>
               <span className="sr-only">（新しいタブで開きます）</span>
             </a>
           </div>
@@ -63,7 +66,7 @@ export function Footer() {
 
         <div className="mt-14 flex flex-col gap-4 border-t border-white/10 pt-8 text-xs text-white/50 md:flex-row md:items-end md:justify-between">
           <address className="not-italic leading-relaxed">
-            運営：{site.company.name}
+            {site.brand}（{site.brandKana}）運営：{site.company.name}／{site.media}
             <br />
             {site.company.address}
           </address>

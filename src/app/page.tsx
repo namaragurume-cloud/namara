@@ -1,5 +1,6 @@
 import { FinalCTA } from "@/components/sections/FinalCTA";
 import { Flow } from "@/components/sections/Flow";
+import { BrandConcept } from "@/components/sections/home/BrandConcept";
 import { AboutIntro } from "@/components/sections/home/AboutIntro";
 import { CreatorsSection } from "@/components/sections/home/CreatorsSection";
 import { FaqSection } from "@/components/sections/home/FaqSection";
@@ -14,6 +15,7 @@ export default function HomePage() {
   return (
     <>
       <Hero />
+      <BrandConcept />
       <Stats />
       <AboutIntro />
       <Reasons />

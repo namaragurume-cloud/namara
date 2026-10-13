@@ -19,7 +19,7 @@ export function WorksSection() {
               <>
                 数字で見る、
                 <br />
-                なまらグルメのPR実績。
+                KITACREのPR実績。
               </>
             }
           />

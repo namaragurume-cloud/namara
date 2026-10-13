@@ -4,7 +4,7 @@ import { PageHero } from "@/components/ui/PageHero";
 
 export const metadata = pageMetadata({
   title: "運営会社",
-  description: `なまらグルメ インフルエンサーキャスティングの運営会社、${site.company.name}の会社概要です。`,
+  description: `KITACRE（キタクリ）の運営会社、${site.company.name}の会社概要です。`,
   path: "/company",
 });
 

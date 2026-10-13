@@ -8,7 +8,7 @@ import { WorksEmpty } from "@/components/ui/WorksEmpty";
 
 export const metadata = pageMetadata({
   title: "PR実績",
-  description: "なまらグルメが手がけた北海道のグルメインフルエンサーPRの事例をご紹介します。",
+  description: "KITACRE（運営：なまらグルメ）が手がけた北海道のグルメインフルエンサーPRの事例をご紹介します。",
   path: "/works",
 });
 
@@ -22,7 +22,7 @@ export default function WorksPage() {
           <>
             数字で見る、
             <br className="hidden md:block" />
-            なまらグルメのPR実績。
+            KITACREのPR実績。
           </>
         }
         lead="これまでに実施したグルメPRの事例をご紹介します。企業名は匿名で掲載しています。"

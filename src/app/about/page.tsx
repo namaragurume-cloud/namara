@@ -1,6 +1,9 @@
+import Image from "next/image";
+import { brand } from "@/data/brand";
 import { history } from "@/data/history";
 import { images } from "@/data/images";
 import { stats } from "@/data/site";
+import { cn } from "@/lib/utils";
 import { pageMetadata } from "@/lib/metadata";
 import { ScrollReveal } from "@/components/animation/ScrollReveal";
 import { FinalCTA } from "@/components/sections/FinalCTA";
@@ -10,9 +13,9 @@ import { SectionHeading, SectionLabel } from "@/components/ui/SectionHeading";
 import { Timeline } from "@/components/ui/Timeline";
 
 export const metadata = pageMetadata({
-  title: "なまらグルメについて",
+  title: "KITACREについて",
   description:
-    "2021年4月から北海道のグルメ情報を発信するメディア「なまらグルメ」。SNS発信、コラボ商品開発、店舗プロデュース、イベント企画、飲食店運営まで、北海道の食に関わる活動をご紹介します。",
+    "KITACRE（キタクリ）は「北の大地」と「CREATOR・CREATIVE」を掛け合わせた、北海道発のクリエイターキャスティングサービス。ブランドに込めた想いと、運営メディア「なまらグルメ」の歩みをご紹介します。",
   path: "/about",
 });
 
@@ -25,9 +28,9 @@ const story = [
   "それから、SNSでの情報発信だけでなく、商品開発やイベント、飲食店のプロデュース・運営など、さまざまな形で北海道の食に関わってきました。",
   "活動を続ける中で、多くの飲食店や企業、そしてグルメを発信するインフルエンサーの皆さんとのつながりが生まれました。",
   "このつながりを活かして、企業や飲食店の魅力を最適な発信者とともに届けたい。そして、発信者にとっても新しい活躍の機会を生み出したい。",
-  "そんな思いから、グルメに特化したキャスティング事業を本格的に展開します。",
+  "そんな思いから、グルメに特化したクリエイターキャスティングサービス「KITACRE（キタクリ）」を立ち上げました。",
   "北海道の食を盛り上げたいという気持ちは、立ち上げ当初から今も変わりません。",
-  "北海道の食に関するSNS発信を相談するなら、まず「なまらグルメ」へ。",
+  "北海道の食に関するSNS発信を相談するなら、まず「KITACRE」へ。",
   "そう思っていただける存在を目指して、これからも挑戦を続けていきます。",
 ];
 
@@ -39,26 +42,93 @@ export default function AboutPage() {
         en="ABOUT"
         title={
           <>
-            北海道の食の魅力を、
+            人と人がつながり、
             <br className="hidden md:block" />
-            もっと多くの人へ。
+            北海道に新しい価値と幸せを。
           </>
         }
-        breadcrumb={[{ label: "なまらグルメについて", href: "/about" }]}
+        breadcrumb={[{ label: "KITACREについて", href: "/about" }]}
       />
 
-      <section aria-label="なまらグルメとは" className="section">
+      <section aria-labelledby="brand-title" className="section">
+        <div className="container-x grid items-center gap-14 lg:grid-cols-2 lg:gap-24">
+          <ScrollReveal className="rounded-[28px] bg-white p-10 shadow-[0_40px_80px_-40px_rgba(0,0,0,0.2)] ring-1 ring-line md:p-16">
+            <Image
+              src="/images/brand/kitacre-logo.png"
+              alt="KITACRE（キタクリ）のロゴ"
+              width={661}
+              height={429}
+              priority
+              sizes="(min-width: 1024px) 40vw, 90vw"
+              className="h-auto w-full"
+            />
+          </ScrollReveal>
+          <div>
+            <ScrollReveal>
+              <SectionLabel>BRAND CONCEPT</SectionLabel>
+              <h2 id="brand-title" className="heading-lg mt-5">
+                KITACRE
+                <span className="ml-3 align-middle text-base font-bold text-muted">（{brand.kana}）</span>
+              </h2>
+            </ScrollReveal>
+            <ScrollReveal delay={0.1} className="mt-8 space-y-5 text-[15px] leading-[2.1] text-ink/80 md:text-base">
+              <p>{brand.nameOrigin}</p>
+              {brand.symbol.map((p) => (
+                <p key={p}>{p}</p>
+              ))}
+            </ScrollReveal>
+            <ScrollReveal delay={0.15}>
+              <p className="mt-8 text-sm font-bold text-muted">4つの人物が象徴するもの</p>
+              <ul className="mt-3 grid grid-cols-2 gap-3">
+                {brand.figures.map((f) => (
+                  <li key={f.en} className="flex items-center gap-3 rounded-2xl bg-mist px-4 py-4">
+                    <span aria-hidden="true" className={cn("size-3.5 shrink-0 rounded-full", f.color === "red" ? "bg-brand" : "bg-ink")} />
+                    <span>
+                      <span className="num block text-[10px] font-semibold tracking-[0.2em] text-muted">{f.en}</span>
+                      <span className="text-sm font-bold">{f.label}</span>
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </ScrollReveal>
+          </div>
+        </div>
+
+        <div className="container-x mt-24 md:mt-32">
+          <ScrollReveal className="relative overflow-hidden rounded-[28px] bg-ink px-8 py-16 text-center text-white md:px-16 md:py-24">
+            <div aria-hidden="true" className="absolute -top-24 -right-24 size-80 rounded-full bg-brand/30 blur-3xl" />
+            <div className="relative mx-auto max-w-2xl space-y-5 text-[15px] leading-[2.1] text-white/75 md:text-base">
+              {brand.values.map((v) => (
+                <p key={v}>{v}</p>
+              ))}
+              <p className="pt-6 text-[clamp(1.75rem,1.2rem+2.4vw,3rem)] leading-snug font-extrabold text-white">
+                <span className="text-brand">{brand.slogan.split("、")[0]}、</span>
+                <br className="sm:hidden" />
+                {brand.slogan.split("、")[1]}
+              </p>
+              <p className="pt-4">{brand.closing}</p>
+            </div>
+          </ScrollReveal>
+        </div>
+      </section>
+
+      <section aria-labelledby="media-title" className="section bg-mist">
         <div className="container-x grid items-center gap-14 lg:grid-cols-2 lg:gap-24">
           <ScrollReveal>
             <Photo
               image={images.aboutMain}
-              priority
               sizes="(min-width: 1024px) 45vw, 100vw"
               className="aspect-[4/3] rounded-[28px]"
             />
           </ScrollReveal>
           <ScrollReveal delay={0.1} className="space-y-5 text-[15px] leading-[2.1] text-ink/80 md:text-base">
-            <p>北海道のグルメ情報を発信するメディア「なまらグルメ」。</p>
+            <SectionLabel>OPERATED BY</SectionLabel>
+            <h2 id="media-title" className="heading-lg">
+              運営メディア
+              <br />
+              「なまらグルメ」
+            </h2>
+            <p>KITACREを運営するのは、北海道のグルメ情報を発信するメディア「なまらグルメ」です。</p>
             <p>2021年4月の運営開始以来、北海道の飲食店や食の魅力をSNSを通じて発信してきました。</p>
             <p className="py-2">
               <span className="block text-sm font-bold text-muted">現在のInstagramフォロワー</span>
@@ -71,7 +141,7 @@ export default function AboutPage() {
               飲食店のPR支援、コラボ商品開発、店舗プロデュース、イベント企画など、SNSの枠を超えて北海道の食に関わるさまざまな活動を展開しています。
             </p>
             <p>
-              これまで培ってきた経験とネットワークを活かし、北海道のグルメに特化したインフルエンサーキャスティング事業を本格展開します。
+              これまで培ってきた経験とネットワークを活かし、北海道のグルメに特化したクリエイターキャスティングサービス「KITACRE」を本格展開します。
             </p>
           </ScrollReveal>
         </div>
@@ -101,21 +171,21 @@ export default function AboutPage() {
                 {p}
               </p>
             ))}
-            <p className="pt-6 text-right font-bold text-white">なまらグルメ 運営者　島田</p>
+            <p className="pt-6 text-right font-bold text-white">KITACRE／なまらグルメ 運営者　島田</p>
           </ScrollReveal>
         </div>
       </section>
 
-      <section aria-label="活動年表" className="section bg-mist">
+      <section aria-label="活動年表" className="section">
         <div className="container-x">
-          <SectionHeading en="HISTORY" title="活動年表" />
+          <SectionHeading en="HISTORY" title="活動年表" lead="運営メディア「なまらグルメ」のこれまでの歩みです。" />
           <div className="mt-14 md:mt-20">
             <Timeline items={history} />
           </div>
         </div>
       </section>
 
-      <section aria-labelledby="vision-title" className="section">
+      <section aria-labelledby="vision-title" className="section bg-mist">
         <div className="container-x max-w-4xl! text-center">
           <ScrollReveal className="flex flex-col items-center">
             <SectionLabel>VISION</SectionLabel>

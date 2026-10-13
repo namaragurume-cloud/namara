@@ -5,13 +5,14 @@ import { SectionLabel } from "@/components/ui/SectionHeading";
 
 export function Stats() {
   return (
-    <section aria-labelledby="stats-title" className="relative bg-white py-20 md:py-28">
+    <section aria-labelledby="stats-title" className="relative bg-white pb-20 md:pb-28">
       <div className="container-x">
+        <div className="border-t border-line pt-20 md:pt-28" />
         <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
           <div>
             <SectionLabel>NUMBERS</SectionLabel>
             <h2 id="stats-title" className="heading-md mt-4">
-              数字で見るなまらグルメ
+              数字で見る、運営メディア「なまらグルメ」
             </h2>
           </div>
           <p className="text-xs text-muted">

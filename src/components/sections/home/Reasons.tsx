@@ -9,11 +9,11 @@ export function Reasons() {
       <div className="container-x grid gap-14 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] lg:gap-20">
         <div className="lg:sticky lg:top-[calc(var(--header-h)+48px)] lg:self-start">
           <ScrollReveal>
-            <SectionLabel>WHY NAMARA GOURMET</SectionLabel>
+            <SectionLabel>WHY KITACRE</SectionLabel>
             <h2 id="reasons-title" className="heading-lg mt-5">
               なぜ、
               <br className="hidden lg:block" />
-              なまらグルメが
+              KITACREが
               <br />
               選ばれるのか。
             </h2>

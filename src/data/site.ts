@@ -4,15 +4,17 @@
  */
 
 export const site = {
-  /** 既存ブランド名（前面に出す名称） */
-  brand: "なまらグルメ",
-  /** キャスティング事業の仮称（正式名称が決まったら変更） */
-  serviceName: "NAMARA GOURMET CASTING",
+  /** サービス名 */
+  brand: "KITACRE",
+  brandKana: "キタクリ",
+  serviceName: "KITACRE",
+  /** 運営メディア（実績・フォロワー数などはこのメディアのもの） */
+  media: "なまらグルメ",
   /** <title> の末尾などに使う名称 */
-  title: "なまらグルメ｜グルメインフルエンサーキャスティング",
+  title: "KITACRE（キタクリ）｜北海道のグルメインフルエンサーキャスティング",
   tagline: "北海道の食に、発信力を。",
   description:
-    "北海道・札幌のグルメに特化したインフルエンサーキャスティング。なまらグルメが培ってきた発信力とネットワークを活かし、飲食店・食品メーカー・ホテルのSNSプロモーションを企画から効果報告までワンストップでご提案します。",
+    "北海道発のクリエイターキャスティングサービス「KITACRE（キタクリ）」。グルメメディア「なまらグルメ」が培ってきた発信力とネットワークを活かし、飲食店・食品メーカー・ホテルのSNSプロモーションを企画から効果報告までワンストップでご提案します。",
   url: (process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000").replace(/\/$/, ""),
   locale: "ja_JP",
 
@@ -34,8 +36,8 @@ export const site = {
     /** 設立年月日：未確認のため空欄。確認後に入力すると会社概要に表示されます */
     founded: "",
     business: [
-      "グルメメディア運営",
-      "インフルエンサーキャスティング",
+      "グルメメディア「なまらグルメ」の運営",
+      "クリエイターキャスティングサービス「KITACRE」の運営",
       "SNSマーケティング支援",
       "飲食店運営",
     ],
@@ -49,7 +51,7 @@ export const site = {
 } as const;
 
 /**
- * 数字で見るなまらグルメ（トップページ）。
+ * 数字で見るなまらグルメ（トップページ）。運営メディア「なまらグルメ」の数値です。
  * ヒアリング時点の数値です。更新時は value と asOf を変更してください。
  */
 export type Stat = {
@@ -95,7 +97,7 @@ export const mainNav: NavItem[] = [
   { href: "/works", label: "実績", en: "WORKS" },
   { href: "/creators", label: "インフルエンサー", en: "CREATORS" },
   { href: "/pricing", label: "料金", en: "PRICING" },
-  { href: "/about", label: "なまらグルメについて", en: "ABOUT" },
+  { href: "/about", label: "KITACREについて", en: "ABOUT" },
 ];
 
 export const footerNav: NavItem[] = [

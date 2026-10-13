@@ -2,6 +2,7 @@
 
 # Project notes
 
+- Service name is KITACRE（キタクリ）; なまらグルメ is the operating media (stats, followers and history belong to it). Brand copy lives in `src/data/brand.ts`.
 - Site content lives in `src/data/*.ts`. Edit data there rather than in components.
 - Never publish fabricated results, unapproved creators, or unconfirmed prices: keep `published: false` / empty `price` until the owner confirms. See README section 8.
 - "200社超" is the number of companies proposed to (not contracts); "約50人" is creators in the network (not registered members).

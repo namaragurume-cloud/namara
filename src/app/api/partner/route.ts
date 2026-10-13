@@ -3,7 +3,7 @@ import { partnerSchema } from "@/lib/validation";
 
 export async function POST(req: Request) {
   return handleFormRequest(req, "partner", partnerSchema, (d) => ({
-    subject: "【発信者登録申請】なまらグルメ",
+    subject: "【発信者登録申請】KITACRE",
     fields: [
       ["活動名・アカウント名", d.account],
       ["メールアドレス", d.email],

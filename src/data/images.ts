@@ -30,7 +30,7 @@ export const images = {
   },
   aboutMain: {
     src: "",
-    alt: "なまらグルメの活動の様子",
+    alt: "運営メディア なまらグルメの活動の様子",
     placeholder: "なまらグルメ活動写真",
   },
   aboutSub: {

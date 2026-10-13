@@ -40,7 +40,7 @@ export default function ContactPage() {
                 Instagram DMでもご相談いただけます
               </p>
               <p className="mt-3 text-sm leading-relaxed text-white/70">
-                「まずは気軽に聞いてみたい」という方は、なまらグルメ公式アカウント（{site.instagram.handle}）へメッセージをお送りください。
+                「まずは気軽に聞いてみたい」という方は、運営メディア「なまらグルメ」の公式Instagram（{site.instagram.handle}）へメッセージをお送りください。
               </p>
               <CTAButton href={site.instagram.dmUrl} variant="light" icon="instagram" fullWidth className="mt-6" trackLocation="contact_aside">
                 Instagram DMで相談する

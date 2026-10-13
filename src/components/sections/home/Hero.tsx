@@ -54,7 +54,7 @@ export function Hero() {
             >
               北海道のグルメに特化したインフルエンサーキャスティング。
               <br className="hidden md:block" />
-              なまらグルメが培ってきた発信力とネットワークを活かし、目的やご予算に合わせた最適なSNSプロモーションをご提案します。
+              グルメメディア「なまらグルメ」が培ってきた発信力とネットワークを活かし、目的やご予算に合わせた最適なSNSプロモーションをご提案します。
             </p>
             <div
               className="anim-fade-up mt-10 flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4"
