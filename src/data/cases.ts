@@ -49,22 +49,23 @@ export type CaseStudy = {
 
 export const cases: CaseStudy[] = [
   {
-    slug: "the-butter",
+    slug: "butter-cafe",
     no: "01",
-    title: "バター専門カフェ「THE BUTTER」のPRリール",
-    industry: "カフェ（バター専門店）／札幌・赤れんがテラス",
+    title: "バター専門カフェのPRリール",
+    industry: "カフェ（バター専門店）",
     summary:
-      "札幌・赤れんがテラスにある、雪印メグミルクグループ初のバター専門カフェ「THE BUTTER」。店内で作る作りたてのバターの魅力をInstagramリールで発信しました。",
+      "札幌のバター専門カフェのPR。北海道のグルメ情報を発信する「なまらグルメ【北海道グルメ】」が、店内で作る作りたてのバターの魅力をInstagramリールで届けました。",
     metric: {
       label: "Instagramリール再生回数",
       value: "50万回",
       period: "Instagramリールの再生回数（集計時点）",
     },
-    media: "Instagram リール",
+    media: "Instagram リール（発信者：なまらグルメ【北海道グルメ】）",
     result: "Instagramリールの再生回数は50万回となりました。",
+    creatorId: "namaragurume",
     instagram: ["https://www.instagram.com/reel/DbM5zHupwUR/"],
     published: true,
-    todo: ["投稿した発信者（creatorId）"],
+    todo: [],
   },
   {
     slug: "jingisukan",
