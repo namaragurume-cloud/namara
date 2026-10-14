@@ -1,5 +1,5 @@
 import { Check, Info } from "lucide-react";
-import { followerTiers, plans, pricingPolicy } from "@/data/pricing";
+import { plans, pricingPolicy } from "@/data/pricing";
 import { pageMetadata } from "@/lib/metadata";
 import { ScrollReveal } from "@/components/animation/ScrollReveal";
 import { CTAButton } from "@/components/ui/CTAButton";
@@ -12,7 +12,7 @@ import { faq } from "@/data/faq";
 export const metadata = pageMetadata({
   title: "料金",
   description:
-    "北海道のグルメインフルエンサーPRの料金。ご予算5万円からご相談いただけます。インフルエンサー1名プラン、複数人キャスティングプラン、オーダーメイドプランをご用意しています。",
+    "北海道のグルメインフルエンサーPRの料金。ご予算3万円からご相談いただけます。インフルエンサー1名プラン、複数人キャスティングプラン、オーダーメイドプランをご用意しています。",
   path: "/pricing",
 });
 
@@ -37,7 +37,7 @@ export default function PricingPage() {
           <ScrollReveal className="flex flex-col justify-center rounded-[28px] bg-ink p-8 text-white md:p-12">
             <p className="text-sm font-bold text-white/60">ご予算の目安</p>
             <p className="mt-2 flex items-baseline gap-1 font-extrabold">
-              <span className="num text-7xl text-brand md:text-8xl">5</span>
+              <span className="num text-7xl text-brand md:text-8xl">3</span>
               <span className="text-2xl md:text-3xl">万円〜</span>
             </p>
             <p className="mt-4 text-sm leading-relaxed text-white/70">{pricingPolicy.minimumOrderNote}</p>
@@ -69,39 +69,7 @@ export default function PricingPage() {
         </div>
       </section>
 
-      <section aria-label="フォロワー規模別の区分" className="section bg-mist">
-        <div className="container-x grid gap-12 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] lg:gap-16">
-          <SectionHeading
-            en="FOLLOWER SCALE"
-            title="フォロワー規模別の区分"
-            lead="起用する発信者のフォロワー規模によって料金が変わります。正式な単価は現在準備中のため、詳細はお見積もりにてご案内します。"
-          />
-          <ScrollReveal>
-            <div className="overflow-hidden rounded-[24px] bg-white">
-              <table className="w-full text-left text-[15px]">
-                <caption className="sr-only">フォロワー規模別の区分（参考）</caption>
-                <thead>
-                  <tr className="border-b border-line text-xs text-muted">
-                    <th scope="col" className="px-6 py-4 font-bold md:px-8">フォロワー規模</th>
-                    <th scope="col" className="px-6 py-4 text-right font-bold md:px-8">料金</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {followerTiers.map((t) => (
-                    <tr key={t.range} className="border-b border-line last:border-0">
-                      <th scope="row" className="px-6 py-5 font-bold md:px-8">{t.range}</th>
-                      <td className="px-6 py-5 text-right text-muted md:px-8">{t.price || "お見積もり"}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-            <p className="mt-4 text-xs text-muted">※参考区分です。区分・単価は変更となる場合があります。</p>
-          </ScrollReveal>
-        </div>
-      </section>
-
-      <section aria-label="注意事項" className="section">
+      <section aria-label="注意事項" className="section pt-0!">
         <div className="container-x max-w-4xl!">
           <ScrollReveal className="rounded-[24px] border border-line p-7 md:p-10">
             <h2 className="flex items-center gap-2 text-lg font-bold">

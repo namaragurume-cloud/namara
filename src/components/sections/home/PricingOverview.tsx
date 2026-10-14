@@ -23,7 +23,7 @@ export function PricingOverview() {
           <ScrollReveal className="rounded-[24px] bg-white px-8 py-7 lg:min-w-[300px]">
             <p className="text-xs font-bold text-muted">ご予算の目安</p>
             <p className="mt-1 flex items-baseline gap-1 font-extrabold">
-              <span className="num text-5xl text-brand">5</span>
+              <span className="num text-5xl text-brand">3</span>
               <span className="text-xl">万円〜</span>
             </p>
             <p className="mt-2 text-xs text-muted">{pricingPolicy.minimumOrderNote}</p>

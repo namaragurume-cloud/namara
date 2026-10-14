@@ -51,7 +51,7 @@ export default function ContactPage() {
               <ul className="mt-3 list-disc space-y-1.5 pl-5 text-sm leading-relaxed text-muted">
                 <li>新店舗OPENにあわせて告知したい</li>
                 <li>新メニュー・新商品をPRしたい</li>
-                <li>5万円の予算で何ができるか知りたい</li>
+                <li>3万円の予算で何ができるか知りたい</li>
                 <li>複数のインフルエンサーを起用したい</li>
                 <li>試食会・PRイベントを開催したい</li>
               </ul>

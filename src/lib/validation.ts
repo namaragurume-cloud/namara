@@ -4,6 +4,7 @@ import { z } from "zod";
 export const industryOptions = ["飲食店", "食品メーカー", "ホテル・宿泊施設", "その他"] as const;
 
 export const budgetOptions = [
+  "3万〜5万円未満",
   "5万〜10万円未満",
   "10万〜20万円未満",
   "20万〜30万円未満",

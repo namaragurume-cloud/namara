@@ -8,8 +8,8 @@
 
 export const pricingPolicy = {
   /** 最低受注価格の目安 */
-  minimumOrder: "5万円〜",
-  minimumOrderNote: "ご予算5万円からご相談いただけます。",
+  minimumOrder: "3万円〜",
+  minimumOrderNote: "ご予算3万円からご相談いただけます。",
   /** 例: "表示価格はすべて税別です。" 未決定のため空欄 */
   taxNote: "",
   points: [
@@ -37,10 +37,10 @@ export const plans: Plan[] = [
     id: "single",
     label: "PLAN A",
     name: "インフルエンサー1名プラン",
-    description: "小規模店舗の紹介、新メニューPR、商品PRなどに適したプラン。",
+    description: "SNS広告を試してみたい方や、新メニューPR、商品PRなどに適したプラン。",
     price: "",
-    priceNote: "ご予算5万円からご相談いただけます",
-    suitedFor: ["小規模店舗の紹介", "新メニューのPR", "商品のPR"],
+    priceNote: "ご予算3万円からご相談いただけます",
+    suitedFor: ["SNS広告を試してみたい方", "新メニューのPR", "商品のPR"],
   },
   {
     id: "multiple",
@@ -58,16 +58,4 @@ export const plans: Plan[] = [
     price: "",
     suitedFor: ["大型インフルエンサーの起用", "複数媒体での展開", "PRイベントとの組み合わせ"],
   },
-];
-
-/**
- * フォロワー規模別の区分（仮案）。
- * 正式な単価が決まるまで price は空欄のまま「参考区分」として表示します。
- */
-export const followerTiers: { range: string; price: string }[] = [
-  { range: "1万人未満", price: "" },
-  { range: "1万〜3万人", price: "" },
-  { range: "3万〜5万人", price: "" },
-  { range: "5万〜10万人", price: "" },
-  { range: "10万人以上", price: "" },
 ];
