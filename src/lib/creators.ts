@@ -1,11 +1,12 @@
 import "server-only";
 import { getVisibleCreators, type CreatorView } from "@/data/creators";
-import { mediaFollowers, site } from "@/data/site";
+import { mediaFollowers, showFollowerCounts, site } from "@/data/site";
 import { getInstagramFollowers } from "./instagram";
 
 /** 公開中の発信者（Instagram のフォロワー数を自動取得できた場合は反映） */
 export async function getCreatorsWithFollowers(): Promise<CreatorView[]> {
   const list = getVisibleCreators();
+  if (!showFollowerCounts) return list;
   return Promise.all(
     list.map(async (c) => {
       if (c.platform !== "Instagram") return c;

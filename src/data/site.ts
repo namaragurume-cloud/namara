@@ -57,6 +57,13 @@ export const site = {
 export const mediaFollowers = { value: 14.2, decimals: 1, suffix: "万人" };
 
 /**
+ * 発信者カードと /about にフォロワー数を表示するかどうか。
+ * true にすると、手入力の値（または Instagram API で自動取得した値）を表示します。
+ * ※トップの「数字で見る MIRATSUMU」（SNS総フォロワー数）はこの設定に関係なく表示されます。
+ */
+export const showFollowerCounts = false;
+
+/**
  * 数字で見る「MIRATSUMU」（トップページ）。
  * 更新時は value と asOf を変更してください。
  */

@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { followerScales, type Creator, type CreatorView } from "@/data/creators";
+import { showFollowerCounts } from "@/data/site";
 import { cn } from "@/lib/utils";
 import { CreatorCard } from "@/components/ui/CreatorCard";
 
@@ -31,7 +32,7 @@ export function CreatorList({ creators }: { creators: CreatorView[] }) {
   return (
     <div>
       {showFilter && (
-        <div className="mb-10 grid gap-4 rounded-[24px] bg-mist p-5 sm:grid-cols-3 md:p-6">
+        <div className={cn("mb-10 grid gap-4 rounded-[24px] bg-mist p-5 md:p-6", showFollowerCounts ? "sm:grid-cols-3" : "sm:grid-cols-2")}>
           <label className="text-xs font-bold">
             活動エリア
             <select className={cn(select, "mt-2")} value={area} onChange={(e) => setArea(e.target.value)}>
@@ -50,6 +51,7 @@ export function CreatorList({ creators }: { creators: CreatorView[] }) {
               ))}
             </select>
           </label>
+          {showFollowerCounts && (
           <label className="text-xs font-bold">
             フォロワー規模
             <select className={cn(select, "mt-2")} value={scale} onChange={(e) => setScale(e.target.value)}>
@@ -61,6 +63,7 @@ export function CreatorList({ creators }: { creators: CreatorView[] }) {
               ))}
             </select>
           </label>
+          )}
         </div>
       )}
 

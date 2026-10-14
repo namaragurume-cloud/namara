@@ -2,6 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { ArrowRight, ArrowUpRight, MapPin, UserRound } from "lucide-react";
 import { formatFollowers, type CreatorView } from "@/data/creators";
+import { showFollowerCounts } from "@/data/site";
 import { InstagramIcon } from "./InstagramIcon";
 
 export function CreatorCard({ creator }: { creator: CreatorView }) {
@@ -43,7 +44,7 @@ export function CreatorCard({ creator }: { creator: CreatorView }) {
           <span className="sr-only">（{creator.platform}を新しいタブで開きます）</span>
         </a>
 
-        {creator.followers !== undefined && (
+        {showFollowerCounts && creator.followers !== undefined && (
           <p className="mt-5 flex items-baseline gap-1.5">
             <span className="num text-3xl font-extrabold">{formatFollowers(creator.followers)}</span>
             <span className="text-xs text-muted">フォロワー</span>
@@ -95,7 +96,7 @@ export function CreatorCard({ creator }: { creator: CreatorView }) {
           この発信者を含めて相談する
           <ArrowRight size={16} aria-hidden="true" className="transition-transform group-hover/btn:translate-x-1" />
         </Link>
-        {creator.followers !== undefined && (
+        {showFollowerCounts && creator.followers !== undefined && (
           <p className="mt-2 text-[11px] text-muted">
             {creator.followersLive
               ? "※フォロワー数はInstagramから自動で更新しています"

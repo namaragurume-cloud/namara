@@ -4,6 +4,7 @@ import { activities } from "@/data/activities";
 import { history } from "@/data/history";
 import { images } from "@/data/images";
 import { getMediaFollowers } from "@/lib/creators";
+import { showFollowerCounts } from "@/data/site";
 import { pageMetadata } from "@/lib/metadata";
 import { ScrollReveal } from "@/components/animation/ScrollReveal";
 import { ActivityList } from "@/components/sections/ActivityList";
@@ -37,7 +38,7 @@ const story = [
 ];
 
 export default async function AboutPage() {
-  const follower = await getMediaFollowers();
+  const follower = showFollowerCounts ? await getMediaFollowers() : null;
   return (
     <>
       <PageHero
@@ -143,6 +144,7 @@ export default async function AboutPage() {
             </h2>
             <p>MIRATSUMUを運営するのは、北海道のグルメ情報を発信するメディア「なまらグルメ」です。</p>
             <p>2021年4月の運営開始以来、北海道の飲食店や食の魅力をSNSを通じて発信してきました。</p>
+            {follower && (
             <p className="py-2">
               <span className="block text-sm font-bold text-muted">現在のInstagramフォロワー</span>
               <span className="mt-1 flex items-baseline gap-1 font-extrabold text-ink">
@@ -150,6 +152,7 @@ export default async function AboutPage() {
                 <span className="text-2xl">{follower.suffix}</span>
               </span>
             </p>
+            )}
             <p>
               飲食店のPR支援、コラボ商品開発、店舗プロデュース、イベント企画など、SNSの枠を超えて北海道の食に関わるさまざまな活動を展開しています。
             </p>
