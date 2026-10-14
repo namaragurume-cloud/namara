@@ -55,7 +55,7 @@ export const creators: Creator[] = [
   {
     id: "namaragurume",
     account: "namaragurume",
-    name: "なまらグルメ",
+    name: "なまらグルメ【北海道グルメ】",
     image: "/images/creators/namaragurume.jpg",
     platform: "Instagram",
     profileUrl: "https://www.instagram.com/namaragurume/",
@@ -67,7 +67,7 @@ export const creators: Creator[] = [
   {
     id: "kenji-gourmet",
     account: "kenji_gourmet_1987",
-    name: "けんじグルメ",
+    name: "けんじ グルメマン",
     image: "/images/creators/kenji-gourmet.jpg",
     platform: "Instagram",
     profileUrl: "https://www.instagram.com/kenji_gourmet_1987/",
@@ -78,7 +78,7 @@ export const creators: Creator[] = [
   {
     id: "kitagohan",
     account: "kitagohan_insta",
-    name: "きたごはん",
+    name: "きたごはん🍽️ 札幌グルメ スポット",
     image: "/images/creators/kitagohan.jpg",
     platform: "Instagram",
     profileUrl: "https://www.instagram.com/kitagohan_insta/",
@@ -89,7 +89,7 @@ export const creators: Creator[] = [
   {
     id: "oniyan",
     account: "oniyan_grm",
-    name: "おにやん",
+    name: "おにやん｜北海道グルメ・カフェ",
     image: "/images/creators/oniyan.jpg",
     platform: "Instagram",
     profileUrl: "https://www.instagram.com/oniyan_grm/",
@@ -100,7 +100,7 @@ export const creators: Creator[] = [
   {
     id: "rikomogu",
     account: "riko_mogram",
-    name: "りこモグ",
+    name: "りこモグ【札幌グルメ/ 北海道グルメ】",
     image: "/images/creators/rikomogu.jpg",
     platform: "Instagram",
     profileUrl: "https://www.instagram.com/riko_mogram/",
