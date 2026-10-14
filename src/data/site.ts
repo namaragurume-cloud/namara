@@ -86,7 +86,7 @@ export const stats: { asOf: string; items: Stat[]; footnote?: string } = {
       label: "MIRATSUMUの発信者たちのSNS総フォロワー数",
     },
     {
-      value: 200,
+      value: 1000,
       suffix: "店舗超",
       label: "発信者たちがこれまでにPRしてきた店舗数",
     },
