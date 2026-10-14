@@ -88,13 +88,13 @@ export const stats: { asOf: string; items: Stat[]; footnote?: string } = {
     {
       value: 200,
       suffix: "店舗超",
-      label: "これまでPRを実施してきた店舗数",
+      label: "発信者たちがこれまでにPRしてきた店舗数",
     },
     {
       value: 200,
       suffix: "%UP",
-      label: "月間売上（200万円→PR実施後600万円）",
-      note: "ある飲食店の事例です",
+      label: "発信者のPRで実現した売上アップの事例",
+      note: "ある飲食店の月間売上（200万円→PR実施後600万円）",
     },
   ],
   footnote: "売上の成果は、PR以外の要因を含む場合があります。",
@@ -104,7 +104,7 @@ export type NavItem = { href: string; label: string; en: string };
 
 export const mainNav: NavItem[] = [
   { href: "/service", label: "サービス", en: "SERVICE" },
-  { href: "/works", label: "実績", en: "WORKS" },
+  { href: "/works", label: "発信者の実績", en: "WORKS" },
   { href: "/creators", label: "インフルエンサー", en: "CREATORS" },
   { href: "/pricing", label: "料金", en: "PRICING" },
   { href: "/about", label: "MIRATSUMUについて", en: "ABOUT" },

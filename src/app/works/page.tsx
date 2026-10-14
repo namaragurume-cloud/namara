@@ -7,8 +7,8 @@ import { PageHero } from "@/components/ui/PageHero";
 import { WorksEmpty } from "@/components/ui/WorksEmpty";
 
 export const metadata = pageMetadata({
-  title: "PR実績",
-  description: "MIRATSUMU（運営：なまらグルメ）が手がけた北海道のグルメインフルエンサーPRの事例をご紹介します。",
+  title: "発信者の実績",
+  description: "MIRATSUMUのネットワークに参加する北海道のグルメインフルエンサーが手がけたPR投稿の実績をご紹介します。",
   path: "/works",
 });
 
@@ -17,16 +17,16 @@ export default function WorksPage() {
   return (
     <>
       <PageHero
-        en="WORKS"
+        en="CREATORS' WORKS"
         title={
           <>
             数字で見る、
             <br className="hidden md:block" />
-            MIRATSUMUのPR実績。
+            発信者たちのPR実績。
           </>
         }
-        lead="これまでに実施したグルメPRの事例をご紹介します。掲載の許可をいただいた事例のみ公開しています。"
-        breadcrumb={[{ label: "PR実績", href: "/works" }]}
+        lead="MIRATSUMUのネットワークに参加する発信者たちが、これまでに手がけたPR投稿の一部をご紹介します。掲載の許可をいただいた事例のみ公開しています。"
+        breadcrumb={[{ label: "発信者の実績", href: "/works" }]}
       />
       <section aria-label="事例一覧" className="section">
         <div className="container-x">

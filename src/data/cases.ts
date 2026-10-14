@@ -38,6 +38,8 @@ export type CaseStudy = {
   media?: string;
   result?: string;
   insight?: string;
+  /** 投稿した発信者（creators.ts の id）。カードと詳細ページに表示 */
+  creatorId?: string;
   /** 掲載する Instagram 投稿・リールの URL（公開投稿のみ） */
   instagram?: string[];
   published: boolean;
@@ -62,7 +64,7 @@ export const cases: CaseStudy[] = [
     result: "Instagramリールの再生回数は50万回となりました。",
     instagram: ["https://www.instagram.com/reel/DbM5zHupwUR/"],
     published: true,
-    todo: [],
+    todo: ["投稿した発信者（creatorId）"],
   },
   {
     slug: "jingisukan",
@@ -78,6 +80,7 @@ export const cases: CaseStudy[] = [
     },
     media: "Instagram リール（発信者：きたごはん🍽️ 札幌グルメ スポット）",
     result: "Instagramリールの再生回数は40万回となりました。",
+    creatorId: "kitagohan",
     instagram: ["https://www.instagram.com/reel/DdyNn5Uv0xq/"],
     published: true,
     todo: ["店名を記載するか"],
@@ -96,6 +99,7 @@ export const cases: CaseStudy[] = [
     },
     media: "Instagram リール（発信者：けんじ グルメマン）",
     result: "Instagramリールの再生回数は120万回となりました。",
+    creatorId: "kenji-gourmet",
     instagram: ["https://www.instagram.com/reel/DagYVwwTGyI/"],
     published: true,
     todo: ["店名を記載するか"],

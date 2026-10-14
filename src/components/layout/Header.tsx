@@ -93,7 +93,7 @@ export function Header() {
             <Logo light={transparent} />
           </Link>
 
-          <nav aria-label="メインメニュー" className="hidden lg:block">
+          <nav aria-label="メインメニュー" className="hidden xl:block">
             <ul className="flex items-center gap-1">
               {mainNav.map((item) => {
                 const active = pathname === item.href || pathname.startsWith(`${item.href}/`);
@@ -103,7 +103,7 @@ export function Header() {
                       href={item.href}
                       aria-current={active ? "page" : undefined}
                       className={cn(
-                        "relative rounded-full px-4 py-2 text-[13.5px] font-bold tracking-wider transition-colors",
+                        "relative rounded-full px-4 py-2 text-[13.5px] font-bold tracking-wider whitespace-nowrap transition-colors",
                         "after:absolute after:inset-x-4 after:bottom-1 after:h-px after:origin-left after:scale-x-0 after:bg-current after:transition-transform after:duration-300 hover:after:scale-x-100",
                         active && "text-brand after:scale-x-100",
                       )}
@@ -120,7 +120,7 @@ export function Header() {
             <Link
               href="/contact"
               onClick={() => track("cta_click", { location: "header", href: "/contact" })}
-              className="group hidden items-center gap-2 rounded-full bg-brand px-6 py-3 text-[13.5px] font-bold tracking-wider text-white transition-all duration-300 hover:bg-brand-dark sm:inline-flex"
+              className="group hidden items-center gap-2 rounded-full bg-brand px-6 py-3 text-[13.5px] font-bold tracking-wider whitespace-nowrap text-white transition-all duration-300 hover:bg-brand-dark sm:inline-flex"
             >
               無料相談・お見積もり
             </Link>
@@ -138,7 +138,7 @@ export function Header() {
               aria-controls="mobile-menu"
               aria-label={open ? "メニューを閉じる" : "メニューを開く"}
               onClick={() => (open ? close() : setOpen(true))}
-              className="grid size-11 place-items-center rounded-full transition-colors hover:bg-current/10 lg:hidden"
+              className="grid size-11 place-items-center rounded-full transition-colors hover:bg-current/10 xl:hidden"
             >
               {open ? <X size={22} /> : <Menu size={22} />}
             </button>
@@ -154,7 +154,7 @@ export function Header() {
         aria-modal="true"
         aria-label="メニュー"
         hidden={!open}
-        className="fixed inset-0 top-[var(--header-h)] z-40 overflow-y-auto bg-white lg:hidden"
+        className="fixed inset-0 top-[var(--header-h)] z-40 overflow-y-auto bg-white xl:hidden"
       >
         <nav aria-label="モバイルメニュー" className="container-x flex min-h-full flex-col pt-6 pb-10">
           <ul className="divide-y divide-line border-y border-line">

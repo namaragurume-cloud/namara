@@ -165,6 +165,10 @@ export const creators: Creator[] = [
   },
 ];
 
+export function getCreatorById(id: string | undefined): Creator | undefined {
+  return id ? creators.find((c) => c.id === id && (c.published || contentPreview)) : undefined;
+}
+
 export function getVisibleCreators(): Creator[] {
   return creators.filter((c) => c.published || contentPreview);
 }

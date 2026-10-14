@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
+import Image from "next/image";
 import { notFound } from "next/navigation";
 import { ArrowRight } from "lucide-react";
 import { getCase, getVisibleCases } from "@/data/cases";
+import { getCreatorById } from "@/data/creators";
 import { pageMetadata } from "@/lib/metadata";
 import { ScrollReveal } from "@/components/animation/ScrollReveal";
 import { FinalCTA } from "@/components/sections/FinalCTA";
@@ -22,7 +24,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const item = getCase(slug);
   if (!item) return {};
   return pageMetadata({
-    title: `${item.title}｜PR実績`,
+    title: `${item.title}｜発信者の実績`,
     description: item.summary,
     path: `/works/${item.slug}`,
     noindex: !item.published,
@@ -33,6 +35,7 @@ export default async function WorkDetailPage({ params }: Props) {
   const { slug } = await params;
   const item = getCase(slug);
   if (!item) notFound();
+  const creator = getCreatorById(item.creatorId);
 
   const sections = [
     { title: "業種・案件概要", body: [item.industry, item.summary] },
@@ -51,9 +54,28 @@ export default async function WorkDetailPage({ params }: Props) {
       <PageHero
         en={`CASE ${item.no}`}
         title={item.title}
-        lead={item.industry}
+        lead={
+          creator ? (
+            <span className="flex flex-wrap items-center gap-3">
+              {item.industry}
+              <a
+                href={creator.profileUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 rounded-full bg-white py-1 pr-4 pl-1 text-sm font-bold text-ink ring-1 ring-line hover:text-brand"
+              >
+                {creator.image && (
+                  <Image src={creator.image} alt="" width={28} height={28} className="size-7 rounded-full object-cover" />
+                )}
+                {creator.name ?? creator.account} の投稿
+              </a>
+            </span>
+          ) : (
+            item.industry
+          )
+        }
         breadcrumb={[
-          { label: "PR実績", href: "/works" },
+          { label: "発信者の実績", href: "/works" },
           { label: item.title, href: `/works/${item.slug}` },
         ]}
       />

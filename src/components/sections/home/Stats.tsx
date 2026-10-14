@@ -12,7 +12,7 @@ export function Stats() {
           <div>
             <SectionLabel>NUMBERS</SectionLabel>
             <h2 id="stats-title" className="heading-md mt-4">
-              数字で見る「MIRATSUMU」
+              数字で見る、MIRATSUMUの発信者ネットワーク
             </h2>
           </div>
           <p className="text-xs text-muted">

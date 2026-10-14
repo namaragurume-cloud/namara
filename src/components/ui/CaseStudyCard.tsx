@@ -2,8 +2,10 @@ import Image from "next/image";
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import type { CaseStudy } from "@/data/cases";
+import { getCreatorById } from "@/data/creators";
 
 export function CaseStudyCard({ item }: { item: CaseStudy }) {
+  const creator = getCreatorById(item.creatorId);
   return (
     <Link
       href={`/works/${item.slug}`}
@@ -42,6 +44,17 @@ export function CaseStudyCard({ item }: { item: CaseStudy }) {
         )}
       </div>
       <div className="flex flex-1 flex-col p-6">
+        {creator && (
+          <p className="mb-4 flex items-center gap-2.5 border-b border-line pb-4 text-xs text-muted">
+            {creator.image && (
+              <Image src={creator.image} alt="" width={32} height={32} className="size-8 rounded-full object-cover ring-1 ring-line" />
+            )}
+            <span>
+              <span className="block font-bold text-ink">{creator.name ?? creator.account}</span>
+              の投稿
+            </span>
+          </p>
+        )}
         <p className="text-xs font-semibold text-muted">{item.industry}</p>
         <h3 className="mt-2 text-lg font-bold leading-relaxed">{item.title}</h3>
         <p className="mt-2 text-sm leading-relaxed text-muted">{item.summary}</p>

@@ -9,23 +9,24 @@ import { WorksEmpty } from "@/components/ui/WorksEmpty";
 export function WorksSection() {
   const cases = getVisibleCases();
   return (
-    <section aria-label="PR実績" className="section overflow-hidden bg-white">
+    <section aria-label="発信者たちのPR実績" className="section overflow-hidden bg-white">
       <div className="container-x">
         <div className="flex flex-col gap-8 md:flex-row md:items-end md:justify-between">
           <SectionHeading
-            en="WORKS"
+            en="CREATORS' WORKS"
             title={
               <>
                 数字で見る、
                 <br />
-                MIRATSUMUのPR実績。
+                発信者たちのPR実績。
               </>
             }
+            lead="MIRATSUMUのネットワークに参加する発信者たちが、これまでに手がけたPR投稿の一部をご紹介します。"
           />
           {cases.length > 0 && (
             <ScrollReveal className="shrink-0">
               <CTAButton href="/works" variant="outline" trackLocation="home_works">
-                PR実績を見る
+                実績をもっと見る
               </CTAButton>
             </ScrollReveal>
           )}
@@ -33,7 +34,7 @@ export function WorksSection() {
         <ScrollReveal className="mt-14 md:mt-20">
           {cases.length > 0 ? (
             <>
-              <Carousel label="PR実績">
+              <Carousel label="発信者たちのPR実績">
                 {cases.map((c) => (
                   <div key={c.slug} className="h-full rounded-[24px] border border-line">
                     <CaseStudyCard item={c} />
