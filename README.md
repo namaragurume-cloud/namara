@@ -1,6 +1,6 @@
-# KITACRE（キタクリ）公式サイト
+# MIRATSUMU（ミラツム）公式サイト
 
-北海道発のクリエイターキャスティングサービス「KITACRE（キタクリ）」の公式サイトです。運営メディアは「なまらグルメ」です。
+北海道発のクリエイターキャスティングサービス「MIRATSUMU（ミラツム）」の公式サイトです。運営メディアは「なまらグルメ」です。
 
 - Next.js 16（App Router）/ React 19 / TypeScript
 - Tailwind CSS v4 / Motion / Lucide Icons / Zod
@@ -65,8 +65,8 @@ npm run dev                  # http://localhost:3000
 フォームは `/api/contact`・`/api/partner`（サーバー側）で入力内容を検証し、メールで通知します。**送信設定が未完了の場合、フォームには「送信設定を準備中」と表示され、送信ボタンは押せません。** 成功画面はサーバーで送信に成功した場合のみ表示されます。
 
 件名：
-- 企業問い合わせ：`【企業問い合わせ】KITACRE`
-- 発信者登録：`【発信者登録申請】KITACRE`
+- 企業問い合わせ：`【企業問い合わせ】MIRATSUMU`
+- 発信者登録：`【発信者登録申請】MIRATSUMU`
 
 返信先（Reply-To）には送信者のメールアドレスが入るため、通知メールにそのまま返信できます。
 
@@ -100,7 +100,7 @@ npm run dev                  # http://localhost:3000
 
 | ファイル | 内容 |
 |---|---|
-| `brand.ts` | KITACRE のブランドコンセプト・スローガン |
+| `brand.ts` | MIRATSUMU のブランドコンセプト・スローガン・ブランドストーリー・ロゴの意味 |
 | `site.ts` | サイト名・会社情報・Instagram・トップの数値（14.2万人など）・メニュー |
 | `images.ts` | サイト内の写真の差し替え |
 | `services.ts` | サービス内容・対応 SNS |
@@ -119,7 +119,7 @@ npm run dev                  # http://localhost:3000
    - 推奨：横 2000px 程度までの JPG / WebP（自動で最適化されます）
 2. `src/data/images.ts` の該当項目の `src` にパスを記入し、`alt` を実際の内容に合わせる
 
-ロゴは `public/images/brand/` の `kitacre-*.png`（`-white` は暗い背景用）。同じファイル名で上書きすれば差し替わります。ファビコンは `src/app/icon.png`。
+ロゴは `public/images/brand/` の `miratsumu-*.png`（`-white` は暗い背景用）。同じファイル名で上書きすれば差し替わります。ファビコンは `src/app/icon.png`。
 
 `src` が空の項目は「仮素材」と表示されたプレースホルダーになります。
 
@@ -216,7 +216,7 @@ URL を変更する場合は `src/app/` のフォルダ名を変更し、`src/da
 - 発信者登録フォームのメールアドレス必須化（連絡手段として必須にしています。運用方針を確認）
 
 ### ブランド
-- [x] 正式なサービス名称が確定している（KITACRE）
+- [x] 正式なサービス名称が確定している（MIRATSUMU）
 - [x] 正式ロゴを配置（`public/images/brand/`）
 - [ ] ブランドカラーを確認
 - [ ] Instagram リンク・DM リンクの確認

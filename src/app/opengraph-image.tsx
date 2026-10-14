@@ -2,7 +2,7 @@ import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { ImageResponse } from "next/og";
 
-export const alt = "KITACRE（キタクリ）- Hokkaido Creator Casting";
+export const alt = "MIRATSUMU（ミラツム）- 北の想いを、未来へ紡ぐ。";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
@@ -11,7 +11,7 @@ export const contentType = "image/png";
  * 正式な OGP 画像を用意した場合は、このファイルを削除して src/app/opengraph-image.png として配置してください。
  */
 export default async function OpengraphImage() {
-  const logo = await readFile(join(process.cwd(), "public/images/brand/kitacre-logo-white.png"));
+  const logo = await readFile(join(process.cwd(), "public/images/brand/miratsumu-logo-white.png"));
   const src = `data:image/png;base64,${logo.toString("base64")}`;
   return new ImageResponse(
     (
@@ -30,7 +30,7 @@ export default async function OpengraphImage() {
         }}
       >
         { }
-        <img src={src} width={496} height={322} alt="" />
+        <img src={src} width={480} height={359} alt="" />
         <div style={{ display: "flex", fontSize: 24, letterSpacing: 8, color: "rgba(255,255,255,0.65)" }}>
           HOKKAIDO GOURMET INFLUENCER CASTING
         </div>

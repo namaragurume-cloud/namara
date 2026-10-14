@@ -5,16 +5,16 @@
 
 export const site = {
   /** サービス名 */
-  brand: "KITACRE",
-  brandKana: "キタクリ",
-  serviceName: "KITACRE",
+  brand: "MIRATSUMU",
+  brandKana: "ミラツム",
+  serviceName: "MIRATSUMU",
   /** 運営メディア（実績・フォロワー数などはこのメディアのもの） */
   media: "なまらグルメ",
   /** <title> の末尾などに使う名称 */
-  title: "KITACRE（キタクリ）｜北海道のグルメインフルエンサーキャスティング",
+  title: "MIRATSUMU（ミラツム）｜北海道のグルメインフルエンサーキャスティング",
   tagline: "北海道の食に、発信力を。",
   description:
-    "北海道発のクリエイターキャスティングサービス「KITACRE（キタクリ）」。グルメメディア「なまらグルメ」が培ってきた発信力とネットワークを活かし、飲食店・食品メーカー・ホテルのSNSプロモーションを企画から効果報告までワンストップでご提案します。",
+    "北海道発のクリエイターキャスティングサービス「MIRATSUMU（ミラツム）」。グルメメディア「なまらグルメ」が培ってきた発信力とネットワークを活かし、飲食店・食品メーカー・ホテルのSNSプロモーションを企画から効果報告までワンストップでご提案します。",
   url: (process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000").replace(/\/$/, ""),
   locale: "ja_JP",
 
@@ -37,7 +37,7 @@ export const site = {
     founded: "",
     business: [
       "グルメメディア「なまらグルメ」の運営",
-      "クリエイターキャスティングサービス「KITACRE」の運営",
+      "クリエイターキャスティングサービス「MIRATSUMU」の運営",
       "SNSマーケティング支援",
       "飲食店運営",
     ],
@@ -97,7 +97,7 @@ export const mainNav: NavItem[] = [
   { href: "/works", label: "実績", en: "WORKS" },
   { href: "/creators", label: "インフルエンサー", en: "CREATORS" },
   { href: "/pricing", label: "料金", en: "PRICING" },
-  { href: "/about", label: "KITACREについて", en: "ABOUT" },
+  { href: "/about", label: "MIRATSUMUについて", en: "ABOUT" },
 ];
 
 export const footerNav: NavItem[] = [

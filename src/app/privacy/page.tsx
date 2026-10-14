@@ -5,7 +5,7 @@ import { PageHero } from "@/components/ui/PageHero";
 
 export const metadata = pageMetadata({
   title: "プライバシーポリシー",
-  description: `${site.company.name}（KITACRE／なまらグルメ）における個人情報の取扱いについて。`,
+  description: `${site.company.name}（MIRATSUMU／なまらグルメ）における個人情報の取扱いについて。`,
   path: "/privacy",
 });
 
@@ -21,7 +21,7 @@ const sections: { title: string; body: React.ReactNode }[] = [
     body: (
       <p>
         {site.company.name}
-        （以下「当社」）は、当社が運営する「なまらグルメ」およびクリエイターキャスティングサービス「KITACRE」（以下「本サービス」）において取得する個人情報を、個人情報の保護に関する法律その他の関係法令を遵守し、適切に取り扱います。
+        （以下「当社」）は、当社が運営する「なまらグルメ」およびクリエイターキャスティングサービス「MIRATSUMU」（以下「本サービス」）において取得する個人情報を、個人情報の保護に関する法律その他の関係法令を遵守し、適切に取り扱います。
       </p>
     ),
   },

@@ -30,7 +30,7 @@ export default function CreatorsPage() {
         lead={
           <>
             <p>
-              KITACREでは、札幌を中心に北海道のグルメ情報を発信する約50人の発信者とのネットワークがあります。
+              MIRATSUMUでは、札幌を中心に北海道のグルメ情報を発信する約50人の発信者とのネットワークがあります。
             </p>
             <p className="mt-2">
               フォロワー10万人超の大型インフルエンサーから、地域密着型のマイクロインフルエンサーまで。商品や店舗の魅力に合う発信者をご提案します。
@@ -46,7 +46,7 @@ export default function CreatorsPage() {
             <>
               <CreatorList creators={creators} />
               <p className="mt-10 text-xs leading-relaxed text-muted">
-                ※掲載しているのはネットワークの一部です。最終的な発信者のご提案は、目的やご予算、スケジュールを踏まえてKITACREが行います。
+                ※掲載しているのはネットワークの一部です。最終的な発信者のご提案は、目的やご予算、スケジュールを踏まえてMIRATSUMUが行います。
               </p>
             </>
           ) : (
@@ -63,7 +63,7 @@ export default function CreatorsPage() {
             <div>
               <p className="num text-xs font-semibold tracking-[0.25em] text-brand">FOR CREATORS</p>
               <p className="mt-3 text-xl font-bold">北海道のグルメを発信している方へ</p>
-              <p className="mt-2 text-sm text-muted">KITACREでは、グルメインフルエンサーの登録を受け付けています。</p>
+              <p className="mt-2 text-sm text-muted">MIRATSUMUでは、グルメインフルエンサーの登録を受け付けています。</p>
             </div>
             <CTAButton href="/partner" variant="dark" trackLocation="creators_partner" className="shrink-0">
               インフルエンサー登録

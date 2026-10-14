@@ -38,7 +38,7 @@ export function PartnerForm({ configured }: { configured: boolean }) {
       <SuccessPanel title="登録申請を受け付けました">
         <p>ご応募いただき、ありがとうございます。</p>
         <p>
-          ※この時点では登録は完了していません。KITACREにて内容を確認・審査のうえ、ご入力いただいたメールアドレス宛に結果をご連絡いたします。
+          ※この時点では登録は完了していません。MIRATSUMUにて内容を確認・審査のうえ、ご入力いただいたメールアドレス宛に結果をご連絡いたします。
         </p>
       </SuccessPanel>
     );

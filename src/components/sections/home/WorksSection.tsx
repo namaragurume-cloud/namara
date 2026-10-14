@@ -19,7 +19,7 @@ export function WorksSection() {
               <>
                 数字で見る、
                 <br />
-                KITACREのPR実績。
+                MIRATSUMUのPR実績。
               </>
             }
           />

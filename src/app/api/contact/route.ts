@@ -3,7 +3,7 @@ import { contactSchema } from "@/lib/validation";
 
 export async function POST(req: Request) {
   return handleFormRequest(req, "contact", contactSchema, (d) => ({
-    subject: "【企業問い合わせ】KITACRE",
+    subject: "【企業問い合わせ】MIRATSUMU",
     fields: [
       ["会社名・店舗名", d.company],
       ["ご担当者名", d.name],

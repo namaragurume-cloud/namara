@@ -8,7 +8,7 @@ import { PageHero } from "@/components/ui/PageHero";
 export const metadata = pageMetadata({
   title: "よくある質問",
   description:
-    "KITACRE（キタクリ）のインフルエンサーキャスティングに関するよくある質問。初めての依頼、インフルエンサーの指名、複数人の起用、投稿前の確認、二次利用などについてお答えします。",
+    "MIRATSUMU（ミラツム）のインフルエンサーキャスティングに関するよくある質問。初めての依頼、インフルエンサーの指名、複数人の起用、投稿前の確認、二次利用などについてお答えします。",
   path: "/faq",
 });
 

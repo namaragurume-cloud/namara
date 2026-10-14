@@ -41,12 +41,12 @@ export function AboutIntro() {
               SNS運営だけでなく、商品開発、店舗プロデュース、イベント企画、飲食店運営など、食に関わるさまざまな活動を展開しています。
             </p>
             <p>
-              こうした経験とネットワークを活かし、北海道のグルメに特化したクリエイターキャスティングサービス「KITACRE（キタクリ）」を展開します。
+              こうした経験とネットワークを活かし、北海道のグルメに特化したクリエイターキャスティングサービス「MIRATSUMU（ミラツム）」を展開します。
             </p>
           </ScrollReveal>
           <ScrollReveal delay={0.2} className="mt-10">
             <CTAButton href="/about" variant="outline" trackLocation="home_about">
-              KITACREについて
+              MIRATSUMUについて
             </CTAButton>
           </ScrollReveal>
         </div>

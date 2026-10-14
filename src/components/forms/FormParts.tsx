@@ -39,7 +39,7 @@ export function SubmitButton({ submitting, disabled, children }: { submitting: b
       type="submit"
       disabled={submitting || disabled}
       aria-busy={submitting}
-      className="group inline-flex min-h-[60px] w-full items-center justify-center gap-3 rounded-full bg-brand px-10 text-base font-bold tracking-wider text-white shadow-[0_10px_30px_-12px_rgba(201,31,45,0.7)] transition-all duration-300 hover:bg-brand-dark disabled:cursor-not-allowed disabled:opacity-50 disabled:shadow-none sm:w-auto sm:min-w-[320px]"
+      className="group inline-flex min-h-[60px] w-full items-center justify-center gap-3 rounded-full bg-brand px-10 text-base font-bold tracking-wider text-white shadow-[0_10px_30px_-12px_rgba(199,62,51,0.7)] transition-all duration-300 hover:bg-brand-dark disabled:cursor-not-allowed disabled:opacity-50 disabled:shadow-none sm:w-auto sm:min-w-[320px]"
     >
       {submitting ? (
         <>
