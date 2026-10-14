@@ -29,7 +29,7 @@ export const images = {
     src: "/images/activities/deer-hunting.jpg",
     alt: "朝日の差し込む森で、エゾシカ猟に同行する様子",
     placeholder: "なまらグルメ活動写真",
-    position: "18% 50%",
+    position: "100% 50%",
   },
   aboutSub: {
     src: "/images/activities/tokachi-potato.jpg",

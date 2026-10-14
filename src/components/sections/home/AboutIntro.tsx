@@ -12,13 +12,13 @@ export function AboutIntro() {
           <Photo
             image={images.aboutMain}
             sizes="(min-width: 1024px) 45vw, 100vw"
-            className="aspect-[4/5] w-[82%] rounded-[24px]"
+            className="ml-auto aspect-[4/5] w-[82%] rounded-[24px]"
           />
           <Photo
             image={images.aboutSub}
             tone="warm"
             sizes="(min-width: 1024px) 22vw, 50vw"
-            className="absolute right-0 bottom-[-8%] aspect-square w-[46%] rounded-[20px] border-[6px] border-mist"
+            className="absolute left-0 bottom-[-8%] aspect-square w-[46%] rounded-[20px] border-[6px] border-mist"
           />
         </ScrollReveal>
 
