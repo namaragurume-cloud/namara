@@ -26,10 +26,10 @@ export const images = {
     placeholder: "現場取材",
   },
   aboutMain: {
-    src: "/images/activities/autumnfest-2024.jpg",
-    alt: "さっぽろオータムフェスト2024の「薄野 味噌に骨 × なまらグルメ」店舗",
+    src: "/images/activities/deer-hunting.jpg",
+    alt: "朝日の差し込む森で、エゾシカ猟に同行する様子",
     placeholder: "なまらグルメ活動写真",
-    position: "50% 60%",
+    position: "18% 50%",
   },
   aboutSub: {
     src: "/images/activities/tokachi-potato.jpg",
