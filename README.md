@@ -102,7 +102,7 @@ npm run dev                  # http://localhost:3000
 | ファイル | 内容 |
 |---|---|
 | `brand.ts` | MIRATSUMU のブランドコンセプト・スローガン・ブランドストーリー・ロゴの意味 |
-| `site.ts` | サイト名・会社情報・Instagram・トップの数値（14.2万人など）・メニュー |
+| `site.ts` | サイト名・会社情報・Instagram・トップの数値（数字で見る「MIRATSUMU」）・なまらグルメのフォロワー数・メニュー |
 | `images.ts` | サイト内の写真の差し替え（トップ最上部の背景写真 `heroMosaic` を含む） |
 | `activities.ts` | これまでの活動（現場取材・イベント・企業との取り組み）と写真 |
 | `services.ts` | サービス内容・対応 SNS |

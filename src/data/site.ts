@@ -51,8 +51,14 @@ export const site = {
 } as const;
 
 /**
- * 数字で見るなまらグルメ（トップページ）。運営メディア「なまらグルメ」の数値です。
- * ヒアリング時点の数値です。更新時は value と asOf を変更してください。
+ * 運営メディア「なまらグルメ」の Instagram フォロワー数（/about などで表示）。
+ * Instagram API を設定すると自動で更新されます。
+ */
+export const mediaFollowers = { value: 14.2, decimals: 1, suffix: "万人" };
+
+/**
+ * 数字で見る「MIRATSUMU」（トップページ）。
+ * 更新時は value と asOf を変更してください。
  */
 export type Stat = {
   value: number;
@@ -63,31 +69,28 @@ export type Stat = {
   note?: string;
 };
 
-export const stats: { asOf: string; items: Stat[] } = {
+export const stats: { asOf: string; items: Stat[]; footnote?: string } = {
   /** 例: "2026年10月" と入力すると「※2026年10月時点」と表示されます。空欄なら汎用の注記を表示 */
   asOf: "",
   items: [
     {
-      value: 14.2,
-      decimals: 1,
-      suffix: "万人",
-      label: "Instagramフォロワー",
-      note: "なまらグルメ公式アカウント（@namaragurume）",
+      value: 115,
+      suffix: "万人超",
+      label: "SNS総フォロワー数",
     },
     {
       value: 200,
-      suffix: "社超",
-      label: "これまでの提案先企業数",
-      note: "ご提案を行った企業の数です（契約社数ではありません）",
+      suffix: "店舗超",
+      label: "これまでの契約店舗数",
     },
     {
-      prefix: "約",
-      value: 50,
-      suffix: "人",
-      label: "つながりのあるグルメ発信者",
-      note: "日頃から連絡を取り合っている発信者の数です",
+      value: 300,
+      suffix: "%",
+      label: "売上（200万円→600万円）",
+      note: "ある飲食店の事例。施策前の売上を100%とした比率です",
     },
   ],
+  footnote: "売上の成果は、PR以外の要因を含む場合があります。",
 };
 
 export type NavItem = { href: string; label: string; en: string };

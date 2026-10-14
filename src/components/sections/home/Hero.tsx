@@ -1,13 +1,13 @@
 import Image from "next/image";
 import { heroMosaic, images } from "@/data/images";
-import { getLiveStats } from "@/lib/creators";
+import { stats } from "@/data/site";
 import { CTAButton } from "@/components/ui/CTAButton";
 import { Photo } from "@/components/ui/Photo";
 
 const keywords = ["SAPPORO", "RAMEN", "SEAFOOD", "SWEETS", "JINGISUKAN", "IZAKAYA", "CAFE", "HOKKAIDO"];
 
-export async function Hero() {
-  const follower = (await getLiveStats()).items[0];
+export function Hero() {
+  const follower = stats.items[0];
   return (
     <section aria-labelledby="hero-title" className="relative isolate flex min-h-[100svh] flex-col overflow-hidden bg-ink text-white">
       {/* 背景：現場で撮影した活動写真を敷き詰めて暗く重ねる */}
@@ -84,9 +84,9 @@ export async function Hero() {
               className="aspect-[3/4] rounded-[28px] shadow-2xl ring-1 ring-white/15"
             />
             <div className="absolute -bottom-6 -left-10 rounded-2xl bg-white px-5 py-4 text-ink shadow-xl">
-              <p className="num text-[10px] font-semibold tracking-[0.2em] text-brand">INSTAGRAM</p>
+              <p className="num text-[10px] font-semibold tracking-[0.2em] text-brand">SNS TOTAL</p>
               <p className="mt-1 text-sm font-bold">
-                フォロワー <span className="num text-xl">{follower.value}</span>
+                総フォロワー <span className="num text-xl">{follower.value}</span>
                 {follower.suffix}
               </p>
             </div>

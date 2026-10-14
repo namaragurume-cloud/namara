@@ -3,7 +3,7 @@ import { brand } from "@/data/brand";
 import { activities } from "@/data/activities";
 import { history } from "@/data/history";
 import { images } from "@/data/images";
-import { getLiveStats } from "@/lib/creators";
+import { getMediaFollowers } from "@/lib/creators";
 import { pageMetadata } from "@/lib/metadata";
 import { ScrollReveal } from "@/components/animation/ScrollReveal";
 import { ActivityList } from "@/components/sections/ActivityList";
@@ -37,7 +37,7 @@ const story = [
 ];
 
 export default async function AboutPage() {
-  const follower = (await getLiveStats()).items[0];
+  const follower = await getMediaFollowers();
   return (
     <>
       <PageHero
