@@ -42,7 +42,7 @@ export const images = {
     placeholder: "なまらグルメ活動写真",
   },
   reason1: { src: "/images/reasons/media.jpg", alt: "スマートフォンに表示された、なまらグルメのロゴ", placeholder: "グルメメディア運営", position: "50% 37%" },
-  reason2: { src: "/images/reasons/own-restaurant.jpg", alt: "自社運営店舗「薄野まぜそば 三鳥目の夕日」ののれん", placeholder: "自社運営店舗", position: "60% 45%" },
+  reason2: { src: "/images/reasons/own-restaurant-front.jpg", alt: "自社運営店舗「薄野まぜそば 三鳥目の夕日」の店構え", placeholder: "自社運営店舗", position: "50% 65%" },
   reason3: { src: "/images/reasons/network.jpg", alt: "スマートフォンから広がるSNSのつながり", placeholder: "発信者ネットワーク" },
   reason4: { src: "/images/reasons/proposal.jpg", alt: "予算や目的に合わせた提案の打ち合わせ", placeholder: "企画提案", position: "40% 50%" },
   reason5: { src: "/images/reasons/report.jpg", alt: "タブレットで効果レポートを確認する様子", placeholder: "効果レポート", position: "55% 50%" },
