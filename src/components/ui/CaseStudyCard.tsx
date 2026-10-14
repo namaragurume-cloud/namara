@@ -22,11 +22,15 @@ export function CaseStudyCard({ item }: { item: CaseStudy }) {
         <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/20 to-transparent" />
         <div className="absolute inset-x-0 bottom-0 p-6 text-white">
           <p className="text-xs text-white/70">{item.metric.label}</p>
-          <p className="mt-1 flex flex-wrap items-baseline gap-x-2 font-extrabold">
-            <span className="num text-lg text-white/70">{item.metric.before}</span>
-            <ArrowRight size={18} aria-label="から" className="self-center text-brand" />
-            <span className="num text-3xl md:text-4xl">{item.metric.after}</span>
-          </p>
+          {item.metric.value ? (
+            <p className="num mt-1 text-4xl font-extrabold md:text-5xl">{item.metric.value}</p>
+          ) : (
+            <p className="mt-1 flex flex-wrap items-baseline gap-x-2 font-extrabold">
+              <span className="num text-lg text-white/70">{item.metric.before}</span>
+              <ArrowRight size={18} aria-label="から" className="self-center text-brand" />
+              <span className="num text-3xl md:text-4xl">{item.metric.after}</span>
+            </p>
+          )}
         </div>
         <span className="num absolute top-5 left-6 text-xs font-semibold tracking-[0.25em] text-white/70">
           CASE {item.no}

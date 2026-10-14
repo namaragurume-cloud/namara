@@ -6,6 +6,7 @@ import { pageMetadata } from "@/lib/metadata";
 import { ScrollReveal } from "@/components/animation/ScrollReveal";
 import { FinalCTA } from "@/components/sections/FinalCTA";
 import { CTAButton } from "@/components/ui/CTAButton";
+import { InstagramEmbed } from "@/components/ui/InstagramEmbed";
 import { PageHero } from "@/components/ui/PageHero";
 
 type Props = { params: Promise<{ slug: string }> };
@@ -34,13 +35,16 @@ export default async function WorkDetailPage({ params }: Props) {
   if (!item) notFound();
 
   const sections = [
-    { no: "01", title: "業種・案件概要", body: [item.industry, item.summary] },
-    { no: "02", title: "PR実施前の課題", body: [item.challenge] },
-    { no: "03", title: "実施した施策", body: item.actions },
-    { no: "04", title: "投稿媒体・発信者起用内容", body: [item.media] },
-    { no: "05", title: "成果", body: [item.result] },
-    { no: "06", title: "実施後の考察", body: [item.insight] },
-  ];
+    { title: "業種・案件概要", body: [item.industry, item.summary] },
+    { title: "PR実施前の課題", body: [item.challenge] },
+    { title: "実施した施策", body: item.actions ?? [] },
+    { title: "投稿媒体・発信者起用内容", body: [item.media] },
+    { title: "成果", body: [item.result] },
+    { title: "実施後の考察", body: [item.insight] },
+  ]
+    .map((s) => ({ ...s, body: s.body.filter((b): b is string => Boolean(b)) }))
+    .filter((s) => s.body.length > 0)
+    .map((s, i) => ({ ...s, no: String(i + 1).padStart(2, "0") }));
 
   return (
     <>
@@ -56,7 +60,7 @@ export default async function WorkDetailPage({ params }: Props) {
 
       {!item.published && (
         <div className="bg-brand py-3 text-center text-sm font-bold text-white">
-          非公開プレビュー：この事例は公開されていません（確認事項：{item.todo.join("、")}）
+          非公開プレビュー：この事例は公開されていません{item.todo.length > 0 && `（確認事項：${item.todo.join("、")}）`}
         </div>
       )}
 
@@ -65,16 +69,24 @@ export default async function WorkDetailPage({ params }: Props) {
           <ScrollReveal className="rounded-[28px] bg-ink p-8 text-white md:p-14">
             <p className="text-sm text-white/60">{item.metric.label}</p>
             <div className="mt-4 flex flex-wrap items-center gap-x-6 gap-y-2">
-              <span className="num text-3xl font-bold text-white/60 md:text-5xl">{item.metric.before}</span>
-              <ArrowRight size={36} aria-label="から" className="text-brand" />
-              <span className="num text-5xl font-extrabold md:text-7xl">{item.metric.after}</span>
+              {item.metric.value ? (
+                <span className="num text-6xl font-extrabold md:text-8xl">{item.metric.value}</span>
+              ) : (
+                <>
+                  <span className="num text-3xl font-bold text-white/60 md:text-5xl">{item.metric.before}</span>
+                  <ArrowRight size={36} aria-label="から" className="text-brand" />
+                  <span className="num text-5xl font-extrabold md:text-7xl">{item.metric.after}</span>
+                </>
+              )}
               {item.metric.highlight && (
                 <span className="rounded-full bg-brand px-4 py-1.5 text-sm font-bold">{item.metric.highlight}</span>
               )}
             </div>
-            <p className="mt-6 border-t border-white/15 pt-4 text-xs text-white/60">
-              測定単位・比較期間：{item.metric.period}
-            </p>
+            {item.metric.period && (
+              <p className="mt-6 border-t border-white/15 pt-4 text-xs text-white/60">
+                測定単位・比較期間：{item.metric.period}
+              </p>
+            )}
           </ScrollReveal>
 
           <div className="mt-16 space-y-12">
@@ -92,6 +104,17 @@ export default async function WorkDetailPage({ params }: Props) {
               </ScrollReveal>
             ))}
           </div>
+
+          {item.instagram && item.instagram.length > 0 && (
+            <ScrollReveal className="mt-16 border-t border-line pt-8">
+              <h2 className="font-bold">実際の投稿</h2>
+              <div className={item.instagram.length > 1 ? "mt-8 grid gap-8 md:grid-cols-2" : "mt-8"}>
+                {item.instagram.map((url) => (
+                  <InstagramEmbed key={url} url={url} />
+                ))}
+              </div>
+            </ScrollReveal>
+          )}
 
           <p className="mt-12 text-xs leading-relaxed text-muted">
             ※成果はPR以外の要因（季節、他の販促施策など）を含む場合があります。

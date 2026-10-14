@@ -25,7 +25,7 @@ export default function WorksPage() {
             MIRATSUMUのPR実績。
           </>
         }
-        lead="これまでに実施したグルメPRの事例をご紹介します。企業名は匿名で掲載しています。"
+        lead="これまでに実施したグルメPRの事例をご紹介します。掲載の許可をいただいた事例のみ公開しています。"
         breadcrumb={[{ label: "PR実績", href: "/works" }]}
       />
       <section aria-label="事例一覧" className="section">

@@ -13,10 +13,13 @@ import { contentPreview } from "./site";
 
 export type CaseMetric = {
   label: string;
-  before: string;
-  after: string;
+  /** 前後比較の場合（例: 200万円 → 600万円） */
+  before?: string;
+  after?: string;
+  /** 単独の数値の場合（例: 50万回） */
+  value?: string;
   /** 測定単位・比較期間（グラフや数値の注記に表示） */
-  period: string;
+  period?: string;
   /** 強調表示する倍率など（任意） */
   highlight?: string;
 };
@@ -29,11 +32,14 @@ export type CaseStudy = {
   summary: string;
   image?: string;
   metric: CaseMetric;
-  challenge: string;
-  actions: string[];
-  media: string;
-  result: string;
-  insight: string;
+  /** 以下は空欄の項目は詳細ページに表示しません */
+  challenge?: string;
+  actions?: string[];
+  media?: string;
+  result?: string;
+  insight?: string;
+  /** 掲載する Instagram 投稿・リールの URL（公開投稿のみ） */
+  instagram?: string[];
   published: boolean;
   /** 公開前に確認が必要な事項（サイトには表示されません） */
   todo: string[];
@@ -41,8 +47,44 @@ export type CaseStudy = {
 
 export const cases: CaseStudy[] = [
   {
-    slug: "restaurant-sales",
+    slug: "the-butter",
     no: "01",
+    title: "バター専門カフェ「THE BUTTER」のPRリール",
+    industry: "カフェ（バター専門店）／札幌・赤れんがテラス",
+    summary:
+      "札幌・赤れんがテラスにある、雪印メグミルクグループ初のバター専門カフェ「THE BUTTER」。店内で作る作りたてのバターの魅力をInstagramリールで発信しました。",
+    metric: {
+      label: "Instagramリール再生回数",
+      value: "50万回",
+      period: "Instagramリールの再生回数（集計時点）",
+    },
+    media: "Instagram リール",
+    result: "Instagramリールの再生回数は50万回となりました。",
+    instagram: ["https://www.instagram.com/reel/DbM5zHupwUR/"],
+    published: true,
+    todo: [],
+  },
+  {
+    slug: "jingisukan",
+    no: "02",
+    title: "ジンギスカン店のPRリール",
+    industry: "飲食店（ジンギスカン）",
+    summary:
+      "北海道のソウルフード、ジンギスカンのお店のPR。札幌のグルメ情報を発信する「きたごはん🍽️ 札幌グルメ スポット」が、Instagramリールでお店の魅力を届けました。",
+    metric: {
+      label: "Instagramリール再生回数",
+      value: "40万回",
+      period: "Instagramリールの再生回数（集計時点）",
+    },
+    media: "Instagram リール（発信者：きたごはん🍽️ 札幌グルメ スポット）",
+    result: "Instagramリールの再生回数は40万回となりました。",
+    instagram: ["https://www.instagram.com/reel/DdyNn5Uv0xq/"],
+    published: true,
+    todo: ["店名を記載するか"],
+  },
+  {
+    slug: "restaurant-sales",
+    no: "03",
     title: "飲食店の売上拡大",
     industry: "飲食店（業態未確認）",
     summary: "インフルエンサーPRを含む施策の実施期間に、売上が拡大した事例。",
@@ -64,7 +106,7 @@ export const cases: CaseStudy[] = [
   },
   {
     slug: "new-store-awareness",
-    no: "02",
+    no: "04",
     title: "新店舗OPEN時の認知拡大",
     industry: "飲食店（新店舗）",
     summary: "新店舗のOPENにあわせてPRを実施した事例。",
@@ -84,7 +126,7 @@ export const cases: CaseStudy[] = [
   },
   {
     slug: "tabelog-access",
-    no: "03",
+    no: "05",
     title: "食べログアクセスの増加",
     industry: "飲食店",
     summary: "PR実施後に食べログの店舗ページへのアクセスが増加した事例。",
