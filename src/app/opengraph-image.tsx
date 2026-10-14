@@ -30,7 +30,7 @@ export default async function OpengraphImage() {
         }}
       >
         { }
-        <img src={src} width={480} height={359} alt="" />
+        <img src={src} width={480} height={358} alt="" />
         <div style={{ display: "flex", fontSize: 24, letterSpacing: 8, color: "rgba(255,255,255,0.65)" }}>
           HOKKAIDO GOURMET INFLUENCER CASTING
         </div>

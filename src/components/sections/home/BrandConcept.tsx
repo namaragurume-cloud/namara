@@ -16,8 +16,8 @@ export function BrandConcept() {
             <Image
               src="/images/brand/miratsumu-symbol.png"
               alt="MIRATSUMUのシンボルマーク（交差しながら一つの輪を描く2本の曲線）"
-              width={235}
-              height={212}
+              width={400}
+              height={361}
               sizes="(min-width: 1024px) 300px, 60vw"
               className="h-full w-full object-contain"
             />

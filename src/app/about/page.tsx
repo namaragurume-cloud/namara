@@ -93,8 +93,8 @@ export default function AboutPage() {
             <Image
               src="/images/brand/miratsumu-logo.png"
               alt="MIRATSUMU（ミラツム）のロゴ"
-              width={527}
-              height={394}
+              width={900}
+              height={671}
               priority
               sizes="(min-width: 1024px) 40vw, 90vw"
               className="h-auto w-full"

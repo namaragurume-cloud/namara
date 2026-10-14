@@ -12,7 +12,7 @@ export const site = {
   media: "なまらグルメ",
   /** <title> の末尾などに使う名称 */
   title: "MIRATSUMU（ミラツム）｜北海道のグルメインフルエンサーキャスティング",
-  tagline: "北海道の食に、発信力を。",
+  tagline: "北海道の食を未来へ紡ぐ",
   description:
     "北海道発のクリエイターキャスティングサービス「MIRATSUMU（ミラツム）」。グルメメディア「なまらグルメ」が培ってきた発信力とネットワークを活かし、飲食店・食品メーカー・ホテルのSNSプロモーションを企画から効果報告までワンストップでご提案します。",
   url: (process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000").replace(/\/$/, ""),

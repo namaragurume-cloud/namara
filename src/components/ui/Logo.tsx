@@ -13,8 +13,8 @@ export function Logo({ light, className, showSub = true }: { light?: boolean; cl
       <Image
         src={`/images/brand/miratsumu-symbol${v}.png`}
         alt=""
-        width={235}
-        height={212}
+        width={400}
+        height={361}
         priority
         className="h-9 w-auto md:h-10"
       />
@@ -22,8 +22,8 @@ export function Logo({ light, className, showSub = true }: { light?: boolean; cl
         <Image
           src={`/images/brand/miratsumu-wordmark${v}.png`}
           alt="MIRATSUMU（ミラツム）"
-          width={395}
-          height={42}
+          width={700}
+          height={75}
           priority
           className="h-[14px] w-auto md:h-[16px]"
         />

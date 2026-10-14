@@ -38,15 +38,9 @@ export function Hero() {
               className="anim-fade-up heading-xl mt-7 text-[clamp(2.6rem,1.2rem+6vw,6rem)] leading-[1.18]"
               style={{ animationDelay: "250ms" }}
             >
-              北海道の食に、
+              北海道の食を
               <br />
-              <span className="relative inline-block">
-                発信力を。
-                <span
-                  aria-hidden="true"
-                  className="absolute -bottom-1 left-0 h-[0.12em] w-full origin-left bg-brand md:-bottom-2"
-                />
-              </span>
+              <span className="text-brand">未来へ紡ぐ</span>
             </h1>
             <p
               className="anim-fade-up mt-8 max-w-xl text-[15px] leading-[2.1] text-white/85 md:text-base"
