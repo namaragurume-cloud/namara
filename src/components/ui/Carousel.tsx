@@ -63,7 +63,7 @@ export function Carousel({ children, label, itemClassName = "w-[82%] sm:w-[46%] 
         className="scrollbar-none -mx-5 flex snap-x snap-mandatory scroll-px-5 gap-5 overflow-x-auto px-5 pb-4 md:-mx-10 md:scroll-px-10 md:px-10"
       >
         {Children.map(children, (child, i) => (
-          <li className={cn("shrink-0 snap-start", itemClassName)} aria-label={`${i + 1} / ${Children.count(children)}`}>
+          <li className={cn("relative shrink-0 snap-start", itemClassName)} aria-label={`${i + 1} / ${Children.count(children)}`}>
             {child}
           </li>
         ))}

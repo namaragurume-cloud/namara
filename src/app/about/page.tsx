@@ -3,7 +3,7 @@ import { brand } from "@/data/brand";
 import { activities } from "@/data/activities";
 import { history } from "@/data/history";
 import { images } from "@/data/images";
-import { stats } from "@/data/site";
+import { getLiveStats } from "@/lib/creators";
 import { pageMetadata } from "@/lib/metadata";
 import { ScrollReveal } from "@/components/animation/ScrollReveal";
 import { ActivityList } from "@/components/sections/ActivityList";
@@ -36,8 +36,8 @@ const story = [
   "そう思っていただける存在を目指して、これからも挑戦を続けていきます。",
 ];
 
-export default function AboutPage() {
-  const follower = stats.items[0];
+export default async function AboutPage() {
+  const follower = (await getLiveStats()).items[0];
   return (
     <>
       <PageHero

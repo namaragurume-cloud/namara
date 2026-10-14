@@ -11,6 +11,11 @@ import { contentPreview } from "./site";
  *   1. プロフィール画像を public/images/creators/ に置く（例: sample.jpg）
  *   2. 下の配列に項目を追加し、image に "/images/creators/sample.jpg" を記入
  *   3. 掲載許可を確認したら published: true
+ *
+ * フォロワー数：
+ *   Instagram API（README「フォロワー数の自動取得」）を設定すると、プロアカウント
+ *   （ビジネス／クリエイター）のフォロワー数が自動で反映されます。
+ *   取得できない場合は followers に入力した数値を表示し、空なら非表示にします。
  */
 
 export type CreatorArea = "札幌" | "道央" | "道南" | "道北" | "道東" | "北海道全域";
@@ -33,11 +38,13 @@ export type Creator = {
   image?: string;
   platform: "Instagram" | "TikTok";
   profileUrl: string;
-  /** フォロワー数（数値） */
-  followers: number;
+  /** フォロワー数（手入力の値。自動取得できた場合はそちらを優先） */
+  followers?: number;
   /** フォロワー数の確認日（例: "2026年10月"） */
   followersAsOf?: string;
+  /** 得意ジャンル（未確認なら空のまま） */
   genres: CreatorGenre[];
+  /** 活動エリア（未確認なら空のまま） */
   areas: CreatorArea[];
   /** 投稿事例（掲載許可済みのもののみ） */
   examples?: { title: string; url: string }[];
@@ -45,18 +52,61 @@ export type Creator = {
 };
 
 export const creators: Creator[] = [
-  // ↓ レイアウト確認用のサンプル（架空・非公開）。実データ追加後に削除してください。
   {
-    id: "sample",
-    account: "sample_account",
-    name: "サンプル（架空・非公開）",
+    id: "namaragurume",
+    account: "namaragurume",
+    name: "なまらグルメ",
+    image: "/images/creators/namaragurume.jpg",
     platform: "Instagram",
-    profileUrl: "https://www.instagram.com/",
-    followers: 12000,
-    genres: ["ラーメン", "居酒屋"],
-    areas: ["札幌"],
-    examples: [],
-    published: false,
+    profileUrl: "https://www.instagram.com/namaragurume/",
+    followers: 142000,
+    genres: [],
+    areas: [],
+    published: true,
+  },
+  {
+    id: "kenji-gourmet",
+    account: "kenji_gourmet_1987",
+    name: "けんじグルメ",
+    image: "/images/creators/kenji-gourmet.jpg",
+    platform: "Instagram",
+    profileUrl: "https://www.instagram.com/kenji_gourmet_1987/",
+    genres: [],
+    areas: [],
+    published: true,
+  },
+  {
+    id: "kitagohan",
+    account: "kitagohan_insta",
+    name: "きたごはん",
+    image: "/images/creators/kitagohan.jpg",
+    platform: "Instagram",
+    profileUrl: "https://www.instagram.com/kitagohan_insta/",
+    genres: [],
+    areas: [],
+    published: true,
+  },
+  {
+    id: "oniyan",
+    account: "oniyan_grm",
+    name: "おにやん",
+    image: "/images/creators/oniyan.jpg",
+    platform: "Instagram",
+    profileUrl: "https://www.instagram.com/oniyan_grm/",
+    genres: [],
+    areas: [],
+    published: true,
+  },
+  {
+    id: "rikomogu",
+    account: "riko_mogram",
+    name: "りこモグ",
+    image: "/images/creators/rikomogu.jpg",
+    platform: "Instagram",
+    profileUrl: "https://www.instagram.com/riko_mogram/",
+    genres: [],
+    areas: [],
+    published: true,
   },
 ];
 
@@ -64,10 +114,13 @@ export function getVisibleCreators(): Creator[] {
   return creators.filter((c) => c.published || contentPreview);
 }
 
+/** 表示用：フォロワー数が自動取得できたかどうかを含む */
+export type CreatorView = Creator & { followersLive?: boolean };
+
 export function formatFollowers(n: number): string {
   if (n >= 10000) {
     const man = n / 10000;
-    return `${man >= 10 ? Math.round(man) : Math.round(man * 10) / 10}万`;
+    return `${Math.floor(man * 10) / 10}万`;
   }
   return n.toLocaleString("ja-JP");
 }

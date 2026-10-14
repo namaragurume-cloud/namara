@@ -1,14 +1,14 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { followerScales, type Creator } from "@/data/creators";
+import { followerScales, type Creator, type CreatorView } from "@/data/creators";
 import { cn } from "@/lib/utils";
 import { CreatorCard } from "@/components/ui/CreatorCard";
 
 /** 絞り込みを表示する最低掲載人数 */
 const FILTER_THRESHOLD = 6;
 
-export function CreatorList({ creators }: { creators: Creator[] }) {
+export function CreatorList({ creators }: { creators: CreatorView[] }) {
   const [area, setArea] = useState("");
   const [genre, setGenre] = useState("");
   const [scale, setScale] = useState("");
@@ -21,7 +21,7 @@ export function CreatorList({ creators }: { creators: Creator[] }) {
     return (
       (!area || c.areas.includes(area as Creator["areas"][number])) &&
       (!genre || c.genres.includes(genre as Creator["genres"][number])) &&
-      (!s || (c.followers >= s.min && c.followers <= s.max))
+      (!s || (c.followers !== undefined && c.followers >= s.min && c.followers <= s.max))
     );
   });
 

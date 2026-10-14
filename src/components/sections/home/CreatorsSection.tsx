@@ -1,4 +1,4 @@
-import { getVisibleCreators } from "@/data/creators";
+import { getCreatorsWithFollowers } from "@/lib/creators";
 import { ScrollReveal } from "@/components/animation/ScrollReveal";
 import { CTAButton } from "@/components/ui/CTAButton";
 import { Carousel } from "@/components/ui/Carousel";
@@ -6,8 +6,8 @@ import { CreatorCard } from "@/components/ui/CreatorCard";
 import { CreatorsEmpty } from "@/components/ui/CreatorsEmpty";
 import { SectionHeading } from "@/components/ui/SectionHeading";
 
-export function CreatorsSection() {
-  const creators = getVisibleCreators();
+export async function CreatorsSection() {
+  const creators = await getCreatorsWithFollowers();
   return (
     <section aria-label="インフルエンサー紹介" className="section overflow-hidden bg-white">
       <div className="container-x">

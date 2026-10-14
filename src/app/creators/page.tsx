@@ -1,4 +1,4 @@
-import { getVisibleCreators } from "@/data/creators";
+import { getCreatorsWithFollowers } from "@/lib/creators";
 import { pageMetadata } from "@/lib/metadata";
 import { ScrollReveal } from "@/components/animation/ScrollReveal";
 import { CreatorList } from "@/components/sections/CreatorList";
@@ -14,8 +14,8 @@ export const metadata = pageMetadata({
   path: "/creators",
 });
 
-export default function CreatorsPage() {
-  const creators = getVisibleCreators();
+export default async function CreatorsPage() {
+  const creators = await getCreatorsWithFollowers();
   return (
     <>
       <PageHero

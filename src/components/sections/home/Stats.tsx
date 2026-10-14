@@ -1,9 +1,10 @@
-import { stats } from "@/data/site";
+import { getLiveStats } from "@/lib/creators";
 import { CountUp } from "@/components/animation/CountUp";
 import { ScrollReveal } from "@/components/animation/ScrollReveal";
 import { SectionLabel } from "@/components/ui/SectionHeading";
 
-export function Stats() {
+export async function Stats() {
+  const stats = await getLiveStats();
   return (
     <section aria-labelledby="stats-title" className="relative bg-white pb-20 md:pb-28">
       <div className="container-x">
@@ -16,7 +17,9 @@ export function Stats() {
             </h2>
           </div>
           <p className="text-xs text-muted">
-            ※{stats.asOf ? `${stats.asOf}時点の数値です。` : "数値は集計時点のものです。"}
+            {stats.live
+              ? "※Instagramフォロワー数は自動で更新されます。その他の数値は集計時点のものです。"
+              : `※${stats.asOf ? `${stats.asOf}時点の数値です。` : "数値は集計時点のものです。"}`}
           </p>
         </div>
 

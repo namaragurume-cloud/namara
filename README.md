@@ -56,6 +56,7 @@ npm run dev                  # http://localhost:3000
 | `FORMSPREE_PARTNER_FORM_ID` | 任意 | 発信者登録用フォーム ID（空なら企業問い合わせ用と共用） |
 | `NEXT_PUBLIC_TURNSTILE_SITE_KEY` / `TURNSTILE_SECRET_KEY` | 任意（推奨） | Cloudflare Turnstile（Bot 対策） |
 | `NEXT_PUBLIC_GA_ID` | 任意 | Google Analytics 4 の測定 ID |
+| `INSTAGRAM_BUSINESS_ACCOUNT_ID` / `INSTAGRAM_ACCESS_TOKEN` | 任意 | Instagram フォロワー数の自動取得（下記参照） |
 | `CONTENT_PREVIEW` | 任意 | `true` で非公開の実績・発信者をプレビュー表示（ローカル／Vercel プレビュー環境のみ有効） |
 
 ---
@@ -147,7 +148,6 @@ npm run dev                  # http://localhost:3000
 - **本人から名前・写真・投稿事例の掲載許可を得たものだけ `published: true` にしてください。**
 - 掲載が 0 人の間は、一覧の代わりに「最適なグルメインフルエンサーをご提案します」という案内を表示します。
 - 6 人以上になると、一覧ページにエリア・ジャンル・フォロワー規模の絞り込みが自動で表示されます（`src/components/sections/CreatorList.tsx` の `FILTER_THRESHOLD`）。
-- 現在入っている `sample` は非公開のレイアウト確認用サンプルです。実データ追加後に削除してください。
 - カードの「この発信者を含めて相談する」を押すと、お問い合わせフォームの「希望インフルエンサー」に自動入力されます。
 
 ### 実績を追加・公開する
@@ -165,6 +165,23 @@ npm run dev                  # http://localhost:3000
 
 ### 非公開コンテンツを確認する
 `.env.local` に `CONTENT_PREVIEW=true` を設定して `npm run dev` すると、`published: false` の実績・発信者が「非公開プレビュー」の表示付きで確認できます。本番環境では無効です。
+
+### フォロワー数の自動取得（Instagram Graph API）
+
+トップの「Instagramフォロワー」と、発信者カードのフォロワー数を Instagram から自動取得できます（6時間ごとに更新。`src/lib/instagram.ts`）。設定しない場合は `src/data/` に入力した数値を表示します。
+
+- 取得できるのは **プロアカウント（ビジネス／クリエイター）** のみです。個人アカウントの発信者は手入力の数値（`followers`）が表示されます。未入力なら非表示。
+- Instagram の規約上、ページの読み取り（スクレイピング）は行わず、公式 API を使います。
+
+設定手順（なまらグルメのアカウントで1回だけ行います）：
+
+1. なまらグルメの Instagram をプロアカウントにし、Facebook ページと連携する
+2. [Meta for Developers](https://developers.facebook.com/) でアプリを作成し、「Instagram Graph API（Facebook ログイン経由）」を追加
+3. グラフAPIエクスプローラで `instagram_basic` と `pages_show_list`（必要に応じて `business_management`）の権限付きトークンを取得し、長期トークン（またはページのトークン）に交換
+4. `GET /me/accounts?fields=instagram_business_account` で Instagram ビジネスアカウント ID を確認
+5. Vercel の環境変数に `INSTAGRAM_BUSINESS_ACCOUNT_ID` と `INSTAGRAM_ACCESS_TOKEN` を設定して再デプロイ
+
+※ 長期ユーザートークンの有効期限は約60日です。期限切れになると自動で手入力の数値に戻ります（表示は崩れません）。期限のないページトークンの利用を推奨します。
 
 ---
 
@@ -208,7 +225,7 @@ URL を変更する場合は `src/app/` のフォルダ名を変更し、`src/da
 ### サイト内で仮の扱いにしている項目
 - 写真（活動写真は設定済み。写っている方の掲載許可を確認）
 - ブランドカラー（`src/app/globals.css` の `:root` で一括変更可）
-- 実績 3 件（非公開）・掲載インフルエンサー（0 人）
+- 実績 3 件（非公開）・掲載インフルエンサー（5 人。得意ジャンル・活動エリアは未入力）
 - 料金（すべて「個別見積もり」、フォロワー規模別区分は参考表示）・税込/税別
 - トップの数値の集計時点（`site.ts` の `stats.asOf`）
 - 会社の設立年月日・代表者の正式表記・郵便番号（`site.ts`）
