@@ -83,8 +83,26 @@ export const cases: CaseStudy[] = [
     todo: ["店名を記載するか"],
   },
   {
-    slug: "restaurant-sales",
+    slug: "wagashi",
     no: "03",
+    title: "和菓子店のPRリール",
+    industry: "和菓子店",
+    summary:
+      "和菓子店のPR。北海道のグルメ情報を発信する「けんじ グルメマン」が、Instagramリールで和菓子の魅力を届けました。",
+    metric: {
+      label: "Instagramリール再生回数",
+      value: "120万回",
+      period: "Instagramリールの再生回数（集計時点）",
+    },
+    media: "Instagram リール（発信者：けんじ グルメマン）",
+    result: "Instagramリールの再生回数は120万回となりました。",
+    instagram: ["https://www.instagram.com/reel/DagYVwwTGyI/"],
+    published: true,
+    todo: ["店名を記載するか"],
+  },
+  {
+    slug: "restaurant-sales",
+    no: "04",
     title: "飲食店の売上拡大",
     industry: "飲食店（業態未確認）",
     summary: "インフルエンサーPRを含む施策の実施期間に、売上が拡大した事例。",
@@ -106,7 +124,7 @@ export const cases: CaseStudy[] = [
   },
   {
     slug: "new-store-awareness",
-    no: "04",
+    no: "05",
     title: "新店舗OPEN時の認知拡大",
     industry: "飲食店（新店舗）",
     summary: "新店舗のOPENにあわせてPRを実施した事例。",
@@ -126,7 +144,7 @@ export const cases: CaseStudy[] = [
   },
   {
     slug: "tabelog-access",
-    no: "05",
+    no: "06",
     title: "食べログアクセスの増加",
     industry: "飲食店",
     summary: "PR実施後に食べログの店舗ページへのアクセスが増加した事例。",
