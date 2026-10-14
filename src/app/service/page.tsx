@@ -33,7 +33,7 @@ export default function ServicePage() {
         }
         lead={
           <>
-            <p>札幌を中心に、グルメに特化した約50人の発信者とのネットワークを活用。</p>
+            <p>札幌を中心に、グルメに特化した総フォロワー数115万人以上の発信者ネットワークを活用。</p>
             <p className="mt-2">
               フォロワー10万人を超える大型インフルエンサーから、地域に密着したマイクロインフルエンサーまで、商品や店舗の目的・予算に合わせたPRをご提案します。
             </p>
@@ -47,7 +47,8 @@ export default function ServicePage() {
           image={images.serviceHero}
           priority
           sizes="(min-width: 1240px) 1160px, 100vw"
-          className="aspect-[16/9] rounded-[28px] md:aspect-[21/8]"
+          className="aspect-square rounded-[28px] bg-[#faf9f6] md:aspect-[21/9]"
+          imgClassName="object-contain!"
         />
       </div>
 

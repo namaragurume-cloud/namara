@@ -47,10 +47,9 @@ export const images = {
   reason4: { src: "/images/reasons/proposal.jpg", alt: "予算や目的に合わせた提案の打ち合わせ", placeholder: "企画提案", position: "40% 50%" },
   reason5: { src: "/images/reasons/report.jpg", alt: "タブレットで効果レポートを確認する様子", placeholder: "効果レポート", position: "55% 50%" },
   serviceHero: {
-    src: "/images/activities/tokachi-farm.jpg",
-    alt: "十勝の生産者さんの農場を訪ねた様子",
-    placeholder: "撮影・PR実施風景",
-    position: "50% 60%",
+    src: "/images/reasons/creator-network.jpg",
+    alt: "MIRATSUMUの発信者ネットワーク（なまらグルメ、けんじ グルメマン、きたごはん、りこモグ、おにやん などのアイコン）",
+    placeholder: "発信者ネットワーク",
   },
   founder: {
     src: "/images/activities/nanporo-corn.jpg",
