@@ -76,7 +76,7 @@ export const stats: { asOf: string; items: Stat[]; footnote?: string } = {
     {
       value: 115,
       suffix: "万人超",
-      label: "SNS総フォロワー数",
+      label: "MIRATSUMUのSNS総フォロワー数",
     },
     {
       value: 200,
@@ -84,10 +84,10 @@ export const stats: { asOf: string; items: Stat[]; footnote?: string } = {
       label: "これまでの契約店舗数",
     },
     {
-      value: 300,
-      suffix: "%",
+      value: 200,
+      suffix: "%UP",
       label: "売上（200万円→600万円）",
-      note: "ある飲食店の事例。施策前の売上を100%とした比率です",
+      note: "ある飲食店の事例です",
     },
   ],
   footnote: "売上の成果は、PR以外の要因を含む場合があります。",
