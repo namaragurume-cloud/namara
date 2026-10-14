@@ -22,18 +22,22 @@ export default async function CreatorsPage() {
         en="CREATORS"
         title={
           <>
-            北海道のグルメを
-            <br className="hidden md:block" />
-            知り尽くした、発信者たち。
+            <span className="inline-block">北海道のグルメを、</span>
+            <br />
+            <span className="inline-block">未来へ紡いでいく</span>
+            <span className="inline-block">発信者たち。</span>
           </>
         }
         lead={
           <>
             <p>
-              MIRATSUMUでは、札幌を中心に北海道のグルメ情報を発信する約50人の発信者とのネットワークがあります。
+              MIRATSUMUには、札幌を中心に北海道のグルメの魅力を届ける、
+              <strong className="font-bold text-ink">SNS総フォロワー115万人以上の発信者ネットワーク</strong>
+              があります。
             </p>
+            <p className="mt-2">フォロワー10万人を超える大型インフルエンサーから、地域に根ざしたマイクロインフルエンサーまで。</p>
             <p className="mt-2">
-              フォロワー10万人超の大型インフルエンサーから、地域密着型のマイクロインフルエンサーまで。商品や店舗の魅力に合う発信者をご提案します。
+              一人ひとりの個性と発信力を活かし、商品や店舗に込められた想いを、最適なカタチで届けるクリエイターをご提案します。
             </p>
           </>
         }
