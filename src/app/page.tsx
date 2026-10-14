@@ -1,6 +1,7 @@
 import { FinalCTA } from "@/components/sections/FinalCTA";
 import { Flow } from "@/components/sections/Flow";
 import { BrandConcept } from "@/components/sections/home/BrandConcept";
+import { ActivitiesSection } from "@/components/sections/home/ActivitiesSection";
 import { AboutIntro } from "@/components/sections/home/AboutIntro";
 import { CreatorsSection } from "@/components/sections/home/CreatorsSection";
 import { FaqSection } from "@/components/sections/home/FaqSection";
@@ -18,6 +19,7 @@ export default function HomePage() {
       <BrandConcept />
       <Stats />
       <AboutIntro />
+      <ActivitiesSection />
       <Reasons />
       <ServicesOverview />
       <CreatorsSection />

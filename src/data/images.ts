@@ -13,49 +13,64 @@
 export type SiteImage = {
   src?: string;
   alt: string;
+  /** 表示位置（CSS object-position。例: "50% 30%"） */
+  position?: string;
   /** src が空のときにプレースホルダーに表示するラベル */
   placeholder: string;
 };
 
 export const images = {
-  heroFood: {
-    src: "",
-    alt: "北海道のグルメ料理の写真",
-    placeholder: "北海道グルメ写真",
-  },
   heroShooting: {
-    src: "",
-    alt: "グルメインフルエンサーが料理を撮影している様子",
-    placeholder: "インフルエンサー撮影風景",
+    src: "/images/activities/akkeshi-oyster.jpg",
+    alt: "厚岸町の牡蠣漁に同行し、水揚げした牡蠣を手にする様子",
+    placeholder: "現場取材",
   },
   aboutMain: {
-    src: "",
-    alt: "運営メディア なまらグルメの活動の様子",
+    src: "/images/activities/autumnfest-2024.jpg",
+    alt: "さっぽろオータムフェスト2024の「薄野 味噌に骨 × なまらグルメ」店舗",
     placeholder: "なまらグルメ活動写真",
+    position: "50% 60%",
   },
   aboutSub: {
-    src: "",
-    alt: "北海道の食材・料理の写真",
+    src: "/images/activities/tokachi-potato.jpg",
+    alt: "十勝の生産者さんを訪ね、じゃがいもを手にする様子",
     placeholder: "北海道の食材写真",
   },
-  reason1: { src: "", alt: "北海道のグルメ料理", placeholder: "北海道グルメ" },
-  reason2: { src: "", alt: "なまらグルメが運営する飲食店", placeholder: "自社運営店舗" },
-  reason3: { src: "", alt: "グルメ発信者による撮影", placeholder: "発信者ネットワーク" },
-  reason4: { src: "", alt: "PR企画の打ち合わせ", placeholder: "企画提案" },
-  reason5: { src: "", alt: "SNS投稿のレポート", placeholder: "効果レポート" },
+  aboutMedia: {
+    src: "/images/activities/tokachi-meeting.jpg",
+    alt: "十勝の生産者さんを訪ね、お話を伺う様子",
+    placeholder: "なまらグルメ活動写真",
+  },
+  reason1: { src: "/images/activities/akkeshi-oyster.jpg", alt: "厚岸町の牡蠣漁の現場", placeholder: "北海道グルメ", position: "50% 30%" },
+  reason2: { src: "/images/activities/autumnfest-2024.jpg", alt: "オータムフェストでの店舗運営", placeholder: "店舗運営", position: "50% 55%" },
+  reason3: { src: "/images/activities/tokachi-garlic.jpg", alt: "生産者さんとの交流", placeholder: "ネットワーク" },
+  reason4: { src: "/images/activities/tokachi-meeting.jpg", alt: "打ち合わせの様子", placeholder: "企画提案" },
+  reason5: { src: "/images/activities/sapporo-classic.jpg", alt: "企業の企画・イベントの広報を担当", placeholder: "企画・広報" },
   serviceHero: {
-    src: "",
-    alt: "SNS向けにグルメを撮影する様子",
+    src: "/images/activities/tokachi-farm.jpg",
+    alt: "十勝の生産者さんの農場を訪ねた様子",
     placeholder: "撮影・PR実施風景",
+    position: "50% 60%",
   },
   founder: {
-    src: "",
+    src: "/images/activities/nanporo-corn.jpg",
     alt: "なまらグルメ 運営者 島田",
     placeholder: "運営者写真",
   },
   partnerHero: {
-    src: "",
-    alt: "グルメを撮影するインフルエンサー",
+    src: "/images/activities/australia-field.jpg",
+    alt: "現地の生産者と",
     placeholder: "発信者の撮影風景",
+    position: "50% 60%",
   },
 } satisfies Record<string, SiteImage>;
+
+/** トップページ最上部の背景に敷き詰める活動写真（暗く重ねて表示） */
+export const heroMosaic: SiteImage[] = [
+  { src: "/images/activities/tokachi-farm.jpg", alt: "", placeholder: "" },
+  { src: "/images/activities/autumnfest-2024.jpg", alt: "", placeholder: "", position: "50% 60%" },
+  { src: "/images/activities/australia-field.jpg", alt: "", placeholder: "", position: "50% 70%" },
+  { src: "/images/activities/tokachi-potato.jpg", alt: "", placeholder: "" },
+  { src: "/images/activities/nanporo-corn.jpg", alt: "", placeholder: "" },
+  { src: "/images/activities/tokachi-garlic.jpg", alt: "", placeholder: "" },
+];

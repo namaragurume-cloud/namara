@@ -1,10 +1,12 @@
 import Image from "next/image";
 import { brand } from "@/data/brand";
+import { activities } from "@/data/activities";
 import { history } from "@/data/history";
 import { images } from "@/data/images";
 import { stats } from "@/data/site";
 import { pageMetadata } from "@/lib/metadata";
 import { ScrollReveal } from "@/components/animation/ScrollReveal";
+import { ActivityList } from "@/components/sections/ActivityList";
 import { FinalCTA } from "@/components/sections/FinalCTA";
 import { PageHero } from "@/components/ui/PageHero";
 import { Photo } from "@/components/ui/Photo";
@@ -127,7 +129,7 @@ export default function AboutPage() {
         <div className="container-x grid items-center gap-14 lg:grid-cols-2 lg:gap-24">
           <ScrollReveal>
             <Photo
-              image={images.aboutMain}
+              image={images.aboutMedia}
               sizes="(min-width: 1024px) 45vw, 100vw"
               className="aspect-[4/3] rounded-[28px]"
             />
@@ -153,6 +155,37 @@ export default function AboutPage() {
             </p>
             <p>
               これまで培ってきた経験とネットワークを活かし、北海道のグルメに特化したクリエイターキャスティングサービス「MIRATSUMU」を本格展開します。
+            </p>
+          </ScrollReveal>
+        </div>
+      </section>
+
+      <section id="activities" aria-labelledby="activities-title" className="section scroll-mt-20 bg-mist">
+        <div className="container-x">
+          <div className="max-w-3xl">
+            <ScrollReveal>
+              <SectionLabel>ACTIVITIES</SectionLabel>
+              <h2 id="activities-title" className="heading-lg mt-5">
+                現場に足を運び、
+                <br />
+                つくり手の想いを届ける。
+              </h2>
+            </ScrollReveal>
+            <ScrollReveal delay={0.1} className="lead mt-8 space-y-4">
+              <p>
+                おいしさの裏側には、それを育て、守り、届ける人たちの物語があります。なまらグルメは、北海道各地の生産者さんや飲食店のもとへ実際に足を運び、現場で見て、聞いて、感じたことをSNSで発信してきました。
+              </p>
+              <p>写真と言葉だけでは伝えきれない想いを、現場から。これまでの取り組みの一部をご紹介します。</p>
+            </ScrollReveal>
+          </div>
+          <div className="mt-16 md:mt-24">
+            <ActivityList items={activities} />
+          </div>
+          <ScrollReveal className="mt-20 rounded-[28px] bg-ink p-8 text-white md:mt-28 md:p-14">
+            <p className="num text-xs font-semibold tracking-[0.3em] text-white/50">FROM NOW ON</p>
+            <p className="mt-4 text-xl leading-relaxed font-bold md:text-2xl">この取り組みに、これからもっと力を入れていきます。</p>
+            <p className="mt-5 max-w-3xl text-[15px] leading-[2.1] text-white/75">
+              MIRATSUMUでは、生産者さんや飲食店の現場に足を運ぶ取材・発信をさらに強化していきます。現場で受け取った想いを、プロのクリエイターとともに、より多くの人へ、そして次の世代へ。北海道の食の価値を、新しいカタチで未来へ紡いでいきます。
             </p>
           </ScrollReveal>
         </div>

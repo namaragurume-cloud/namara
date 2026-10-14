@@ -1,4 +1,5 @@
-import { images } from "@/data/images";
+import Image from "next/image";
+import { heroMosaic, images } from "@/data/images";
 import { stats } from "@/data/site";
 import { CTAButton } from "@/components/ui/CTAButton";
 import { Photo } from "@/components/ui/Photo";
@@ -9,18 +10,26 @@ export function Hero() {
   const follower = stats.items[0];
   return (
     <section aria-labelledby="hero-title" className="relative isolate flex min-h-[100svh] flex-col overflow-hidden bg-ink text-white">
-      {/* 背景：北海道グルメ写真 */}
-      <div className="absolute inset-0 -z-10">
-        <Photo
-          image={images.heroFood}
-          priority
-          sizes="100vw"
-          className="h-full w-full"
-          imgClassName="anim-slow-zoom"
-          showLabel={false}
-        />
-        <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/55 to-black/20" />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-black/40" />
+      {/* 背景：現場で撮影した活動写真を敷き詰めて暗く重ねる */}
+      <div aria-hidden="true" className="absolute inset-0 -z-10">
+        <div className="anim-slow-zoom grid h-full w-full grid-cols-2 grid-rows-3 gap-1 md:grid-cols-3 md:grid-rows-2">
+          {heroMosaic.map((img, i) => (
+            <div key={img.src} className="relative overflow-hidden">
+              <Image
+                src={img.src!}
+                alt=""
+                fill
+                priority={i < 2}
+                sizes="(min-width: 768px) 34vw, 50vw"
+                style={img.position ? { objectPosition: img.position } : undefined}
+                className="object-cover"
+              />
+            </div>
+          ))}
+        </div>
+        <div className="absolute inset-0 bg-black/60" />
+        <div className="absolute inset-0 bg-gradient-to-r from-black/85 via-black/55 to-black/25" />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/50" />
       </div>
 
       <div className="container-x relative flex flex-1 items-center pt-[var(--header-h)]">
