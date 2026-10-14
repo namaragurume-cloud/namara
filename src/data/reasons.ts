@@ -5,7 +5,7 @@ export type Reason = { no: string; title: string; body: string; image: SiteImage
 export const reasons: Reason[] = [
   {
     no: "01",
-    title: "北海道のグルメに特化した専門性",
+    title: "自らも北海道のグルメに特化したメディアを運営",
     body: "グルメメディア「なまらグルメ」として、北海道各地の生産者さんや飲食店へ足を運び、食の魅力を発信し続けてきた経験をもとに、地域性や飲食業界の特性を理解したPRをご提案します。",
     image: images.reason1,
   },
@@ -17,7 +17,7 @@ export const reasons: Reason[] = [
   },
   {
     no: "03",
-    title: "約50人の発信者とのネットワーク",
+    title: "フォロワー数115万人超の発信者とのネットワーク",
     body: "フォロワー10万人超の大型インフルエンサーから、地域密着型のマイクロインフルエンサーまで、発信者と直接コミュニケーションを取っています。",
     image: images.reason3,
   },
