@@ -26,7 +26,9 @@ export function CreatorList({ creators }: { creators: CreatorView[] }) {
     );
   });
 
-  const showFilter = creators.length >= FILTER_THRESHOLD;
+  // 絞り込みに使える情報（エリア・ジャンル・フォロワー数）が登録されている場合のみ表示
+  const showFilter =
+    creators.length >= FILTER_THRESHOLD && (areas.length > 0 || genres.length > 0 || showFollowerCounts);
   const select = "field-input min-h-12! py-2! text-sm";
 
   return (
