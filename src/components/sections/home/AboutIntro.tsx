@@ -6,7 +6,7 @@ import { SectionLabel } from "@/components/ui/SectionHeading";
 
 export function AboutIntro() {
   return (
-    <section aria-labelledby="about-title" className="section overflow-hidden bg-mist">
+    <section aria-labelledby="about-title" className="section overflow-hidden bg-white">
       <div className="container-x grid items-center gap-16 lg:grid-cols-2 lg:gap-24">
         <ScrollReveal className="relative order-2 lg:order-1">
           <Photo
@@ -18,7 +18,7 @@ export function AboutIntro() {
             image={images.aboutSub}
             tone="warm"
             sizes="(min-width: 1024px) 22vw, 50vw"
-            className="absolute left-0 bottom-[-8%] aspect-square w-[46%] rounded-[20px] border-[6px] border-mist"
+            className="absolute left-0 bottom-[-8%] aspect-square w-[46%] rounded-[20px] border-[6px] border-white"
           />
         </ScrollReveal>
 

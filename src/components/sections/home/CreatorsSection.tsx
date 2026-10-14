@@ -9,7 +9,7 @@ import { SectionHeading } from "@/components/ui/SectionHeading";
 export async function CreatorsSection() {
   const creators = await getCreatorsWithFollowers();
   return (
-    <section aria-label="インフルエンサー紹介" className="section overflow-hidden bg-white">
+    <section aria-label="インフルエンサー紹介" className="section overflow-hidden bg-mist">
       <div className="container-x">
         <div className="flex flex-col gap-8 md:flex-row md:items-end md:justify-between">
           <SectionHeading

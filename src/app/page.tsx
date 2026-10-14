@@ -18,11 +18,11 @@ export default function HomePage() {
       <Hero />
       <BrandConcept />
       <Stats />
+      <ServicesOverview />
+      <Reasons />
+      <CreatorsSection />
       <AboutIntro />
       <ActivitiesSection />
-      <Reasons />
-      <ServicesOverview />
-      <CreatorsSection />
       <WorksSection />
       <PricingOverview />
       <Flow />
