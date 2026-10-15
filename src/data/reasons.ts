@@ -1,36 +1,38 @@
 import { images, type SiteImage } from "./images";
 
-export type Reason = { no: string; title: string; body: string; image: SiteImage };
+export type Reason = {
+  no: string;
+  /** 短いラベル */
+  label: string;
+  title: string;
+  body: string;
+  image: SiteImage;
+  link?: { href: string; label: string };
+};
 
+/** MIRATSUMUが選ばれる理由（北海道の食材・店舗・発信者をつなぐ3つの強み） */
 export const reasons: Reason[] = [
   {
     no: "01",
-    title: "自らも北海道のグルメに特化したメディアを運営",
-    body: "グルメメディア「なまらグルメ」として、北海道各地の生産者さんや飲食店へ足を運び、食の魅力を発信し続けてきた経験をもとに、地域性や飲食業界の特性を理解したPRをご提案します。",
-    image: images.reason1,
+    label: "NETWORK",
+    title: "北海道グルメに特化した発信者ネットワーク",
+    body: "札幌を中心に、北海道の食に強いグルメインフルエンサーと連携しています。フォロワー数だけでなく、得意なジャンルや視聴者層、PRの目的を踏まえて、店舗や商品に合う発信者をご提案します。",
+    image: images.reason3,
+    link: { href: "/creators", label: "インフルエンサーを見る" },
   },
   {
     no: "02",
-    title: "飲食店を運営しているからこその現場目線",
-    body: "自社でも飲食店を運営。SNS上の再生数だけでなく、店舗側が求める集客や売上を意識した施策を考えます。",
-    image: images.reason2,
+    label: "MEDIA",
+    title: "グルメメディア「なまらグルメ」の発信実績",
+    body: "2021年から北海道のグルメメディア「なまらグルメ」を運営し、生産者さんや飲食店へ足を運んで発信を続けてきました。ユーザーが思わず保存したくなる伝え方や、投稿の企画づくりを熟知しています。",
+    image: images.reason1,
+    link: { href: "/about#activities", label: "これまでの活動を見る" },
   },
   {
     no: "03",
-    title: "フォロワー数115万人超の発信者とのネットワーク",
-    body: "フォロワー10万人超の大型インフルエンサーから、地域密着型のマイクロインフルエンサーまで、発信者と直接コミュニケーションを取っています。",
-    image: images.reason3,
-  },
-  {
-    no: "04",
-    title: "予算に合わせた柔軟な提案",
-    body: "大型インフルエンサー1名の起用から、複数のマイクロインフルエンサーを組み合わせた企画まで。目的や予算に合わせて最適な組み合わせを提案します。",
-    image: images.reason4,
-  },
-  {
-    no: "05",
-    title: "企画から効果報告まで一括対応",
-    body: "PR企画、キャスティング、投稿管理、効果レポートまで一貫してサポートします。",
-    image: images.reason5,
+    label: "ON SITE",
+    title: "飲食店の現場を理解しているから、寄り添える",
+    body: "自社でも飲食店を運営しています。SNS上の再生数だけでなく、店舗側が抱える集客の悩みや、オペレーションの事情まで踏まえた企画をご提案します。",
+    image: images.reason2,
   },
 ];

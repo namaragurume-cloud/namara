@@ -1,4 +1,5 @@
 import { getCreatorsWithFollowers } from "@/lib/creators";
+import { site } from "@/data/site";
 import { pageMetadata } from "@/lib/metadata";
 import { ScrollReveal } from "@/components/animation/ScrollReveal";
 import { CreatorList } from "@/components/sections/CreatorList";
@@ -8,9 +9,9 @@ import { CTAButton } from "@/components/ui/CTAButton";
 import { PageHero } from "@/components/ui/PageHero";
 
 export const metadata = pageMetadata({
-  title: "インフルエンサー紹介",
+  title: "札幌・北海道のグルメインフルエンサー紹介",
   description:
-    "札幌を中心に北海道のグルメ情報を発信するインフルエンサーとのネットワーク。大型インフルエンサーから地域密着型のマイクロインフルエンサーまで、商品や店舗に合う発信者をご提案します。",
+    "札幌を中心に北海道のグルメ情報を発信するインフルエンサーをご紹介。SNS総フォロワー115万人以上のネットワークから、店舗や商品に合う発信者をご提案します。",
   path: "/creators",
 });
 
@@ -52,6 +53,13 @@ export default async function CreatorsPage() {
               <p className="mt-10 text-xs leading-relaxed text-muted">
                 ※掲載しているのはネットワークの一部です。最終的な発信者のご提案は、目的やご予算、スケジュールを踏まえてMIRATSUMUが行います。
               </p>
+              <div className="mt-12 flex flex-col items-center gap-4 rounded-[28px] bg-mist p-8 text-center md:p-12">
+                <p className="text-lg font-bold md:text-xl">どの発信者が合うか迷ったら、MIRATSUMUにお任せください。</p>
+                <p className="text-sm text-muted">目的・ご予算・ターゲットを伺い、相性の良い発信者をご提案します。</p>
+                <CTAButton href="/contact" size="lg" trackLocation="creators_list" className="mt-2">
+                  {site.cta}
+                </CTAButton>
+              </div>
             </>
           ) : (
             <ScrollReveal>

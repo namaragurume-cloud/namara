@@ -1,5 +1,5 @@
 import type { LucideIcon } from "lucide-react";
-import { BarChart3, CalendarCheck, Lightbulb, PartyPopper, Users } from "lucide-react";
+import { BarChart3, CalendarCheck, ClipboardCheck, Lightbulb, PartyPopper, Users } from "lucide-react";
 
 export type Service = {
   id: string;
@@ -21,7 +21,7 @@ export const services: Service[] = [
     en: "CASTING",
     title: "インフルエンサーキャスティング",
     summary:
-      "商材とターゲットを分析し、ジャンル・地域・フォロワー属性に合った発信者を選定。交渉からスケジュール調整まで担います。",
+      "フォロワー数だけではなく、発信ジャンルや視聴者層、PRの目的を踏まえて、相性の良い発信者をご提案します。",
     icon: Users,
     items: ["商材とターゲットの分析", "発信者の選定", "スケジュール調整", "発信者との交渉", "起用人数の提案"],
     extra: {
@@ -37,8 +37,8 @@ export const services: Service[] = [
   {
     id: "direction",
     no: "02",
-    en: "PLANNING & DIRECTION",
-    title: "PR企画・ディレクション",
+    en: "PLANNING",
+    title: "PR企画・プロモーション設計",
     summary:
       "PRの目的を整理し、投稿の構成から訴求ポイントの設計まで。見ているユーザーに魅力が伝わりやすい投稿に落とし込みます。",
     icon: Lightbulb,
@@ -47,39 +47,45 @@ export const services: Service[] = [
   {
     id: "management",
     no: "03",
-    en: "POST MANAGEMENT",
-    title: "SNS投稿管理",
+    en: "SCHEDULING",
+    title: "投稿スケジュール・進行管理",
     summary:
-      "投稿スケジュールの調整から内容の事前確認、PR表記のチェックまで。安心して任せられる進行管理を行います。",
+      "発信者との連絡や日程調整はMIRATSUMUが窓口に。新店舗OPENやキャンペーンの時期に合わせた進行を、手間なく任せられます。",
     icon: CalendarCheck,
-    items: [
-      "投稿スケジュール調整",
-      "投稿内容の事前確認（原則）",
-      "正確な商品情報の確認",
-      "PR表記の確認",
-      "投稿完了の管理",
-    ],
+    items: ["投稿スケジュールの調整", "発信者との連絡・進行管理", "投稿完了の確認"],
+    note: "ご希望日時での投稿を保証するものではありません。",
+  },
+  {
+    id: "review",
+    no: "04",
+    en: "CONTENT CHECK",
+    title: "投稿内容の確認・調整",
+    summary:
+      "投稿前に内容を確認し、商品情報やPR表記の誤りを防ぎます。お店や商品のイメージを大切にしたまま発信できます。",
+    icon: ClipboardCheck,
+    items: ["投稿内容の事前確認（原則）", "正確な商品情報の確認", "PR表記の確認", "修正点の調整"],
+    note: "修正範囲や確認方法は案件ごとに調整します。",
   },
   {
     id: "report",
-    no: "04",
+    no: "05",
     en: "REPORTING",
-    title: "効果測定・レポート",
+    title: "効果測定・レポーティング",
     summary:
-      "再生数・リーチ数・保存数など、確認できる範囲の指標を集計。次の施策につながるレポートをお届けします。",
+      "再生数・リーチ数・保存数など、確認できる範囲の指標を集計してご報告。PRの成果を振り返り、次の施策に生かせます。",
     icon: BarChart3,
     items: ["再生数", "リーチ数", "いいね・保存など", "投稿URL", "その他、案件ごとに合意した成果指標"],
     note: "売上や来店人数などは、クライアント様から実測データをご共有いただいた場合に扱います。",
   },
   {
     id: "event",
-    no: "05",
-    en: "PR EVENT",
-    title: "PRイベント企画",
+    no: "06",
+    en: "EVENT & CAMPAIGN",
+    title: "イベント・キャンペーン企画",
     summary:
-      "試食会や新商品発表、グルメインフルエンサーを招いた店舗イベントなど、リアルな体験を通じたPRを企画します。",
+      "試食会や新商品発表、グルメインフルエンサーを招いた店舗イベントなど、SNSの投稿と組み合わせたリアルな体験づくりをお手伝いします。",
     icon: PartyPopper,
-    items: ["試食会", "新商品PRイベント", "グルメインフルエンサーを招いた企画", "店舗のPRイベント"],
+    items: ["試食会", "新商品PRイベント", "グルメインフルエンサーを招いた企画", "店舗のPRイベント・キャンペーン"],
     note: "実施内容や規模は個別にお見積もりいたします。",
   },
 ];

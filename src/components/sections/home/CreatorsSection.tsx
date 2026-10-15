@@ -1,3 +1,4 @@
+import { site } from "@/data/site";
 import { getCreatorsWithFollowers } from "@/lib/creators";
 import { ScrollReveal } from "@/components/animation/ScrollReveal";
 import { CTAButton } from "@/components/ui/CTAButton";
@@ -55,6 +56,14 @@ export async function CreatorsSection() {
             <CreatorsEmpty location="home_creators_empty" />
           )}
         </ScrollReveal>
+        {creators.length > 0 && (
+          <ScrollReveal className="mt-12 flex flex-col items-center gap-3 text-center">
+            <p className="text-sm text-muted">掲載しているのはネットワークの一部です。目的やご予算に合う発信者をご提案します。</p>
+            <CTAButton href="/contact" size="lg" trackLocation="home_creators">
+              {site.cta}
+            </CTAButton>
+          </ScrollReveal>
+        )}
       </div>
     </section>
   );

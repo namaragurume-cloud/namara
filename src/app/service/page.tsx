@@ -7,15 +7,16 @@ import { absoluteUrl } from "@/lib/utils";
 import { ScrollReveal } from "@/components/animation/ScrollReveal";
 import { FinalCTA } from "@/components/sections/FinalCTA";
 import { Flow } from "@/components/sections/Flow";
+import { CTAButton } from "@/components/ui/CTAButton";
 import { JsonLd } from "@/components/ui/JsonLd";
 import { PageHero } from "@/components/ui/PageHero";
 import { Photo } from "@/components/ui/Photo";
 import { SectionHeading } from "@/components/ui/SectionHeading";
 
 export const metadata = pageMetadata({
-  title: "サービス紹介",
+  title: "サービス内容｜北海道のインフルエンサーPR・キャスティング",
   description:
-    "北海道・札幌のグルメインフルエンサーキャスティング、PR企画・ディレクション、SNS投稿管理、効果測定・レポート、PRイベント企画。グルメPRを企画から発信までワンストップでご提供します。",
+    "北海道・札幌のグルメインフルエンサーキャスティング、PR企画、投稿スケジュール管理、投稿内容の確認、効果測定レポート、イベント企画まで。飲食店の集客や新商品PRをワンストップでサポートします。",
   path: "/service",
 });
 
@@ -54,7 +55,7 @@ export default function ServicePage() {
 
       {/* サービス目次 */}
       <nav aria-label="サービス一覧" className="container-x mt-14">
-        <ul className="grid grid-cols-2 gap-3 md:grid-cols-5">
+        <ul className="grid grid-cols-2 gap-3 md:grid-cols-3">
           {services.map((s) => (
             <li key={s.id}>
               <a
@@ -120,6 +121,12 @@ export default function ServicePage() {
               </ScrollReveal>
             );
           })}
+        </div>
+        <div className="container-x mt-12 flex flex-col items-center gap-4 text-center md:mt-16">
+          <p className="text-lg font-bold md:text-xl">どのサービスが合うかわからない場合も、お気軽にご相談ください。</p>
+          <CTAButton href="/contact" size="lg" trackLocation="service_list">
+            {site.cta}
+          </CTAButton>
         </div>
       </section>
 

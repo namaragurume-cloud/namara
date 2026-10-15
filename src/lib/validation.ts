@@ -1,15 +1,23 @@
 import { z } from "zod";
 
 /** フォームの選択肢（フォーム表示とサーバー検証で共通） */
-export const industryOptions = ["飲食店", "食品メーカー", "ホテル・宿泊施設", "その他"] as const;
+export const industryOptions = ["飲食店", "食品メーカー", "ホテル・宿泊施設", "観光施設", "その他"] as const;
 
-export const budgetOptions = [
-  "3万〜5万円未満",
-  "5万〜10万円未満",
-  "10万〜20万円未満",
-  "20万〜30万円未満",
-  "30万円以上",
-  "未定・相談して決めたい",
+export const budgetOptions = ["3万〜10万円", "10万〜30万円", "30万円以上", "まだ決まっていない"] as const;
+
+/** 料金ページなどから ?budget= で予算を引き継ぐためのキー */
+export const budgetParams = {
+  "3-10": "3万〜10万円",
+  "10-30": "10万〜30万円",
+  "30": "30万円以上",
+} as const satisfies Record<string, (typeof budgetOptions)[number]>;
+export type BudgetParam = keyof typeof budgetParams;
+
+export const purposeOptions = [
+  "集客を増やしたい",
+  "新商品・新店舗をPRしたい",
+  "認知度を高めたい",
+  "まずは話を聞きたい",
 ] as const;
 
 export const genreOptions = [
@@ -56,15 +64,17 @@ const antiSpam = {
 };
 
 export const contactSchema = z.object({
-  company: required("会社名・店舗名"),
-  name: required("ご担当者名", 50),
+  company: required("企業名・店舗名"),
   email,
+  purpose: optionalEnum(purposeOptions),
+  budget: optionalEnum(budgetOptions),
+  message: optional(3000),
+  // 以下は「詳しく入力する」を開いた場合のみ（任意）
+  name: optional(50),
   industry: optionalEnum(industryOptions),
   product: optional(200),
-  budget: optionalEnum(budgetOptions),
   timing: optional(100),
   creator: optional(200),
-  message: required("お問い合わせ内容", 3000),
   privacy: z.literal(true, { error: "個人情報の取扱いへの同意が必要です" }),
   ...antiSpam,
 });

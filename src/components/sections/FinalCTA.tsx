@@ -25,9 +25,16 @@ export function FinalCTA() {
             <br className="hidden md:block" />
             目的やご予算をお伺いし、最適なプランをご提案します。
           </p>
-          <div className="mt-12 flex flex-col items-stretch justify-center gap-4 sm:flex-row sm:items-center">
+          <ul className="mt-8 flex flex-wrap justify-center gap-2.5" aria-label="ご相談の条件">
+            {["ご予算3万円〜相談可能", "無料お見積もり", "企画が未定でもOK"].map((t) => (
+              <li key={t} className="rounded-full border border-white/25 bg-white/10 px-4 py-2 text-[13px] font-bold">
+                {t}
+              </li>
+            ))}
+          </ul>
+          <div className="mt-10 flex flex-col items-stretch justify-center gap-4 sm:flex-row sm:items-center">
             <CTAButton href="/contact" size="lg" trackLocation="final_cta">
-              無料相談・お見積もり
+              無料でPRプランを相談する
             </CTAButton>
             <CTAButton href={site.instagram.dmUrl} size="lg" variant="outline-light" icon="instagram" trackLocation="final_cta">
               Instagram DMで相談

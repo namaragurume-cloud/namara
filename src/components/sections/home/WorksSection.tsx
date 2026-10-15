@@ -1,4 +1,5 @@
 import { getVisibleCases } from "@/data/cases";
+import { site } from "@/data/site";
 import { ScrollReveal } from "@/components/animation/ScrollReveal";
 import { CaseStudyCard } from "@/components/ui/CaseStudyCard";
 import { Carousel } from "@/components/ui/Carousel";
@@ -42,12 +43,17 @@ export function WorksSection() {
                 ))}
               </Carousel>
               <p className="mt-6 text-xs leading-relaxed text-muted">
-                ※成果はPR以外の要因を含む場合があります。各事例の集計期間・条件は詳細ページをご確認ください。
+                ※再生回数はPR投稿が視聴された回数で、来店数や売上を示すものではありません。各事例の集計条件は詳細ページをご確認ください。
               </p>
             </>
           ) : (
             <WorksEmpty theme="light" />
           )}
+        </ScrollReveal>
+        <ScrollReveal className="mt-12 flex justify-center">
+          <CTAButton href="/contact" size="lg" trackLocation="home_works">
+            {site.cta}
+          </CTAButton>
         </ScrollReveal>
       </div>
     </section>

@@ -33,6 +33,10 @@ export type CaseStudy = {
   image?: string;
   metric: CaseMetric;
   /** 以下は空欄の項目は詳細ページに表示しません */
+  /** PR対象の商品・サービス（空欄なら industry を表示） */
+  product?: string;
+  /** 投稿のサムネイル画像（掲載許可済みのもの。public/images/works/ に配置） */
+  thumbnail?: string;
   challenge?: string;
   actions?: string[];
   media?: string;
@@ -50,6 +54,7 @@ export type CaseStudy = {
 export const cases: CaseStudy[] = [
   {
     slug: "butter-cafe",
+    thumbnail: "/images/works/butter-cafe.jpg",
     no: "01",
     title: "バター専門カフェのPRリール",
     industry: "カフェ（バター専門店）",
@@ -69,6 +74,7 @@ export const cases: CaseStudy[] = [
   },
   {
     slug: "jingisukan",
+    thumbnail: "/images/works/jingisukan.jpg",
     no: "02",
     title: "ジンギスカン店のPRリール",
     industry: "飲食店（ジンギスカン）",
@@ -88,6 +94,7 @@ export const cases: CaseStudy[] = [
   },
   {
     slug: "wagashi",
+    thumbnail: "/images/works/wagashi.jpg",
     no: "03",
     title: "和菓子店のPRリール",
     industry: "和菓子店",

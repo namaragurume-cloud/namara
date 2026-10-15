@@ -6,6 +6,8 @@
  * - 税込・税別の表記は未決定です。決まったら taxNote に入力してください。
  */
 
+import type { BudgetParam } from "@/lib/validation";
+
 export const pricingPolicy = {
   /** 最低受注価格の目安 */
   minimumOrder: "3万円〜",
@@ -19,10 +21,13 @@ export const pricingPolicy = {
   ],
   disclaimer:
     "料金は起用する発信者、投稿媒体、制作内容、実施時期などによって変動します。詳細はお見積もりにてご案内します。",
+  budgetNote: "予算の目安は活用イメージです。提供内容や金額をお約束するものではありません。",
 };
 
 export type Plan = {
   id: string;
+  /** 予算イメージ（提供内容や金額を確約するものではありません） */
+  budget: { label: string; text: string; param: BudgetParam };
   label: string;
   name: string;
   description: string;
@@ -35,15 +40,16 @@ export type Plan = {
 export const plans: Plan[] = [
   {
     id: "single",
+    budget: { label: "3万円〜10万円", text: "インフルエンサー1名からのPR相談", param: "3-10" },
     label: "PLAN A",
     name: "インフルエンサー1名プラン",
     description: "SNS広告を試してみたい方や、新メニューPR、商品PRなどに適したプラン。",
     price: "",
-    priceNote: "ご予算3万円からご相談いただけます",
     suitedFor: ["SNS広告を試してみたい方", "新メニューのPR", "商品のPR"],
   },
   {
     id: "multiple",
+    budget: { label: "10万円〜30万円", text: "複数人の起用やキャンペーン企画の相談", param: "10-30" },
     label: "PLAN B",
     name: "複数人キャスティングプラン",
     description: "複数の発信者を組み合わせ、異なるフォロワー層にPRを届けるプラン。",
@@ -52,6 +58,7 @@ export const plans: Plan[] = [
   },
   {
     id: "custom",
+    budget: { label: "30万円以上", text: "大型PRやイベントを含めた個別設計", param: "30" },
     label: "PLAN C",
     name: "オーダーメイドプラン",
     description: "大型インフルエンサー、複数媒体、PRイベントなどを組み合わせたプラン。",

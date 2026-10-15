@@ -16,7 +16,7 @@ export function CreatorsEmpty({ location }: { location: string }) {
         <p className="mt-4 text-sm text-white/70">まずはお気軽にお問い合わせください。</p>
         <div className="mt-10 flex justify-center">
           <CTAButton href="/contact" size="lg" trackLocation={location}>
-            発信者の提案を依頼する
+            無料でPRプランを相談する
           </CTAButton>
         </div>
       </div>

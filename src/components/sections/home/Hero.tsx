@@ -1,6 +1,7 @@
 import Image from "next/image";
 import { heroMosaic, images } from "@/data/images";
-import { stats } from "@/data/site";
+import { Check } from "lucide-react";
+import { site, stats } from "@/data/site";
 import { CTAButton } from "@/components/ui/CTAButton";
 import { Photo } from "@/components/ui/Photo";
 
@@ -33,42 +34,65 @@ export function Hero() {
       </div>
 
       <div className="container-x relative flex flex-1 items-center pt-[var(--header-h)]">
-        <div className="grid w-full items-end gap-12 py-16 lg:grid-cols-[1fr_auto] lg:py-24">
+        <div className="grid w-full items-end gap-12 pt-10 pb-14 md:py-16 lg:grid-cols-[1fr_auto] lg:py-24">
           <div className="max-w-3xl">
             <p
-              className="anim-fade-up num flex items-center gap-3 text-[11px] font-semibold tracking-[0.3em] text-white/80 md:text-xs"
+              className="anim-fade-up flex items-center gap-3 text-xs font-bold tracking-[0.2em] text-white/85 md:text-[13px]"
               style={{ animationDelay: "100ms" }}
             >
               <span aria-hidden="true" className="h-px w-8 bg-brand" />
-              HOKKAIDO GOURMET INFLUENCER CASTING
+              {site.tagline}
             </p>
             <h1
               id="hero-title"
-              className="anim-fade-up heading-xl mt-7 text-[clamp(2.6rem,1.2rem+6vw,6rem)] leading-[1.18]"
-              style={{ animationDelay: "250ms" }}
+              className="anim-fade-up heading-xl mt-6 text-[clamp(2.3rem,1rem+5.2vw,5rem)] leading-[1.2]"
+              style={{ animationDelay: "200ms" }}
             >
-              北海道の食を
+              <span className="inline-block">北海道のグルメを、</span>
               <br />
-              <span className="text-brand">未来へ紡ぐ</span>
+              <span className="inline-block text-brand">未来へ紡ぐ。</span>
             </h1>
-            <p
-              className="anim-fade-up mt-8 max-w-xl text-[15px] leading-[2.1] text-white/85 md:text-base"
-              style={{ animationDelay: "450ms" }}
-            >
-              北海道のグルメに特化したインフルエンサーキャスティング。
-              <br className="hidden md:block" />
-              グルメメディア「なまらグルメ」が培ってきた発信力とネットワークを活かし、目的やご予算に合わせた最適なSNSプロモーションをご提案します。
-            </p>
-            <div
-              className="anim-fade-up mt-10 flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4"
-              style={{ animationDelay: "600ms" }}
-            >
-              <CTAButton href="/contact" size="lg" trackLocation="hero">
-                無料相談・お見積もり
-              </CTAButton>
-              <CTAButton href="/service" size="lg" variant="outline-light" trackLocation="hero">
-                サービスを見る
-              </CTAButton>
+            <div className="mt-6 flex flex-col md:mt-8">
+              <p
+                className="anim-fade-up max-w-2xl text-[16px] leading-[1.9] font-bold text-white md:text-xl"
+                style={{ animationDelay: "350ms" }}
+              >
+                <span className="inline-block">北海道の飲食店・食品メーカー・企業のための、</span>
+                <span className="inline-block">グルメ特化型</span>
+                <span className="inline-block">インフルエンサーキャスティングサービス。</span>
+              </p>
+              <p
+                className="anim-fade-up order-last mt-6 max-w-2xl text-[14px] leading-[2] text-white/75 sm:order-none sm:mt-5 md:text-[15px]"
+                style={{ animationDelay: "450ms" }}
+              >
+                北海道のグルメメディア「なまらグルメ」が培ってきた発信力とネットワークを活かし、店舗集客・新商品PR・認知拡大をサポート。インフルエンサーの選定から企画・投稿管理・効果報告まで、ワンストップで対応します。
+              </p>
+              <ul
+                className="anim-fade-up mt-6 flex flex-wrap gap-2.5"
+                style={{ animationDelay: "500ms" }}
+                aria-label="ご相談の条件"
+              >
+                {["ご予算3万円〜相談可能", "無料お見積もり"].map((t) => (
+                  <li
+                    key={t}
+                    className="inline-flex items-center gap-1.5 rounded-full border border-white/25 bg-white/10 px-4 py-2 text-[13px] font-bold backdrop-blur-sm"
+                  >
+                    <Check size={15} aria-hidden="true" className="text-brand" />
+                    {t}
+                  </li>
+                ))}
+              </ul>
+              <div
+                className="anim-fade-up mt-7 flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4"
+                style={{ animationDelay: "600ms" }}
+              >
+                <CTAButton href="/contact" size="lg" trackLocation="hero">
+                  {site.cta}
+                </CTAButton>
+                <CTAButton href="/works" size="lg" variant="outline-light" trackLocation="hero">
+                  PR実績を見る
+                </CTAButton>
+              </div>
             </div>
           </div>
 

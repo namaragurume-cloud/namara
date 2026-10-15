@@ -60,7 +60,7 @@ export function Footer() {
             <p className="mt-1 text-sm text-white/60">ご予算3万円からご相談いただけます。</p>
           </div>
           <CTAButton href="/contact" trackLocation="footer">
-            無料相談・お見積もり
+            無料でPRプランを相談する
           </CTAButton>
         </div>
 

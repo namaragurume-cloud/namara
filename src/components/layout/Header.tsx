@@ -122,7 +122,7 @@ export function Header() {
               onClick={() => track("cta_click", { location: "header", href: "/contact" })}
               className="group hidden items-center gap-2 rounded-full bg-brand px-6 py-3 text-[13.5px] font-bold tracking-wider whitespace-nowrap text-white transition-all duration-300 hover:bg-brand-dark sm:inline-flex"
             >
-              無料相談・お見積もり
+              無料でPRプランを相談する
             </Link>
             <Link
               href="/contact"
@@ -181,7 +181,7 @@ export function Header() {
               }}
               className="mt-5 flex min-h-14 items-center justify-center rounded-full bg-brand font-bold tracking-wider"
             >
-              無料相談・お見積もり
+              無料でPRプランを相談する
             </Link>
             <a
               href={site.instagram.dmUrl}

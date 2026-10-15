@@ -11,11 +11,11 @@ export function CaseStudyCard({ item }: { item: CaseStudy }) {
       href={`/works/${item.slug}`}
       className="group flex h-full flex-col overflow-hidden rounded-[24px] bg-white text-ink transition-all duration-500 ease-out-expo hover:-translate-y-1.5 hover:shadow-[0_30px_60px_-30px_rgba(0,0,0,0.45)]"
     >
-      <div className="relative aspect-[16/10] overflow-hidden bg-[radial-gradient(120%_100%_at_20%_0%,#5a2a1c_0%,#1a1311_100%)]">
-        {item.image && (
+      <div className={`relative ${item.thumbnail ? "aspect-[4/5]" : "aspect-[16/10]"} overflow-hidden bg-[radial-gradient(120%_100%_at_20%_0%,#5a2a1c_0%,#1a1311_100%)]`}>
+        {(item.thumbnail ?? item.image) && (
           <Image
-            src={item.image}
-            alt=""
+            src={(item.thumbnail ?? item.image)!}
+            alt={`${item.title}の投稿画像`}
             fill
             sizes="(min-width: 1024px) 30vw, 80vw"
             className="object-cover transition-transform duration-700 ease-out-expo group-hover:scale-105"

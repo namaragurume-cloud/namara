@@ -10,9 +10,9 @@ import { FAQAccordion } from "@/components/ui/FAQAccordion";
 import { faq } from "@/data/faq";
 
 export const metadata = pageMetadata({
-  title: "料金",
+  title: "料金・プラン｜ご予算3万円から相談可能",
   description:
-    "北海道のグルメインフルエンサーPRの料金。ご予算3万円からご相談いただけます。インフルエンサー1名プラン、複数人キャスティングプラン、オーダーメイドプランをご用意しています。",
+    "北海道のグルメインフルエンサーPRの料金・プラン。ご予算3万円からご相談いただけます。インフルエンサー1名からのPR、複数人の起用、イベントを含む個別設計まで、ご予算に合わせてご提案します。",
   path: "/pricing",
 });
 
@@ -58,7 +58,11 @@ export default function PricingPage() {
 
       <section aria-label="料金プラン" className="section">
         <div className="container-x">
-          <SectionHeading en="PLAN" title="料金プラン" />
+          <SectionHeading
+            en="PLAN"
+            title="ご予算別のプラン"
+            lead="ご予算の目安ごとに、よくあるご相談内容をまとめました。気になるプランの「この予算でPRを相談する」から、お問い合わせフォームにご予算を引き継いでご相談いただけます。"
+          />
           <ul className="mt-12 grid gap-5 lg:grid-cols-3 md:mt-16">
             {plans.map((p, i) => (
               <ScrollReveal as="li" key={p.id} delay={i * 0.1}>
@@ -77,6 +81,7 @@ export default function PricingPage() {
               ご注意事項
             </h2>
             <ul className="mt-5 list-disc space-y-2 pl-5 text-sm leading-[1.95] text-muted">
+              <li>{pricingPolicy.budgetNote}</li>
               <li>{pricingPolicy.disclaimer}</li>
               {pricingPolicy.taxNote && <li>{pricingPolicy.taxNote}</li>}
               <li>料金に含まれる作業範囲は、ご契約前に明示いたします。</li>
@@ -87,7 +92,7 @@ export default function PricingPage() {
           <div className="mt-16">
             <h2 className="heading-md">料金に関するよくある質問</h2>
             <div className="mt-6">
-              <FAQAccordion items={faq.filter((f) => /複数人|二次利用|初めて/.test(f.q))} />
+              <FAQAccordion items={faq.filter((f) => /予算3万円|複数人|二次利用/.test(f.q))} />
             </div>
           </div>
 
@@ -95,7 +100,7 @@ export default function PricingPage() {
             <p className="text-xl font-bold md:text-2xl">ご予算に合わせて、最適な組み合わせをご提案します。</p>
             <p className="text-sm text-muted">「この予算で何ができる？」というご相談も歓迎です。</p>
             <CTAButton href="/contact" size="lg" trackLocation="pricing" className="mt-4">
-              予算に合わせたプランを相談する
+              無料でPRプランを相談する
             </CTAButton>
           </div>
         </div>

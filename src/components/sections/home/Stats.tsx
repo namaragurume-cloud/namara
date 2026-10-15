@@ -38,10 +38,10 @@ export function Stats() {
               </dt>
               <dd className="flex items-baseline font-extrabold text-ink">
                 {s.prefix && <span className="mr-1 text-2xl md:text-3xl">{s.prefix}</span>}
-                <span className="num text-[clamp(3.5rem,2.5rem+3.5vw,5.5rem)] leading-none text-brand">
+                <span className="num text-[clamp(3.25rem,2rem+3vw,4.75rem)] leading-none text-brand">
                   <CountUp value={s.value} decimals={s.decimals} />
                 </span>
-                <span className="ml-1 text-2xl md:text-3xl">{s.suffix}</span>
+                <span className="ml-1 text-2xl whitespace-nowrap md:text-3xl">{s.suffix}</span>
               </dd>
             </ScrollReveal>
           ))}

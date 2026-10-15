@@ -5,7 +5,7 @@ import { FAQAccordion } from "@/components/ui/FAQAccordion";
 import { SectionHeading } from "@/components/ui/SectionHeading";
 
 export function FaqSection() {
-  const items = faq.filter((f) => f.featured).slice(0, 5);
+  const items = faq.filter((f) => f.featured).slice(0, 6);
   return (
     <section aria-label="よくある質問" className="section bg-mist">
       <div className="container-x grid gap-12 lg:grid-cols-[minmax(0,4fr)_minmax(0,8fr)] lg:gap-20">

@@ -1,3 +1,5 @@
+import { siteUrl } from "@/lib/utils";
+
 /**
  * サイト全体の基本情報。
  * 名称・連絡先・数値などはここを書き換えると全ページに反映されます。
@@ -11,11 +13,15 @@ export const site = {
   /** 運営メディア（実績・フォロワー数などはこのメディアのもの） */
   media: "なまらグルメ",
   /** <title> の末尾などに使う名称 */
-  title: "MIRATSUMU（ミラツム）｜北海道のグルメインフルエンサーキャスティング",
-  tagline: "北海道の食を未来へ紡ぐ",
+  title: "MIRATSUMU",
+  /** トップページの <title> */
+  homeTitle: "MIRATSUMU｜北海道のインフルエンサーPR・キャスティング",
+  tagline: "北海道の食を未来へ紡ぐ。",
   description:
-    "北海道発のクリエイターキャスティングサービス「MIRATSUMU（ミラツム）」。グルメメディア「なまらグルメ」が培ってきた発信力とネットワークを活かし、飲食店・食品メーカー・ホテルのSNSプロモーションを企画から効果報告までワンストップでご提案します。",
-  url: (process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000").replace(/\/$/, ""),
+    "北海道のグルメPRならMIRATSUMU。飲食店の集客、新商品PR、認知拡大をサポート。北海道のグルメインフルエンサーを活用し、企画から投稿管理までワンストップで対応。ご予算3万円から相談可能。",
+  /** 問い合わせボタンの共通文言 */
+  cta: "無料でPRプランを相談する",
+  url: siteUrl(),
   locale: "ja_JP",
 
   instagram: {

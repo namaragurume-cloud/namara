@@ -38,11 +38,12 @@ export default async function WorkDetailPage({ params }: Props) {
   const creator = getCreatorById(item.creatorId);
 
   const sections = [
-    { title: "業種・案件概要", body: [item.industry, item.summary] },
-    { title: "PR実施前の課題", body: [item.challenge] },
-    { title: "実施した施策", body: item.actions ?? [] },
-    { title: "投稿媒体・発信者起用内容", body: [item.media] },
-    { title: "成果", body: [item.result] },
+    { title: "PR対象の商品・サービス", body: [item.product ?? item.industry, item.summary] },
+    { title: "PRの目的", body: [item.challenge] },
+    { title: "実施した内容", body: item.actions ?? [] },
+    { title: "起用したインフルエンサー", body: [creator ? (creator.name ?? `@${creator.account}`) : undefined] },
+    { title: "投稿媒体", body: [item.media] },
+    { title: "実績", body: [item.result] },
     { title: "実施後の考察", body: [item.insight] },
   ]
     .map((s) => ({ ...s, body: s.body.filter((b): b is string => Boolean(b)) }))
@@ -109,6 +110,11 @@ export default async function WorkDetailPage({ params }: Props) {
                 測定単位・比較期間：{item.metric.period}
               </p>
             )}
+            {item.metric.label.includes("再生") && (
+              <p className="mt-2 text-xs text-white/60">
+                ※再生回数はPR投稿が視聴された回数で、来店数や売上を示すものではありません。
+              </p>
+            )}
           </ScrollReveal>
 
           <div className="mt-16 space-y-12">
@@ -146,7 +152,7 @@ export default async function WorkDetailPage({ params }: Props) {
             <p className="text-xl font-bold md:text-2xl">同じような課題をお持ちの方へ</p>
             <p className="text-sm text-muted">目的やご予算をお伺いし、最適なPRをご提案します。</p>
             <CTAButton href="/contact" size="lg" trackLocation="work_detail" className="mt-4">
-              無料相談・お見積もり
+              無料でPRプランを相談する
             </CTAButton>
           </div>
         </div>

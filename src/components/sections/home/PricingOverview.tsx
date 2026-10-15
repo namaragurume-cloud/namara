@@ -39,9 +39,12 @@ export function PricingOverview() {
         </ul>
 
         <div className="mt-10 flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
-          <p className="max-w-2xl text-xs leading-relaxed text-muted">※{pricingPolicy.disclaimer}</p>
+          <p className="max-w-2xl text-xs leading-relaxed text-muted">
+            ※{pricingPolicy.budgetNote}
+            <br />※{pricingPolicy.disclaimer}
+          </p>
           <CTAButton href="/pricing" variant="outline" trackLocation="home_pricing" className="shrink-0">
-            料金を見る
+            料金の詳細を見る
           </CTAButton>
         </div>
       </div>

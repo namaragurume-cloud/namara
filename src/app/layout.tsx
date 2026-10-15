@@ -3,6 +3,7 @@ import { Inter, Noto_Sans_JP } from "next/font/google";
 import { Analytics } from "@/components/layout/Analytics";
 import { Footer } from "@/components/layout/Footer";
 import { Header } from "@/components/layout/Header";
+import { StickyCTA } from "@/components/layout/StickyCTA";
 import { MotionProvider } from "@/components/animation/MotionProvider";
 import { JsonLd } from "@/components/ui/JsonLd";
 import { site } from "@/data/site";
@@ -25,25 +26,25 @@ const inter = Inter({
 export const metadata: Metadata = {
   metadataBase: new URL(site.url),
   title: {
-    default: `${site.title}｜北海道・札幌のインフルエンサーPR`,
+    default: site.homeTitle,
     template: `%s｜${site.title}`,
   },
   description: site.description,
   applicationName: site.brand,
   keywords: [
-    "北海道 インフルエンサー キャスティング",
-    "札幌 グルメ インフルエンサー",
-    "北海道 飲食店 PR",
-    "札幌 インフルエンサーマーケティング",
-    "北海道 SNS集客",
-    "グルメ インフルエンサー 依頼",
+    "北海道 インフルエンサーPR",
+    "札幌 インフルエンサー",
+    "北海道 飲食店 集客",
+    "札幌 グルメインフルエンサー",
+    "北海道 SNSマーケティング",
+    "飲食店 インフルエンサー キャスティング",
   ],
   alternates: { canonical: "/" },
   openGraph: {
     type: "website",
     locale: site.locale,
     siteName: site.title,
-    title: site.title,
+    title: site.homeTitle,
     description: site.description,
     url: "/",
   },
@@ -65,6 +66,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <Header />
           <main id="main">{children}</main>
           <Footer />
+          <StickyCTA />
         </MotionProvider>
         <JsonLd
           data={{

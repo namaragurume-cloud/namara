@@ -1,9 +1,9 @@
 import Image from "next/image";
-import Link from "next/link";
 import { ArrowRight, ArrowUpRight, MapPin, UserRound } from "lucide-react";
 import { formatFollowers, type CreatorView } from "@/data/creators";
 import { showFollowerCounts } from "@/data/site";
 import { InstagramIcon } from "./InstagramIcon";
+import { TrackedLink } from "./TrackedLink";
 
 export function CreatorCard({ creator }: { creator: CreatorView }) {
   const label = creator.name ?? creator.account;
@@ -89,13 +89,15 @@ export function CreatorCard({ creator }: { creator: CreatorView }) {
           </div>
         )}
 
-        <Link
+        <TrackedLink
           href={contactHref}
+          event="cta_click"
+          params={{ location: "creator_card", creator: creator.id }}
           className="group/btn mt-auto flex min-h-12 items-center justify-between gap-2 border-t border-line pt-5 text-sm font-bold transition-colors hover:text-brand"
         >
           この発信者を含めて相談する
           <ArrowRight size={16} aria-hidden="true" className="transition-transform group-hover/btn:translate-x-1" />
-        </Link>
+        </TrackedLink>
         {showFollowerCounts && creator.followers !== undefined && (
           <p className="mt-2 text-[11px] text-muted">
             {creator.followersLive

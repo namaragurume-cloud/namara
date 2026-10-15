@@ -1,8 +1,9 @@
 import { Check } from "lucide-react";
 import type { Plan } from "@/data/pricing";
 import { cn } from "@/lib/utils";
+import { CTAButton } from "./CTAButton";
 
-export function PricingCard({ plan, featured }: { plan: Plan; featured?: boolean }) {
+export function PricingCard({ plan, featured, showCta = true }: { plan: Plan; featured?: boolean; showCta?: boolean }) {
   return (
     <article
       className={cn(
@@ -21,8 +22,11 @@ export function PricingCard({ plan, featured }: { plan: Plan; featured?: boolean
       </p>
 
       <div className={cn("my-7 border-y py-6", featured ? "border-white/15" : "border-line")}>
-        <p className="text-xs font-semibold opacity-60">料金</p>
-        <p className="mt-1 text-2xl font-extrabold">{plan.price || "個別見積もり"}</p>
+        <p className="text-xs font-semibold opacity-60">ご予算の目安</p>
+        <p className="num mt-1 text-2xl font-extrabold">{plan.budget.label}</p>
+        <p className={cn("mt-1 text-xs", featured ? "text-white/70" : "text-muted")}>{plan.budget.text}</p>
+        <p className="mt-5 text-xs font-semibold opacity-60">料金</p>
+        <p className="mt-1 text-base font-bold">{plan.price || "個別見積もり"}</p>
         {plan.priceNote && (
           <p className={cn("mt-2 text-xs", featured ? "text-white/60" : "text-muted")}>{plan.priceNote}</p>
         )}
@@ -37,6 +41,19 @@ export function PricingCard({ plan, featured }: { plan: Plan; featured?: boolean
           </li>
         ))}
       </ul>
+
+      {showCta && (
+        <div className="mt-auto pt-8">
+          <CTAButton
+            href={`/contact?budget=${plan.budget.param}`}
+            variant={featured ? "primary" : "dark"}
+            fullWidth
+            trackLocation={`pricing_${plan.id}`}
+          >
+            この予算でPRを相談する
+          </CTAButton>
+        </div>
+      )}
     </article>
   );
 }

@@ -1,5 +1,7 @@
 import { getVisibleCases } from "@/data/cases";
+import { site } from "@/data/site";
 import { pageMetadata } from "@/lib/metadata";
+import { CTAButton } from "@/components/ui/CTAButton";
 import { ScrollReveal } from "@/components/animation/ScrollReveal";
 import { FinalCTA } from "@/components/sections/FinalCTA";
 import { CaseStudyCard } from "@/components/ui/CaseStudyCard";
@@ -7,8 +9,9 @@ import { PageHero } from "@/components/ui/PageHero";
 import { WorksEmpty } from "@/components/ui/WorksEmpty";
 
 export const metadata = pageMetadata({
-  title: "発信者の実績",
-  description: "MIRATSUMUのネットワークに参加する北海道のグルメインフルエンサーが手がけたPR投稿の実績をご紹介します。",
+  title: "発信者の実績｜北海道グルメのPR事例",
+  description:
+    "MIRATSUMUのネットワークに参加する北海道・札幌のグルメインフルエンサーが手がけた、飲食店や食品のPR投稿の実績をご紹介します。",
   path: "/works",
 });
 
@@ -42,8 +45,15 @@ export default function WorksPage() {
                 ))}
               </ul>
               <p className="mt-10 text-xs leading-relaxed text-muted">
-                ※成果はPR以外の要因を含む場合があります。各事例の集計期間・条件は詳細ページをご確認ください。
+                ※再生回数はPR投稿が視聴された回数で、来店数や売上を示すものではありません。各事例の集計条件は詳細ページをご確認ください。
               </p>
+              <div className="mt-12 flex flex-col items-center gap-4 rounded-[28px] bg-mist p-8 text-center md:p-12">
+                <p className="text-lg font-bold md:text-xl">同じようなPRをご検討中の方へ</p>
+                <p className="text-sm text-muted">商品やお店の魅力に合う発信者と、投稿の企画をご提案します。</p>
+                <CTAButton href="/contact" size="lg" trackLocation="works_list" className="mt-2">
+                  {site.cta}
+                </CTAButton>
+              </div>
             </>
           ) : (
             <ScrollReveal>

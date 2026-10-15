@@ -8,7 +8,7 @@ import { PageHero } from "@/components/ui/PageHero";
 export const metadata = pageMetadata({
   title: "よくある質問",
   description:
-    "MIRATSUMU（ミラツム）のインフルエンサーキャスティングに関するよくある質問。初めての依頼、インフルエンサーの指名、複数人の起用、投稿前の確認、二次利用などについてお答えします。",
+    "MIRATSUMUのインフルエンサーPRに関するよくある質問。予算3万円での依頼、インフルエンサーの指定、投稿までの期間、道外企業や飲食店以外の商品PR、実施後のレポートなどにお答えします。",
   path: "/faq",
 });
 
