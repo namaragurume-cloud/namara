@@ -163,6 +163,17 @@ export const creators: Creator[] = [
     areas: [],
     published: true,
   },
+  {
+    id: "rui",
+    account: "rui.hokkaido",
+    name: "るい【ぼっち食べ歩き】",
+    image: "/images/creators/rui.jpg",
+    platform: "Instagram",
+    profileUrl: "https://www.instagram.com/rui.hokkaido/",
+    genres: [],
+    areas: [],
+    published: true,
+  },
 ];
 
 export function getCreatorById(id: string | undefined): Creator | undefined {
