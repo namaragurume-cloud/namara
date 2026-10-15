@@ -1,14 +1,12 @@
 import Image from "next/image";
-import { heroMosaic, images } from "@/data/images";
+import { heroMosaic } from "@/data/images";
 import { Check } from "lucide-react";
-import { site, stats } from "@/data/site";
+import { site } from "@/data/site";
 import { CTAButton } from "@/components/ui/CTAButton";
-import { Photo } from "@/components/ui/Photo";
 
 const keywords = ["SAPPORO", "RAMEN", "SEAFOOD", "SWEETS", "JINGISUKAN", "IZAKAYA", "CAFE", "HOKKAIDO"];
 
 export function Hero() {
-  const follower = stats.items[0];
   return (
     <section aria-labelledby="hero-title" className="relative isolate flex min-h-[100svh] flex-col overflow-hidden bg-ink text-white">
       {/* 背景：現場で撮影した活動写真を敷き詰めて暗く重ねる */}
@@ -34,7 +32,7 @@ export function Hero() {
       </div>
 
       <div className="container-x relative flex flex-1 items-center pt-[var(--header-h)]">
-        <div className="grid w-full items-end gap-12 pt-10 pb-14 md:py-16 lg:grid-cols-[1fr_auto] lg:py-24">
+        <div className="w-full pt-10 pb-14 md:py-16 lg:py-24">
           <div className="max-w-3xl">
             <p
               className="anim-fade-up flex items-center gap-3 text-xs font-bold tracking-[0.2em] text-white/85 md:text-[13px]"
@@ -96,25 +94,6 @@ export function Hero() {
             </div>
           </div>
 
-          {/* インフルエンサー撮影風景 */}
-          <div
-            className="anim-fade-up relative hidden w-[300px] lg:block xl:w-[340px]"
-            style={{ animationDelay: "800ms" }}
-          >
-            <Photo
-              image={images.heroShooting}
-              tone="warm"
-              sizes="340px"
-              className="aspect-[3/4] rounded-[28px] shadow-2xl ring-1 ring-white/15"
-            />
-            <div className="absolute -bottom-6 -left-10 rounded-2xl bg-white px-5 py-4 text-ink shadow-xl">
-              <p className="num text-[10px] font-semibold tracking-[0.2em] text-brand">SNS TOTAL</p>
-              <p className="mt-1 text-sm font-bold">
-                総フォロワー <span className="num text-xl">{follower.value}</span>
-                {follower.suffix}
-              </p>
-            </div>
-          </div>
         </div>
       </div>
 
