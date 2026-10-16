@@ -120,6 +120,17 @@ export const creators: Creator[] = [
     published: true,
   },
   {
+    id: "mokkun",
+    account: "mokkun_sapporo",
+    name: "もっくん｜札幌グルメ＆カフェ",
+    image: "/images/creators/mokkun.jpg",
+    platform: "Instagram",
+    profileUrl: "https://www.instagram.com/mokkun_sapporo/",
+    genres: [],
+    areas: [],
+    published: true,
+  },
+  {
     id: "oniyan",
     account: "oniyan_grm",
     name: "おにやん｜北海道グルメ・カフェ",
