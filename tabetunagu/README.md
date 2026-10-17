@@ -217,6 +217,8 @@ DATABASE_URL=... npm run db:migrate -- --bootstrap
 
 ## 8. Supabase 設定
 
+> **いちばん簡単な方法（Node.js 不要）**：Supabase の **SQL Editor** に [`supabase/setup/01_schema.sql`](./supabase/setup/01_schema.sql)（テーブル）→ [`supabase/setup/02_demo_data.sql`](./supabase/setup/02_demo_data.sql)（デモデータ・プレビュー用）の順に中身を貼り付けて Run するだけで準備できます。本番の DB には 01 だけを使ってください。01 は `supabase/migrations/` から作ったもので、適用済みとして記録されるため、あとから `npm run db:migrate` を実行しても二重には適用されません。
+
 1. プロジェクトを作成（リージョン：Tokyo `ap-northeast-1`）
 2. **Database → Connection string → Transaction pooler（:6543）** を `DATABASE_URL` に設定し、`npm run db:migrate`
 3. **Storage** でバケット `product-images` を作成（Public・画像のみ・5MB 上限）。`NEXT_PUBLIC_SUPABASE_URL` と `SUPABASE_SERVICE_ROLE_KEY` を設定
