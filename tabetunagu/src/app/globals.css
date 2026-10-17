@@ -1,0 +1,155 @@
+@import "tailwindcss";
+
+/*
+ * TABETUNAGU デザイントークン
+ * 白ベース + インク（黒） + 深いグリーン。温かいベージュを差し色に。
+ * 典型的な SDGs カラーや派手な赤い値引き表示は使わない。
+ */
+:root {
+  --paper: #ffffff;
+  --canvas: #faf8f4;
+  --sand: #f2ede4;
+  --sand-2: #e9e1d4;
+  --ink: #16181a;
+  --ink-2: #3c4043;
+  --muted: #6e7275;
+  --line: #e8e4dd;
+  --forest: #1e4a37;
+  --forest-2: #153628;
+  --leaf: #3e9a63;
+  --leaf-soft: #e8f3eb;
+  --clay: #a4532f;
+  --clay-soft: #f8ece6;
+}
+
+@theme inline {
+  --color-paper: var(--paper);
+  --color-canvas: var(--canvas);
+  --color-sand: var(--sand);
+  --color-sand-2: var(--sand-2);
+  --color-ink: var(--ink);
+  --color-ink-2: var(--ink-2);
+  --color-muted: var(--muted);
+  --color-line: var(--line);
+  --color-forest: var(--forest);
+  --color-forest-2: var(--forest-2);
+  --color-leaf: var(--leaf);
+  --color-leaf-soft: var(--leaf-soft);
+  --color-clay: var(--clay);
+  --color-clay-soft: var(--clay-soft);
+
+  --font-sans: var(--font-inter), "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Noto Sans JP", "Yu Gothic UI", Meiryo, sans-serif;
+  --font-en: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  body {
+    background: var(--paper);
+    color: var(--ink);
+    font-feature-settings: "palt" 1;
+    letter-spacing: 0.02em;
+    line-height: 1.7;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  ::selection {
+    background: var(--forest);
+    color: #fff;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--forest);
+    outline-offset: 2px;
+    border-radius: 6px;
+  }
+
+  input,
+  select,
+  textarea,
+  button {
+    font: inherit;
+    letter-spacing: inherit;
+  }
+}
+
+@layer components {
+  .tnum {
+    font-family: var(--font-en);
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 0;
+  }
+
+  .field {
+    @apply block w-full rounded-xl border border-line bg-paper px-3.5 py-3 text-[15px] text-ink transition-colors outline-none placeholder:text-muted/70 focus:border-forest focus:ring-2 focus:ring-forest/15 disabled:bg-canvas disabled:text-muted;
+  }
+
+  .label {
+    @apply mb-1.5 block text-[13px] font-semibold text-ink-2;
+  }
+
+  .card {
+    @apply rounded-2xl border border-line bg-paper;
+  }
+
+  .no-scrollbar {
+    scrollbar-width: none;
+  }
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+/* 「食べつなぎ完了！」のバトン演出（動きを減らす設定では止める） */
+@keyframes baton-pass {
+  0% {
+    transform: translateX(-28px) scale(0.9);
+    opacity: 0;
+  }
+  60% {
+    transform: translateX(4px) scale(1.04);
+    opacity: 1;
+  }
+  100% {
+    transform: translateX(0) scale(1);
+    opacity: 1;
+  }
+}
+@keyframes ring-grow {
+  0% {
+    transform: scale(0.6);
+    opacity: 0;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+.anim-baton {
+  animation: baton-pass 700ms var(--ease-out-expo) both;
+}
+.anim-ring {
+  animation: ring-grow 600ms var(--ease-out-expo) both;
+}
+@media (prefers-reduced-motion: reduce) {
+  .anim-baton,
+  .anim-ring {
+    animation: none;
+  }
+}
+
+@media print {
+  .no-print {
+    display: none !important;
+  }
+  body {
+    background: #fff;
+  }
+}

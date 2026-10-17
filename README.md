@@ -6,6 +6,8 @@
 - Tailwind CSS v4 / Motion / Lucide Icons / Zod
 - Vercel へのデプロイを想定（CMS なし。内容は `src/data/` のファイルで管理）
 
+> **`tabetunagu/`** には食品ロス削減サービス「TABETUNAGU（食べつなぐ）」の MVP（別の Next.js アプリ）があります。セットアップ・デプロイは [`tabetunagu/README.md`](./tabetunagu/README.md) を参照してください。このサイトの lint / typecheck / build の対象外です。
+
 > 以前の静的 HTML 版（`index.html` / `privacy.html` / `css/` / `js/`）はこの Next.js 版に置き換えました。過去の内容は Git の履歴から参照できます。
 
 ---

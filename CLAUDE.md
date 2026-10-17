@@ -8,3 +8,4 @@
 - MIRATSUMU itself has no track record yet: present results as the creators' (network) results, not the organization's. Top stats (115万人超 creators' total SNS followers, 1000店舗超 stores the creators have promoted, 売上200%UP = 200万円→600万円 one restaurant case) were provided by the owner. "約50人" is creators in the network (not registered members).
 - Forms: `src/app/api/{contact,partner}/route.ts` → `src/lib/form-handler.ts` → `src/lib/mail.ts`. Never show success unless the server actually sent the mail.
 - Before committing: `npm run lint && npm run typecheck && npm run build`.
+- `tabetunagu/` is a separate Next.js app (TABETUNAGU, food-loss MVP) with its own package.json, tests and README; it is excluded from the root lint/typecheck/build. Run its checks inside that directory: `npm run lint && npm run typecheck && npm test && npm run build`.
