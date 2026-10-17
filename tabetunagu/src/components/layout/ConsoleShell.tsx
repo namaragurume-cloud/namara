@@ -22,7 +22,7 @@ export function ConsoleShell({
         <div className="mx-auto flex h-14 max-w-7xl items-center justify-between gap-3 px-4">
           <div className="flex min-w-0 items-center gap-3">
             <Link href="/" aria-label="ユーザー画面へ" className="shrink-0">
-              <LogoMark className="text-forest sm:hidden" />
+              <LogoMark className="sm:hidden" />
               <Logo className="hidden sm:inline-flex" />
             </Link>
             <span className="hidden h-5 w-px bg-line sm:block" />

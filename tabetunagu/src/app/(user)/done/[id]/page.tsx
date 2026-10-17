@@ -26,7 +26,7 @@ export default async function DonePage({ params }: { params: Promise<{ id: strin
     <div className="space-y-6 pt-4 text-center">
       <div className="relative mx-auto flex h-28 w-28 items-center justify-center">
         <span className="anim-ring absolute inset-0 rounded-full bg-leaf-soft" aria-hidden />
-        <LogoMark className="anim-baton relative h-14 w-14 text-forest" />
+        <LogoMark className="anim-baton relative h-20 w-20" />
       </div>
       <div>
         <h1 className="text-[30px] font-bold tracking-wide">{brand.completed}！</h1>

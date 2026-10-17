@@ -25,7 +25,7 @@ export default async function StoreQrPage() {
 
       <div className="mx-auto max-w-[420px] rounded-[28px] border border-line bg-paper px-8 py-9 text-center print:max-w-none print:border-0">
         <div className="flex items-center justify-center gap-2 text-forest">
-          <LogoMark className="h-7 w-7" />
+          <LogoMark className="h-9 w-9" />
           <span className="font-en text-[17px] font-semibold tracking-[0.2em] text-ink">TABETUNAGU</span>
         </div>
         <p className="mt-5 text-[20px] font-bold leading-snug">
