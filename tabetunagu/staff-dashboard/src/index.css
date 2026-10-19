@@ -1,0 +1,61 @@
+@import "tailwindcss";
+
+/*
+ * 店舗モニターのトークン。厨房でも読めるよう、白地に黒の強いコントラスト。
+ * 受取待ちは黄色〜オレンジ、受取完了はグレー。ブランドの深いグリーンは「完了・良い知らせ」に使う。
+ */
+@theme {
+  --color-brand: #1e4a37;
+  --color-brand-2: #153628;
+  --color-leaf: #3e9a63;
+  --color-leaf-soft: #e3f3e8;
+  --color-wait: #ffe7a3;
+  --color-wait-edge: #f59e0b;
+  --color-wait-ink: #6b3d00;
+  --color-done: #eeeeec;
+  --color-done-ink: #9a9a96;
+  --color-alert: #c2410c;
+  --font-sans: "Noto Sans JP", "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Yu Gothic UI", Meiryo, sans-serif;
+  --font-num: "Inter", ui-sans-serif, system-ui, sans-serif;
+
+  --animate-flash: flash 1.6s ease-out both;
+  --animate-bump: bump 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+  --animate-drop: drop 0.45s cubic-bezier(0.16, 1, 0.3, 1) both;
+  --animate-fill: fill var(--hold-ms, 700ms) linear forwards;
+
+  @keyframes flash {
+    0% { background-color: var(--color-leaf); color: #fff; transform: scale(1.02); }
+    35% { background-color: var(--color-leaf-soft); color: var(--color-brand); transform: scale(1); }
+    100% { background-color: var(--color-done); }
+  }
+  @keyframes bump {
+    0% { transform: scale(1); }
+    40% { transform: scale(1.18); color: var(--color-leaf); }
+    100% { transform: scale(1); }
+  }
+  @keyframes drop {
+    from { transform: translate(-50%, -120%); opacity: 0; }
+    to { transform: translate(-50%, 0); opacity: 1; }
+  }
+  @keyframes fill {
+    from { transform: scaleX(0); }
+    to { transform: scaleX(1); }
+  }
+}
+
+@layer base {
+  html, body, #root { height: 100%; }
+  body {
+    background: #fff;
+    color: #111;
+    font-feature-settings: "palt" 1;
+    -webkit-font-smoothing: antialiased;
+    -webkit-tap-highlight-color: transparent;
+    overscroll-behavior: none;
+  }
+  .num { font-family: var(--font-num); font-variant-numeric: tabular-nums; letter-spacing: -0.02em; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 1ms !important; animation-iteration-count: 1 !important; }
+}
