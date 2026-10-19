@@ -49,7 +49,7 @@ export function CTAButton({
   };
 
   const classes = cn(
-    "group relative inline-flex items-center justify-center gap-3 rounded-full font-bold tracking-wider transition-all duration-300 ease-out-expo",
+    "group relative inline-flex items-center justify-center gap-3 rounded-full font-bold tracking-wider whitespace-nowrap transition-all duration-300 ease-out-expo",
     "active:scale-[0.98]",
     size === "lg" ? "min-h-[60px] px-8 text-[15px] md:px-10 md:text-base" : "min-h-[52px] px-7 text-sm",
     variants[variant],

@@ -2,6 +2,7 @@ import Image from "next/image";
 import { Check, Sparkles } from "lucide-react";
 import { site } from "@/data/site";
 import { CTAButton } from "@/components/ui/CTAButton";
+import { HeroFlowCompact, HeroVisual } from "./HeroVisual";
 
 /** 下部で流れる活動写真（現場で撮影した写真） */
 const strip = [
@@ -42,7 +43,8 @@ export function Hero() {
       <Threads />
 
       <div className="container-x relative pt-[calc(var(--header-h)+40px)] pb-12 md:pt-[calc(var(--header-h)+80px)] md:pb-16">
-        <div className="max-w-4xl">
+        <div className="flex items-center justify-between gap-10">
+        <div className="max-w-4xl xl:max-w-[640px]">
           <p
             className="anim-fade-up glass inline-flex items-center gap-2 rounded-full px-4 py-2 text-xs font-bold tracking-[0.12em] text-ink/80 md:text-[13px]"
             style={{ animationDelay: "100ms" }}
@@ -52,7 +54,7 @@ export function Hero() {
           </p>
           <h1
             id="hero-title"
-            className="anim-fade-up heading-xl mt-6 text-[clamp(2.3rem,1rem+5.2vw,5.25rem)] leading-[1.18] text-ink"
+            className="anim-fade-up heading-xl mt-6 text-[clamp(2.3rem,1rem+5.2vw,4.5rem)] leading-[1.18] text-ink xl:text-[3.9rem]"
             style={{ animationDelay: "200ms" }}
           >
             <span className="inline-block">北海道のグルメを、</span>
@@ -60,14 +62,17 @@ export function Hero() {
             <span className="text-gradient-brand inline-block pb-1">未来へ紡ぐ。</span>
           </h1>
           <div className="mt-6 flex flex-col md:mt-8">
-            <p
-              className="anim-fade-up max-w-2xl text-[16px] leading-[1.9] font-bold text-ink md:text-xl"
-              style={{ animationDelay: "350ms" }}
-            >
-              <span className="inline-block">北海道の飲食店・食品メーカー・企業のための、</span>
-              <span className="inline-block">グルメ特化型</span>
-              <span className="inline-block">インフルエンサーキャスティングサービス。</span>
-            </p>
+            <div className="anim-fade-up" style={{ animationDelay: "350ms" }}>
+              <p className="text-[14px] font-bold text-ink/70 md:text-base">北海道の飲食店・食品メーカー・企業のための、</p>
+              <p className="mt-2 text-[19px] leading-[1.6] font-extrabold text-ink md:text-[26px]">
+                <span className="bg-[linear-gradient(transparent_62%,rgb(232_116_59/0.28)_62%)] px-0.5">
+                  <span className="inline-block">グルメ特化型</span>
+                  <span className="inline-block">インフルエンサーキャスティング</span>
+                </span>
+                <span className="inline-block">サービス。</span>
+              </p>
+              <HeroFlowCompact />
+            </div>
             <p
               className="anim-fade-up order-last mt-6 max-w-2xl text-[14px] leading-[2] text-ink/65 sm:order-none sm:mt-5 md:text-[15px]"
               style={{ animationDelay: "450ms" }}
@@ -94,6 +99,8 @@ export function Hero() {
               </CTAButton>
             </div>
           </div>
+        </div>
+        <HeroVisual />
         </div>
       </div>
 
