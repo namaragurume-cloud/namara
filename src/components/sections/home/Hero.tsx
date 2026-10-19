@@ -4,17 +4,15 @@ import { site } from "@/data/site";
 import { CTAButton } from "@/components/ui/CTAButton";
 import { HeroFlowCompact, HeroVisual } from "./HeroVisual";
 
-/** 下部で流れる活動写真（現場で撮影した写真） */
+/** 下部で流れる、発信者たちのSNS投稿のサムネイル */
 const strip = [
-  { src: "/images/activities/akkeshi-oyster.jpg", alt: "厚岸町の牡蠣漁" },
   { src: "/images/works/butter-cafe.jpg", alt: "バター専門カフェのPR投稿" },
-  { src: "/images/activities/nanporo-corn.jpg", alt: "南幌町のとうもろこし畑" },
-  { src: "/images/activities/autumnfest-2024.jpg", alt: "さっぽろオータムフェスト2024の出店" },
-  { src: "/images/works/jingisukan.jpg", alt: "ジンギスカン店のPR投稿" },
-  { src: "/images/activities/tokachi-farm.jpg", alt: "十勝の生産者さんの農場" },
-  { src: "/images/works/wagashi.jpg", alt: "和菓子店のPR投稿" },
-  { src: "/images/activities/tokachi-potato.jpg", alt: "十勝のじゃがいもの貯蔵庫" },
-  { src: "/images/activities/australia-field.jpg", alt: "オーストラリアの牧場視察" },
+  { src: "/images/posts/sweets-cafe.jpg", alt: "札幌西区のお菓子カフェの投稿" },
+  { src: "/images/works/jingisukan.jpg", alt: "すすきののジンギスカン店のPR投稿" },
+  { src: "/images/posts/new-shop.jpg", alt: "札幌に新しくできた話題のお店の投稿" },
+  { src: "/images/works/wagashi.jpg", alt: "京極町の水まんじゅうのPR投稿" },
+  { src: "/images/posts/miso-ramen.jpg", alt: "すすきのの味噌ラーメン店の投稿" },
+  { src: "/images/posts/sakaba-open.jpg", alt: "札幌の酒場OPENの投稿" },
 ];
 
 /** 「紡ぐ」を表す糸の曲線 */
@@ -104,7 +102,7 @@ export function Hero() {
         </div>
       </div>
 
-      {/* 活動写真のストリップ */}
+      {/* SNS投稿サムネイルのストリップ */}
       <div aria-hidden="true" className="anim-fade-up relative pb-12 md:pb-16" style={{ animationDelay: "700ms" }}>
         <div className="flex w-max anim-marquee gap-4 [animation-duration:60s]">
           {[0, 1].map((n) => (
@@ -112,7 +110,7 @@ export function Hero() {
               {strip.map((img, i) => (
                 <div
                   key={img.src}
-                  className={`relative h-40 w-32 shrink-0 overflow-hidden rounded-[22px] shadow-[0_20px_40px_-24px_rgba(120,60,30,0.5)] ring-1 ring-white md:h-56 md:w-44 ${i % 2 ? "translate-y-4" : ""}`}
+                  className={`relative aspect-[9/16] w-32 shrink-0 overflow-hidden rounded-[22px] shadow-[0_20px_40px_-24px_rgba(120,60,30,0.5)] ring-1 ring-white md:w-44 ${i % 2 ? "translate-y-4" : ""}`}
                 >
                   <Image src={img.src} alt="" fill sizes="176px" priority={n === 0 && i < 4} className="object-cover" />
                 </div>
