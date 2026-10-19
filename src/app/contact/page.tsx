@@ -62,15 +62,15 @@ export default function ContactPage() {
           </div>
 
           <aside className="space-y-5 lg:sticky lg:top-[calc(var(--header-h)+32px)] lg:self-start">
-            <div className="rounded-[24px] bg-ink p-7 text-white">
+            <div className="glass rounded-[24px] p-7">
               <p className="flex items-center gap-2 font-bold">
                 <MessageCircle size={20} aria-hidden="true" />
                 Instagram DMでもご相談いただけます
               </p>
-              <p className="mt-3 text-sm leading-relaxed text-white/70">
+              <p className="mt-3 text-sm leading-relaxed text-muted">
                 「まずは気軽に聞いてみたい」という方は、運営メディア「なまらグルメ」の公式Instagram（{site.instagram.handle}）へメッセージをお送りください。
               </p>
-              <CTAButton href={site.instagram.dmUrl} variant="light" icon="instagram" fullWidth className="mt-6" trackLocation="contact_aside">
+              <CTAButton href={site.instagram.dmUrl} variant="dark" icon="instagram" fullWidth className="mt-6" trackLocation="contact_aside">
                 Instagram DMで相談する
               </CTAButton>
             </div>

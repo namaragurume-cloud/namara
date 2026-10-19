@@ -66,7 +66,7 @@ export default async function AboutPage() {
             {brand.story.map((block) => (
               <ScrollReveal key={block.lines[0]}>
                 {block.emphasis ? (
-                  <div className="mx-auto max-w-2xl rounded-[24px] bg-ink px-6 py-10 text-white md:px-12">
+                  <div className="bg-gradient-brand mx-auto max-w-2xl rounded-[24px] px-6 py-10 text-white md:px-12">
                     {block.lines.map((l) => (
                       <p key={l} className="text-lg leading-[2] font-bold md:text-2xl">
                         {l}
@@ -184,22 +184,22 @@ export default async function AboutPage() {
           <div className="mt-16 md:mt-24">
             <ActivityList items={activities} />
           </div>
-          <ScrollReveal className="mt-20 rounded-[28px] bg-ink p-8 text-white md:mt-28 md:p-14">
-            <p className="num text-xs font-semibold tracking-[0.3em] text-white/50">FROM NOW ON</p>
+          <ScrollReveal className="mt-20 bg-gradient-brand rounded-[28px] p-8 text-white md:mt-28 md:p-14">
+            <p className="num text-xs font-semibold tracking-[0.3em] text-white/80">FROM NOW ON</p>
             <p className="mt-4 text-xl leading-relaxed font-bold md:text-2xl">この取り組みに、これからもっと力を入れていきます。</p>
-            <p className="mt-5 max-w-3xl text-[15px] leading-[2.1] text-white/75">
+            <p className="mt-5 max-w-3xl text-[15px] leading-[2.1] text-white/90">
               MIRATSUMUでは、生産者さんや飲食店の現場に足を運ぶ取材・発信をさらに強化していきます。現場で受け取った想いを、プロのクリエイターとともに、より多くの人へ、そして次の世代へ。北海道の食の価値を、新しいカタチで未来へ紡いでいきます。
             </p>
           </ScrollReveal>
         </div>
       </section>
 
-      <section aria-labelledby="story-title" className="section bg-ink text-white">
+      <section aria-labelledby="story-title" className="bg-glow section relative bg-cream">
         <div className="container-x grid gap-14 lg:grid-cols-[minmax(0,4fr)_minmax(0,7fr)] lg:gap-20">
           <div className="lg:sticky lg:top-[calc(var(--header-h)+48px)] lg:self-start">
             <ScrollReveal>
-              <SectionLabel theme="dark">STORY</SectionLabel>
-              <h2 id="story-title" className="heading-lg mt-5 text-[clamp(1.5rem,1.1rem+1.4vw,2.25rem)] text-white">
+              <SectionLabel>STORY</SectionLabel>
+              <h2 id="story-title" className="heading-lg mt-5 text-[clamp(1.5rem,1.1rem+1.4vw,2.25rem)]">
                 北海道の食の魅力を、
                 <br />
                 発信の力で広げたい。
@@ -212,13 +212,13 @@ export default async function AboutPage() {
               />
             </ScrollReveal>
           </div>
-          <ScrollReveal className="space-y-6 text-[15px] leading-[2.2] text-white/80 md:text-base">
+          <ScrollReveal className="space-y-6 text-[15px] leading-[2.2] text-ink/80 md:text-base">
             {story.map((p) => (
-              <p key={p} className={p.startsWith("「") ? "text-lg font-bold text-white md:text-xl" : undefined}>
+              <p key={p} className={p.startsWith("「") ? "text-lg font-bold text-ink md:text-xl" : undefined}>
                 {p}
               </p>
             ))}
-            <p className="pt-6 text-right font-bold text-white">MIRATSUMU／なまらグルメ 運営者　島田</p>
+            <p className="pt-6 text-right font-bold text-ink">MIRATSUMU／なまらグルメ 運営者　島田</p>
           </ScrollReveal>
         </div>
       </section>

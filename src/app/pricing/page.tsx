@@ -34,13 +34,13 @@ export default function PricingPage() {
 
       <section aria-label="料金の考え方" className="section pb-0!">
         <div className="container-x grid gap-8 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] lg:gap-16">
-          <ScrollReveal className="flex flex-col justify-center rounded-[28px] bg-ink p-8 text-white md:p-12">
-            <p className="text-sm font-bold text-white/60">ご予算の目安</p>
+          <ScrollReveal className="flex flex-col justify-center bg-gradient-brand rounded-[28px] p-8 text-white shadow-[0_30px_60px_-30px_rgba(217,83,58,0.6)] md:p-12">
+            <p className="text-sm font-bold text-white/80">ご予算の目安</p>
             <p className="mt-2 flex items-baseline gap-1 font-extrabold">
-              <span className="num text-7xl text-brand md:text-8xl">3</span>
+              <span className="num text-7xl text-white md:text-8xl">3</span>
               <span className="text-2xl md:text-3xl">万円〜</span>
             </p>
-            <p className="mt-4 text-sm leading-relaxed text-white/70">{pricingPolicy.minimumOrderNote}</p>
+            <p className="mt-4 text-sm leading-relaxed text-white/90">{pricingPolicy.minimumOrderNote}</p>
           </ScrollReveal>
           <ScrollReveal delay={0.1} className="flex flex-col justify-center">
             <h2 className="heading-md">料金の考え方</h2>

@@ -130,10 +130,9 @@ export default function ServicePage() {
         </div>
       </section>
 
-      <section aria-label="対応SNS" className="section bg-ink text-white">
+      <section aria-label="対応SNS" className="bg-glow section relative bg-cream">
         <div className="container-x">
           <SectionHeading
-            theme="dark"
             en="PLATFORM"
             title="対応SNS"
             lead="商材やPRの目的に合わせて、最適な媒体と投稿形式をご提案します。"
@@ -144,11 +143,11 @@ export default function ServicePage() {
                 as="li"
                 key={`${p.name}-${p.format}`}
                 delay={i * 0.08}
-                className="flex flex-col rounded-[24px] border border-white/10 bg-white/[0.04] p-7 transition-colors duration-500 hover:bg-white/[0.08]"
+                className="glass flex flex-col rounded-[24px] p-7 transition-transform duration-500 hover:-translate-y-1"
               >
-                <p className="num text-xs font-semibold tracking-[0.2em] text-white/50">{p.name.toUpperCase()}</p>
+                <p className="num text-xs font-semibold tracking-[0.2em] text-brand">{p.name.toUpperCase()}</p>
                 <h3 className="mt-2 text-xl font-bold">{p.format}</h3>
-                <p className="mt-4 text-sm leading-[1.95] text-white/65">{p.description}</p>
+                <p className="mt-4 text-sm leading-[1.95] text-muted">{p.description}</p>
               </ScrollReveal>
             ))}
           </ul>

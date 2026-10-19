@@ -31,11 +31,11 @@ export function PainsSection() {
           ))}
         </ul>
 
-        <ScrollReveal className="mx-auto mt-12 flex max-w-5xl flex-col items-center gap-6 rounded-[28px] bg-ink px-6 py-10 text-center text-white md:mt-16 md:flex-row md:justify-between md:px-12 md:text-left">
+        <ScrollReveal className="bg-glow relative mx-auto mt-12 flex max-w-5xl flex-col items-center gap-6 overflow-hidden rounded-[28px] border border-line bg-cream px-6 py-10 text-center md:mt-16 md:flex-row md:justify-between md:px-12 md:text-left">
           <p className="text-xl leading-relaxed font-bold md:text-2xl">
             そのお悩み、
             <br className="md:hidden" />
-            <span className="text-brand">MIRATSUMU</span>にご相談ください。
+            <span className="text-gradient-brand">MIRATSUMU</span>にご相談ください。
           </p>
           <CTAButton href="/contact" trackLocation="home_pains" className="shrink-0">
             {site.cta}

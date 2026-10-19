@@ -82,7 +82,7 @@ export function Header() {
         className={cn(
           "fixed inset-x-0 top-0 z-50 transition-[background-color,box-shadow,color] duration-500",
           transparent
-            ? "bg-transparent text-white"
+            ? "bg-transparent text-ink"
             : open
               ? "bg-white text-ink shadow-[0_1px_0_rgba(0,0,0,0.06)]"
               : "bg-white/90 text-ink shadow-[0_1px_0_rgba(0,0,0,0.06)] backdrop-blur-xl",
@@ -90,7 +90,7 @@ export function Header() {
       >
         <div className="container-x flex h-[var(--header-h)] items-center justify-between gap-6">
           <Link href="/" aria-label={`${site.brand} トップページ`} className="shrink-0">
-            <Logo light={transparent} />
+            <Logo />
           </Link>
 
           <nav aria-label="メインメニュー" className="hidden xl:block">
@@ -120,14 +120,14 @@ export function Header() {
             <Link
               href="/contact"
               onClick={() => track("cta_click", { location: "header", href: "/contact" })}
-              className="group hidden items-center gap-2 rounded-full bg-brand px-6 py-3 text-[13.5px] font-bold tracking-wider whitespace-nowrap text-white transition-all duration-300 hover:bg-brand-dark sm:inline-flex"
+              className="group hidden items-center gap-2 rounded-full bg-gradient-brand px-6 py-3 text-[13.5px] font-bold tracking-wider whitespace-nowrap text-white transition-all duration-300 hover:bg-brand-dark sm:inline-flex"
             >
               無料でPRプランを相談する
             </Link>
             <Link
               href="/contact"
               onClick={() => track("cta_click", { location: "header_mobile", href: "/contact" })}
-              className="inline-flex min-h-11 items-center rounded-full bg-brand px-4 text-[13px] font-bold tracking-wider text-white sm:hidden"
+              className="inline-flex min-h-11 items-center rounded-full bg-gradient-brand px-4 text-[13px] font-bold tracking-wider text-white sm:hidden"
             >
               相談する
             </Link>
@@ -168,9 +168,9 @@ export function Header() {
             ))}
           </ul>
 
-          <div className="mt-8 rounded-2xl bg-ink p-6 text-white">
+          <div className="bg-glow mt-8 rounded-2xl border border-line bg-cream p-6 text-ink">
             <p className="text-sm font-bold">企業・店舗のご担当者様へ</p>
-            <p className="mt-2 text-xs leading-relaxed text-white/70">
+            <p className="mt-2 text-xs leading-relaxed text-muted">
               目的やご予算に合わせて、最適なグルメPRをご提案します。
             </p>
             <Link
@@ -179,7 +179,7 @@ export function Header() {
                 track("cta_click", { location: "mobile_menu", href: "/contact" });
                 close();
               }}
-              className="mt-5 flex min-h-14 items-center justify-center rounded-full bg-brand font-bold tracking-wider"
+              className="bg-gradient-brand mt-5 flex min-h-14 items-center justify-center rounded-full font-bold tracking-wider text-white"
             >
               無料でPRプランを相談する
             </Link>
@@ -188,7 +188,7 @@ export function Header() {
               target="_blank"
               rel="noopener noreferrer"
               onClick={() => track("instagram_click", { location: "mobile_menu" })}
-              className="mt-3 flex min-h-14 items-center justify-center gap-2 rounded-full border border-white/30 text-sm font-bold tracking-wider"
+              className="mt-3 flex min-h-14 items-center justify-center gap-2 rounded-full border border-ink/15 bg-white text-sm font-bold tracking-wider"
             >
               <InstagramIcon size={18} />
               Instagram DMで相談

@@ -5,7 +5,7 @@ export function ServiceCard({ service }: { service: Service }) {
   return (
     <article className="group relative flex h-full flex-col overflow-hidden rounded-[24px] bg-white p-7 transition-all duration-500 ease-out-expo hover:-translate-y-1.5 hover:shadow-[0_30px_60px_-30px_rgba(0,0,0,0.3)] md:p-9">
       <div className="flex items-start justify-between">
-        <span className="grid size-14 place-items-center rounded-2xl bg-mist text-ink transition-colors duration-500 group-hover:bg-brand group-hover:text-white">
+        <span className="grid size-14 place-items-center rounded-2xl bg-mist text-ink transition-colors duration-500 group-hover:bg-gradient-brand group-hover:text-white">
           <Icon size={26} strokeWidth={1.6} aria-hidden="true" />
         </span>
         <span className="num text-sm font-bold text-ink/25">{service.no}</span>

@@ -6,7 +6,8 @@ import { SectionHeading } from "@/components/ui/SectionHeading";
 
 export function PricingOverview() {
   return (
-    <section aria-label="料金" className="section bg-mist">
+    <section aria-label="料金" className="section relative isolate overflow-hidden bg-mist">
+      <div aria-hidden="true" className="bg-glow absolute inset-0 -z-10 opacity-70" />
       <div className="container-x">
         <div className="grid gap-10 lg:grid-cols-[1fr_auto] lg:items-end">
           <SectionHeading

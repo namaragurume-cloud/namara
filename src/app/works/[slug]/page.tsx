@@ -89,29 +89,29 @@ export default async function WorkDetailPage({ params }: Props) {
 
       <section className="section">
         <div className="container-x max-w-5xl!">
-          <ScrollReveal className="rounded-[28px] bg-ink p-8 text-white md:p-14">
-            <p className="text-sm text-white/60">{item.metric.label}</p>
+          <ScrollReveal className="bg-gradient-brand rounded-[28px] p-8 text-white shadow-[0_30px_60px_-30px_rgba(217,83,58,0.6)] md:p-14">
+            <p className="text-sm text-white/80">{item.metric.label}</p>
             <div className="mt-4 flex flex-wrap items-center gap-x-6 gap-y-2">
               {item.metric.value ? (
                 <span className="num text-6xl font-extrabold md:text-8xl">{item.metric.value}</span>
               ) : (
                 <>
-                  <span className="num text-3xl font-bold text-white/60 md:text-5xl">{item.metric.before}</span>
-                  <ArrowRight size={36} aria-label="から" className="text-brand" />
+                  <span className="num text-3xl font-bold text-white/80 md:text-5xl">{item.metric.before}</span>
+                  <ArrowRight size={36} aria-label="から" className="text-white/80" />
                   <span className="num text-5xl font-extrabold md:text-7xl">{item.metric.after}</span>
                 </>
               )}
               {item.metric.highlight && (
-                <span className="rounded-full bg-brand px-4 py-1.5 text-sm font-bold">{item.metric.highlight}</span>
+                <span className="rounded-full bg-white/20 px-4 py-1.5 text-sm font-bold">{item.metric.highlight}</span>
               )}
             </div>
             {item.metric.period && (
-              <p className="mt-6 border-t border-white/15 pt-4 text-xs text-white/60">
+              <p className="mt-6 border-t border-white/30 pt-4 text-xs text-white/80">
                 測定単位・比較期間：{item.metric.period}
               </p>
             )}
             {item.metric.label.includes("再生") && (
-              <p className="mt-2 text-xs text-white/60">
+              <p className="mt-2 text-xs text-white/80">
                 ※再生回数はPR投稿が視聴された回数で、来店数や売上を示すものではありません。
               </p>
             )}

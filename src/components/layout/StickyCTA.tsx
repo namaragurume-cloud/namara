@@ -49,7 +49,7 @@ export function StickyCTA() {
         href="/contact"
         tabIndex={visible ? 0 : -1}
         onClick={() => track("cta_click", { location: "sticky_mobile", href: "/contact" })}
-        className="flex min-h-12 items-center justify-center gap-2 rounded-full bg-brand text-[15px] font-bold tracking-wider text-white"
+        className="bg-gradient-brand flex min-h-12 items-center justify-center gap-2 rounded-full text-[15px] font-bold tracking-wider text-white"
       >
         {site.cta}
         <span className="text-xs font-normal opacity-80">｜3万円〜</span>

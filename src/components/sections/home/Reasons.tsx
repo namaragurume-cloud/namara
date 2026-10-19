@@ -38,7 +38,7 @@ export function Reasons() {
               />
               <div className="flex flex-1 flex-col p-6 md:p-8">
                 <p className="num flex items-baseline gap-3 text-brand">
-                  <span className="text-4xl font-extrabold">{r.no}</span>
+                  <span className="text-gradient-brand text-4xl font-extrabold">{r.no}</span>
                   <span className="text-[11px] font-semibold tracking-[0.25em]">{r.label}</span>
                 </p>
                 <h3 className="heading-md mt-3">{r.title}</h3>

@@ -22,7 +22,7 @@ type Props = {
 };
 
 const variants: Record<Variant, string> = {
-  primary: "bg-brand text-white hover:bg-brand-dark shadow-[0_10px_30px_-12px_rgba(199,62,51,0.7)]",
+  primary: "bg-gradient-brand text-white hover:brightness-110 shadow-[0_14px_32px_-14px_rgba(217,83,58,0.75)]",
   dark: "bg-ink text-white hover:bg-black",
   outline: "border border-ink/20 text-ink hover:border-ink hover:bg-ink hover:text-white",
   "outline-light": "border border-white/40 text-white hover:bg-white hover:text-ink hover:border-white",

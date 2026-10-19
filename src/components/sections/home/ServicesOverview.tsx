@@ -7,7 +7,8 @@ import { ServiceCard } from "@/components/ui/ServiceCard";
 
 export function ServicesOverview() {
   return (
-    <section aria-label="MIRATSUMUでできること" className="section bg-mist">
+    <section aria-label="MIRATSUMUでできること" className="section relative isolate overflow-hidden bg-mist">
+      <div aria-hidden="true" className="bg-glow absolute inset-0 -z-10 opacity-70" />
       <div className="container-x">
         <SectionHeading
           en="SERVICE"

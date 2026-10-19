@@ -13,7 +13,9 @@ type Props = {
 /** 下層ページ共通のページ見出し */
 export function PageHero({ en, title, lead, breadcrumb, children }: Props) {
   return (
-    <section className="relative overflow-hidden bg-mist pt-[calc(var(--header-h)+40px)] pb-16 md:pt-[calc(var(--header-h)+72px)] md:pb-24">
+    <section className="relative isolate overflow-hidden bg-cream pt-[calc(var(--header-h)+40px)] pb-16 md:pt-[calc(var(--header-h)+72px)] md:pb-24">
+      <div aria-hidden="true" className="bg-glow absolute inset-0 -z-10" />
+      <div aria-hidden="true" className="bg-grid absolute inset-0 -z-10" />
       <div
         aria-hidden="true"
         className="num pointer-events-none absolute -right-4 bottom-[-0.18em] text-[22vw] leading-none font-extrabold tracking-tighter text-ink/[0.035] select-none md:text-[15vw]"
