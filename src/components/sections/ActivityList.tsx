@@ -23,6 +23,7 @@ export function ActivityList({ items }: { items: Activity[] }) {
                   alt={main.alt}
                   fill
                   sizes="(min-width: 1024px) 45vw, 100vw"
+                  style={main.position ? { objectPosition: main.position } : undefined}
                   className="object-cover"
                 />
               </div>

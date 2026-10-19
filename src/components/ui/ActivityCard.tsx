@@ -12,6 +12,7 @@ export function ActivityCard({ activity }: { activity: Activity }) {
         alt={photo.alt}
         fill
         sizes="(min-width: 1024px) 30vw, (min-width: 640px) 45vw, 80vw"
+        style={photo.position ? { objectPosition: photo.position } : undefined}
         className="object-cover transition-transform duration-1000 ease-out-expo group-hover:scale-105"
       />
       <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent" />

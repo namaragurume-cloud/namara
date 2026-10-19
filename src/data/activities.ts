@@ -6,7 +6,7 @@
  * 写っている方の掲載許可を得た写真のみ使用してください。
  */
 
-export type ActivityPhoto = { src: string; alt: string; width: number; height: number };
+export type ActivityPhoto = { src: string; alt: string; width: number; height: number; position?: string };
 
 export type Activity = {
   id: string;
@@ -137,7 +137,7 @@ export const activities: Activity[] = [
       "1985年に誕生した北海道限定ビール「サッポロ クラシック」。その応援団員に就任しました。",
       "応援団長を務める杉谷拳士さんとともに、2025年の「サッポロ クラシック40周年」に関する企画・イベントなどの広報を担当させていただきました。",
     ],
-    photos: [p("sapporo-classic.jpg", "サッポロ クラシック応援団長の杉谷拳士さんと", 2000, 1126)],
+    photos: [{ ...p("sapporo-classic-snow.jpg", "さっぽろ雪まつりのサッポロ クラシックの雪像の前で", 788, 1400), position: "50% 38%" }],
     featured: true,
   },
 ];
