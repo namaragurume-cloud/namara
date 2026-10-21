@@ -1,0 +1,128 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+/*
+ * NAMARA REVIEW デザイントークン
+ * 白基調 + 深いネイビー（primary）+ ブルー（accent）。
+ * 色はすべてここで定義し、コンポーネントでは bg-primary などの役割名で参照する。
+ */
+:root {
+  --radius: 0.75rem;
+
+  --background: #f6f8fb;
+  --foreground: #0f1b2d;
+  --card: #ffffff;
+  --card-foreground: #0f1b2d;
+  --popover: #ffffff;
+  --popover-foreground: #0f1b2d;
+
+  --primary: #12284c; /* deep navy */
+  --primary-foreground: #ffffff;
+  --brand: #1f5fbf; /* blue accent */
+  --brand-foreground: #ffffff;
+  --brand-soft: #eaf1fc;
+
+  --secondary: #eef2f7;
+  --secondary-foreground: #12284c;
+  --muted: #f1f4f8;
+  --muted-foreground: #5b6779;
+  --accent: #eaf1fc;
+  --accent-foreground: #12284c;
+
+  --success: #0d7a3f;
+  --success-soft: #e7f6ee;
+  --warning: #9a6200;
+  --warning-soft: #fdf3dc;
+  --destructive: #c62f2f;
+  --destructive-soft: #fdecec;
+
+  --border: #e3e8ef;
+  --input: #d5dce6;
+  --ring: #1f5fbf;
+
+  --star: #f2a900;
+
+  /* charts (validated: categorical first 3 slots, diverging blue/red) */
+  --chart-1: #2a78d6;
+  --chart-2: #eb6834;
+  --chart-3: #1baf7a;
+  --chart-positive: #2a78d6;
+  --chart-negative: #e34948;
+  --chart-grid: #e6eaf0;
+  --chart-axis: #7a8494;
+
+  --sidebar: #0f2140;
+  --sidebar-foreground: #c9d4e5;
+  --sidebar-active: #1c355f;
+}
+
+@theme inline {
+  --font-sans:
+    "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Noto Sans JP", "Yu Gothic UI", "Yu Gothic",
+    Meiryo, system-ui, -apple-system, "Segoe UI", sans-serif;
+
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-brand: var(--brand);
+  --color-brand-foreground: var(--brand-foreground);
+  --color-brand-soft: var(--brand-soft);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-success: var(--success);
+  --color-success-soft: var(--success-soft);
+  --color-warning: var(--warning);
+  --color-warning-soft: var(--warning-soft);
+  --color-destructive: var(--destructive);
+  --color-destructive-soft: var(--destructive-soft);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-star: var(--star);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-active: var(--sidebar-active);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-feature-settings: "palt" 1;
+    line-height: 1.7;
+  }
+  :focus-visible {
+    @apply outline-2 outline-offset-2 outline-ring;
+  }
+  .tabular {
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+@media print {
+  .no-print {
+    display: none !important;
+  }
+  body {
+    background: #fff;
+  }
+}
