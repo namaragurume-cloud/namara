@@ -1,0 +1,65 @@
+@import "tailwindcss";
+
+/*
+ * デザイントークン（白基調＋ネイビー・ブルー）
+ * なまらAI（消費者向け）と NAMARA REVIEW（店舗向け）で共通の色を使い、ブランドの統一感を出す。
+ */
+:root {
+  --navy: #1e3a8a;
+  --navy-dark: #172554;
+  --blue: #2563eb;
+  --blue-soft: #eff6ff;
+  --ink: #0f172a;
+  --muted: #64748b;
+  --line: #e2e8f0;
+  --surface: #f8fafc;
+  --paper: #ffffff;
+  --ad: #b45309;
+  --ad-soft: #fffbeb;
+  --good: #047857;
+  --bad: #b91c1c;
+}
+
+@theme inline {
+  --color-navy: var(--navy);
+  --color-navy-dark: var(--navy-dark);
+  --color-blue: var(--blue);
+  --color-blue-soft: var(--blue-soft);
+  --color-ink: var(--ink);
+  --color-muted: var(--muted);
+  --color-line: var(--line);
+  --color-surface: var(--surface);
+  --color-paper: var(--paper);
+  --color-ad: var(--ad);
+  --color-ad-soft: var(--ad-soft);
+  --color-good: var(--good);
+  --color-bad: var(--bad);
+
+  --font-sans: "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Noto Sans JP", "Yu Gothic UI", Meiryo, system-ui, sans-serif;
+}
+
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+  body {
+    background: var(--paper);
+    color: var(--ink);
+    font-family: var(--font-sans);
+    line-height: 1.7;
+    font-feature-settings: "palt";
+  }
+  :focus-visible {
+    outline: 2px solid var(--blue);
+    outline-offset: 2px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    transition: none !important;
+    animation: none !important;
+  }
+}
