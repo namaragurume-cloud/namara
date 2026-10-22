@@ -24,7 +24,7 @@ const TOGGLES: { key: Exclude<keyof NotificationSettings, "lowRatingThreshold">;
 
 export function NotificationsForm({ store }: { store: Store }) {
   const me = useCurrentMember();
-  const canEdit = canOnStore(me, "notifications.edit", store.id);
+  const canEdit = canOnStore(me, "notifications.edit", store);
   const [settings, setSettings] = useState<NotificationSettings>(store.notifications);
 
   return (

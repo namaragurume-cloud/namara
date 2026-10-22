@@ -76,9 +76,9 @@ function ReplyEditor({ reviewId }: { reviewId: string }) {
     );
   }
 
-  const canEdit = canOnStore(me, "reply.edit", store.id);
-  const canSubmit = canOnStore(me, "reply.submit", store.id);
-  const canApprove = canOnStore(me, "reply.approve", store.id);
+  const canEdit = canOnStore(me, "reply.edit", store);
+  const canSubmit = canOnStore(me, "reply.submit", store);
+  const canApprove = canOnStore(me, "reply.approve", store);
   const locked = review.status === "published" || review.status === "publishing";
   const dirty = text !== (draft?.text ?? "") || (draft !== undefined && tone !== draft.tone);
   const checks = checkReply(text, store.policy, review.author);

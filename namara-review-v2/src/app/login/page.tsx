@@ -22,11 +22,11 @@ export default function LoginPage() {
         </div>
         <p className="text-xs text-sidebar-foreground">運営：なまらグルメ</p>
       </section>
-      <section className="flex items-center justify-center px-4 py-10">
+      <section className="flex justify-center px-4 py-10 lg:items-center">
         <div className="w-full max-w-sm">
           <Logo className="mb-8 lg:hidden" />
           <h1 className="text-2xl font-bold text-primary">ログイン</h1>
-          <p className="mt-1 text-sm text-muted-foreground">店舗アカウントでログインしてください。</p>
+          <p className="mt-1 text-sm text-muted-foreground">ログインすると、ご契約法人の専用ページが開きます。</p>
           <LoginForm />
         </div>
       </section>

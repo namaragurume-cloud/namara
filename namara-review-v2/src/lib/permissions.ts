@@ -1,4 +1,4 @@
-import type { Member, Role } from "./types";
+import type { Member, Role, Store } from "./types";
 
 /**
  * 店舗ユーザーの権限。Phase 2 では同じ内容を Supabase の RLS ポリシーと
@@ -47,11 +47,19 @@ export function can(role: Role, permission: Permission) {
   return MATRIX[role].includes(permission);
 }
 
-/** 担当店舗以外のデータには触れない */
-export function canAccessStore(member: Pick<Member, "role" | "storeIds">, storeId: string) {
-  return member.role === "owner" || member.storeIds.includes(storeId);
+type MemberScope = Pick<Member, "role" | "storeIds" | "organizationId">;
+type StoreScope = Pick<Store, "id" | "organizationId">;
+
+/**
+ * 店舗にアクセスできるか。
+ * 1. 同じ法人の店舗であること（テナント分離。オーナーでも他法人の店舗は不可）
+ * 2. 担当店舗であること（オーナーは自法人の全店舗を担当として持つ）
+ */
+export function canAccessStore(member: MemberScope, store: StoreScope | undefined) {
+  if (!store) return false;
+  return store.organizationId === member.organizationId && member.storeIds.includes(store.id);
 }
 
-export function canOnStore(member: Pick<Member, "role" | "storeIds">, permission: Permission, storeId: string) {
-  return canAccessStore(member, storeId) && can(member.role, permission);
+export function canOnStore(member: MemberScope, permission: Permission, store: StoreScope | undefined) {
+  return canAccessStore(member, store) && can(member.role, permission);
 }

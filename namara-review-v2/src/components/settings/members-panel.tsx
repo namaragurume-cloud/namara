@@ -37,7 +37,9 @@ function MemberDialog({
   onOpenChange: (open: boolean) => void;
   member: Member | null;
 }) {
-  const stores = useDemoState((s) => s.stores);
+  const me = useCurrentMember();
+  const allStores = useDemoState((s) => s.stores);
+  const stores = allStores.filter((s) => s.organizationId === me.organizationId);
   const members = useDemoState((s) => s.members);
   const [name, setName] = useState(member?.name ?? "");
   const [email, setEmail] = useState(member?.email ?? "");
@@ -62,6 +64,7 @@ function MemberDialog({
         type: "inviteMember",
         member: {
           id: `user_${Date.now()}`,
+          organizationId: me.organizationId,
           name: name.trim(),
           email: email.trim(),
           role,
@@ -145,8 +148,10 @@ function MemberDialog({
 
 export function MembersPanel() {
   const me = useCurrentMember();
-  const members = useDemoState((s) => s.members);
+  const allMembers = useDemoState((s) => s.members);
   const stores = useDemoState((s) => s.stores);
+  // 自分の法人のメンバーだけを扱う
+  const members = allMembers.filter((m) => m.organizationId === me.organizationId);
   const isOwner = me.role === "owner";
   const [dialog, setDialog] = useState<{ open: boolean; member: Member | null; key: number }>({ open: false, member: null, key: 0 });
   const [removing, setRemoving] = useState<Member | null>(null);

@@ -21,6 +21,14 @@ const nextConfig: NextConfig = {
       },
     },
   },
+  async redirects() {
+    // 法人専用ページ（/o/{法人ID}/…）に移行する前のURLは、ログイン画面へ案内する
+    return ["dashboard", "reviews", "replies", "reports", "settings"].map((page) => ({
+      source: `/${page}`,
+      destination: "/login",
+      permanent: false,
+    }));
+  },
   async headers() {
     return [{ source: "/:path*", headers: securityHeaders }];
   },

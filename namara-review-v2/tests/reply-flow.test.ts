@@ -3,8 +3,9 @@ import { describe, expect, it } from "vitest";
 import { demoReducer, type DemoState } from "@/lib/demo/reducer";
 import { AT, createState } from "./helpers";
 
-function firstReview(state: DemoState, status: string, storeId?: string) {
-  const review = state.reviews.find((r) => r.status === status && (!storeId || r.storeId === storeId));
+// 既定はログイン中ユーザー（なまらダイニングのオーナー）の店舗
+function firstReview(state: DemoState, status: string, storeId = "store_yakiniku") {
+  const review = state.reviews.find((r) => r.status === status && r.storeId === storeId);
   if (!review) throw new Error(`no ${status} review`);
   return review;
 }
@@ -114,7 +115,7 @@ describe("権限", () => {
     const s = createState();
     const invite = demoReducer(s, {
       type: "inviteMember",
-      member: { id: "u_x", name: "X", email: "x@example.com", role: "owner", storeIds: [], lineLinked: false, lastActiveAt: AT },
+      member: { id: "u_x", organizationId: "org_namara", name: "X", email: "x@example.com", role: "owner", storeIds: [], lineLinked: false, lastActiveAt: AT },
       at: AT,
     });
     expect(invite).toBe(s);
@@ -126,7 +127,7 @@ describe("権限", () => {
     const s = createState({ currentUserId: "user_manager" });
     const invite = demoReducer(s, {
       type: "inviteMember",
-      member: { id: "u_y", name: "Y", email: "y@example.com", role: "staff", storeIds: ["store_yakiniku"], lineLinked: false, lastActiveAt: AT },
+      member: { id: "u_y", organizationId: "org_namara", name: "Y", email: "y@example.com", role: "staff", storeIds: ["store_yakiniku"], lineLinked: false, lastActiveAt: AT },
       at: AT,
     });
     expect(invite).toBe(s);
@@ -136,7 +137,7 @@ describe("権限", () => {
     const s = createState();
     const invite = demoReducer(s, {
       type: "inviteMember",
-      member: { id: "u_z", name: "Z", email: "OWNER@example.com", role: "staff", storeIds: ["store_cafe"], lineLinked: false, lastActiveAt: AT },
+      member: { id: "u_z", organizationId: "org_namara", name: "Z", email: "OWNER@example.com", role: "staff", storeIds: ["store_cafe"], lineLinked: false, lastActiveAt: AT },
       at: AT,
     });
     expect(invite).toBe(s);

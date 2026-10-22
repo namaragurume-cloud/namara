@@ -20,12 +20,14 @@ import { DEMO_TODAY } from "@/lib/constants";
 import { useAccessibleStores, useDemoState, useScopedReviews } from "@/lib/demo/store";
 import { formatDate, formatNumber, formatRating } from "@/lib/format";
 import { SuggestionList } from "./suggestion-list";
+import { useOrgHref } from "@/components/layout/org-context";
 
 export function DashboardView() {
   const reviews = useScopedReviews();
   const stores = useAccessibleStores();
   const selected = useDemoState((s) => s.selectedStoreId);
   const [openId, setOpenId] = useState<string | null>(null);
+  const href = useOrgHref();
 
   const kpis = useMemo(() => computeKpis(reviews, DEMO_TODAY), [reviews]);
   const trend = useMemo(() => monthlyTrend(reviews, DEMO_TODAY, 12), [reviews]);
@@ -36,7 +38,18 @@ export function DashboardView() {
   const scopeLabel = selected === "all" ? `全店舗（${stores.length}店舗）` : storeById.get(selected)?.name;
 
   if (stores.length === 0) {
-    return <EmptyState icon={Inbox} title="担当店舗がありません" description="オーナーに担当店舗の設定を依頼してください。" />;
+    return (
+      <EmptyState
+        icon={Inbox}
+        title="まだ店舗が登録されていません"
+        description="店舗設定から店舗を追加すると、ここに口コミの状況が表示されます。オーナー以外の方は、オーナーに担当店舗の設定を依頼してください。"
+        action={
+          <Button asChild>
+            <Link href={href("/settings")}>店舗設定へ</Link>
+          </Button>
+        }
+      />
+    );
   }
 
   return (
@@ -54,7 +67,7 @@ export function DashboardView() {
         }
         actions={
           <Button asChild variant="brand">
-            <Link href="/reviews?status=unreplied">
+            <Link href={href("/reviews?status=unreplied")}>
               <Sparkles aria-hidden />
               未返信に対応する
             </Link>
@@ -66,7 +79,7 @@ export function DashboardView() {
         <div className="flex flex-col gap-2 sm:flex-row">
           {kpis.pending > 0 ? (
             <Link
-              href="/replies"
+              href={href("/replies")}
               className="flex flex-1 items-center gap-3 rounded-xl border border-brand/20 bg-brand-soft px-4 py-3 text-sm text-primary hover:border-brand/40"
             >
               <Clock className="size-5 text-brand" aria-hidden />
@@ -78,7 +91,7 @@ export function DashboardView() {
           ) : null}
           {kpis.failed > 0 ? (
             <Link
-              href="/replies?tab=history"
+              href={href("/replies?tab=history")}
               className="flex flex-1 items-center gap-3 rounded-xl border border-destructive/20 bg-destructive-soft px-4 py-3 text-sm text-destructive hover:border-destructive/40"
             >
               <TriangleAlert className="size-5" aria-hidden />
@@ -178,7 +191,7 @@ export function DashboardView() {
               <CardDescription>直近90日の口コミから</CardDescription>
             </div>
             <Button asChild variant="link" size="sm" className="px-0">
-              <Link href="/reports">
+              <Link href={href("/reports")}>
                 詳しく見る
                 <ArrowRight aria-hidden />
               </Link>
@@ -197,7 +210,7 @@ export function DashboardView() {
             <CardDescription>新しい順に5件</CardDescription>
           </div>
           <Button asChild variant="outline" size="sm">
-            <Link href="/reviews">
+            <Link href={href("/reviews")}>
               すべて見る
               <ArrowRight aria-hidden />
             </Link>

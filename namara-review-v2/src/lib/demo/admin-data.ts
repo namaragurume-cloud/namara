@@ -1,14 +1,17 @@
-import type { IntegrationStatus, PlanId } from "@/lib/types";
+import type { ContractStatus, IntegrationStatus, PlanId } from "@/lib/types";
+
+export type { ContractStatus };
 
 /**
  * 運営管理画面（なまらグルメ社内用）のサンプルデータ。すべて架空の企業。
  * Phase 6 で organizations / subscriptions / integration_connections などの集計に置き換える。
  */
 
-export type ContractStatus = "active" | "trial" | "past_due" | "cancelled";
 
 export interface Tenant {
   id: string;
+  /** 専用ページのURLに使う識別子（デモ法人のみ設定） */
+  slug?: string;
   name: string;
   plan: PlanId;
   status: ContractStatus;
@@ -34,9 +37,9 @@ export interface SupportTicket {
 }
 
 export const TENANTS: Tenant[] = [
-  { id: "t01", name: "株式会社なまらダイニング", plan: "standard", status: "active", stores: 3, googleStatus: "error", lineConnected: true, errors7d: 3, reviews30d: 52, replyRate: 88, startedAt: "2025-10-01", lastActiveAt: "2026-10-21T17:40:00+09:00" },
-  { id: "t02", name: "すすきの串焼き 炎（個人）", plan: "starter", status: "active", stores: 1, googleStatus: "connected", lineConnected: true, errors7d: 0, reviews30d: 14, replyRate: 100, startedAt: "2026-01-15", lastActiveAt: "2026-10-21T11:20:00+09:00" },
-  { id: "t03", name: "北海フードサービス株式会社", plan: "premium", status: "active", stores: 8, googleStatus: "connected", lineConnected: true, errors7d: 1, reviews30d: 163, replyRate: 94, startedAt: "2025-12-01", lastActiveAt: "2026-10-21T16:05:00+09:00" },
+  { id: "t01", slug: "namara-dining", name: "株式会社なまらダイニング", plan: "standard", status: "active", stores: 3, googleStatus: "error", lineConnected: true, errors7d: 3, reviews30d: 52, replyRate: 88, startedAt: "2025-10-01", lastActiveAt: "2026-10-21T17:40:00+09:00" },
+  { id: "t02", slug: "kushiyaki-homura", name: "すすきの串焼き 炎", plan: "starter", status: "trial", stores: 1, googleStatus: "connected", lineConnected: true, errors7d: 0, reviews30d: 14, replyRate: 100, startedAt: "2026-10-08", lastActiveAt: "2026-10-21T11:20:00+09:00" },
+  { id: "t03", slug: "hokkai-food", name: "北海フードサービス株式会社", plan: "premium", status: "active", stores: 2, googleStatus: "connected", lineConnected: true, errors7d: 1, reviews30d: 163, replyRate: 94, startedAt: "2025-12-01", lastActiveAt: "2026-10-21T16:05:00+09:00" },
   { id: "t04", name: "カフェ・ド・円山（個人）", plan: "starter", status: "trial", stores: 1, googleStatus: "connected", lineConnected: false, errors7d: 0, reviews30d: 6, replyRate: 50, startedAt: "2026-10-10", lastActiveAt: "2026-10-20T09:15:00+09:00" },
   { id: "t05", name: "株式会社スープカレー工房", plan: "standard", status: "active", stores: 3, googleStatus: "connected", lineConnected: true, errors7d: 0, reviews30d: 47, replyRate: 91, startedAt: "2026-03-01", lastActiveAt: "2026-10-21T14:48:00+09:00" },
   { id: "t06", name: "小樽寿司 銀鱗（個人）", plan: "starter", status: "past_due", stores: 1, googleStatus: "connected", lineConnected: true, errors7d: 0, reviews30d: 9, replyRate: 78, startedAt: "2026-02-20", lastActiveAt: "2026-10-12T20:01:00+09:00" },
@@ -69,5 +72,5 @@ export const MONTHLY_REVENUE = [
   { key: "2026-07", amount: 148400 },
   { key: "2026-08", amount: 158200 },
   { key: "2026-09", amount: 168200 },
-  { key: "2026-10", amount: 148400 },
+  { key: "2026-10", amount: 138600 },
 ];

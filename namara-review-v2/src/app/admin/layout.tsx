@@ -13,9 +13,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             <ShieldCheck className="size-3.5" aria-hidden />
             運営管理（なまらグルメ社内）
           </span>
-          <Link href="/dashboard" className="ml-auto inline-flex items-center gap-1 rounded-md px-2 py-1.5 text-sm text-sidebar-foreground hover:bg-white/10 hover:text-white">
+          <Link href="/login" className="ml-auto inline-flex items-center gap-1 rounded-md px-2 py-1.5 text-sm text-sidebar-foreground hover:bg-white/10 hover:text-white">
             <ArrowLeft className="size-4" aria-hidden />
-            店舗画面へ
+            ログイン画面へ
           </Link>
         </div>
       </header>

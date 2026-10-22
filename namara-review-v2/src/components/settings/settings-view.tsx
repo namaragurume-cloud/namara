@@ -2,6 +2,10 @@
 
 import { Bell, CreditCard, Link2, Sparkles, Store as StoreIcon, Users } from "lucide-react";
 
+import { EmptyState } from "@/components/common/empty-state";
+import { Card } from "@/components/ui/card";
+import { AddStoreButton } from "./add-store-dialog";
+
 import { PageHeader } from "@/components/common/page-header";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useCurrentMember } from "@/lib/demo/store";
@@ -18,14 +22,33 @@ import { useStoreScope } from "./use-store-scope";
 export function SettingsView() {
   const me = useCurrentMember();
   const { stores, store, showPicker, setPicked } = useStoreScope();
-  if (!store) return null;
+  if (!store) {
+    return (
+      <div className="space-y-5">
+        <PageHeader title="店舗設定" />
+        <Card>
+          <EmptyState
+            icon={StoreIcon}
+            title="まだ店舗が登録されていません"
+            description={me.role === "owner" ? "最初の店舗を追加すると、口コミ管理を始められます。" : "オーナーに担当店舗の設定を依頼してください。"}
+            action={<AddStoreButton variant="default" />}
+          />
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-5">
       <PageHeader
         title="店舗設定"
         description={showPicker ? "設定する店舗を選んでください" : store.name}
-        actions={showPicker ? <StoreScopeSelect stores={stores} value={store.id} onChange={setPicked} /> : null}
+        actions={
+          <>
+            {showPicker ? <StoreScopeSelect stores={stores} value={store.id} onChange={setPicked} /> : null}
+            <AddStoreButton />
+          </>
+        }
       />
       <Tabs defaultValue="store">
         <TabsList>

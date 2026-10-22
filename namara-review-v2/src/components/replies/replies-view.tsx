@@ -99,7 +99,7 @@ export function RepliesView() {
     const { stores: allStores } = getState();
     for (const review of unreplied) {
       const store = allStores.find((s) => s.id === review.storeId);
-      if (!store || !canOnStore(me, "reply.edit", store.id)) continue;
+      if (!store || !canOnStore(me, "reply.edit", store)) continue;
       const text = generateReply({ review, store, policy: store.policy, tone: store.policy.tone, variant: created });
       if (dispatch({ type: "saveDraft", reviewId: review.id, text, tone: store.policy.tone, source: "ai", at: demoNow() })) created++;
     }

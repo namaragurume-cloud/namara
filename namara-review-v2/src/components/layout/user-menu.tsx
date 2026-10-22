@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { LogOut, RotateCcw, ShieldCheck, UserRound } from "lucide-react";
+import { Building2, LogOut, RotateCcw, ShieldCheck, UserRound } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -26,12 +26,14 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { ROLE_LABELS } from "@/lib/constants";
-import { dispatch, resetDemo, useCurrentMember, useDemoState } from "@/lib/demo/store";
+import { dispatch, resetDemo, useCurrentMember, useCurrentOrganization, useDemoState } from "@/lib/demo/store";
 import { cn } from "@/lib/utils";
 
 export function UserMenu({ className, compact = false }: { className?: string; compact?: boolean }) {
   const me = useCurrentMember();
-  const members = useDemoState((s) => s.members);
+  const allMembers = useDemoState((s) => s.members);
+  const organization = useCurrentOrganization();
+  const members = allMembers.filter((m) => m.organizationId === organization.id);
   const [confirmReset, setConfirmReset] = useState(false);
 
   return (
@@ -60,7 +62,7 @@ export function UserMenu({ className, compact = false }: { className?: string; c
             <span className="block text-xs font-normal text-muted-foreground">{me.email}</span>
           </DropdownMenuLabel>
           <DropdownMenuSeparator />
-          <DropdownMenuLabel>デモ：ログインユーザーを切り替え</DropdownMenuLabel>
+          <DropdownMenuLabel>デモ：{organization.name}内でユーザーを切り替え</DropdownMenuLabel>
           <DropdownMenuRadioGroup value={me.id} onValueChange={(id) => dispatch({ type: "switchUser", userId: id })}>
             {members
               .filter((m) => !m.invited)
@@ -73,6 +75,12 @@ export function UserMenu({ className, compact = false }: { className?: string; c
               ))}
           </DropdownMenuRadioGroup>
           <DropdownMenuSeparator />
+          <DropdownMenuItem asChild>
+            <Link href="/login">
+              <Building2 />
+              別の法人のアカウントでログイン（デモ）
+            </Link>
+          </DropdownMenuItem>
           <DropdownMenuItem asChild>
             <Link href="/admin">
               <ShieldCheck />

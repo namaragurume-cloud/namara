@@ -16,9 +16,11 @@
 - AI は返信を自動投稿しない。必ず担当者（オーナー・店長）の承認を経る。
 - 権限チェックは画面の出し分けだけにしない。Phase 1 は `src/lib/demo/reducer.ts`、Phase 2 以降はサーバー側＋RLS で強制する。
 - 返信の投稿は冪等キー（口コミID:返信案の版数）で二重投稿を防ぐ。
+- マルチテナント：すべてのデータは法人（organization）に属する。店舗へのアクセスは「同じ法人」かつ「担当店舗」の両方を満たす場合だけ（`canAccessStore`）。他法人の存在や社名が分かる表示をしない。
 
 ## コード構成
-- 画面: `src/app/(console)/*`（店舗向け）、`src/app/admin`（運営向け）、`src/app/login`
+- 画面: `src/app/o/[org]/*`（法人専用ページ。`OrgGate` が所属法人と URL の一致を確認）、`src/app/admin`（運営向け）、`src/app/login`
+- 法人内のリンクは必ず `useOrgHref()` で `/o/{slug}` を付ける。法人ID（slug）のルールは `src/lib/organizations.ts`
 - 画面部品: `src/components/<機能>/`、共通部品 `src/components/common`、UI基盤 `src/components/ui`（shadcn/ui 形式）
 - ドメイン: `src/lib/types.ts`（型）、`analytics.ts`（集計）、`permissions.ts`（権限表）、`ai/reply-generator.ts`（返信案・安全チェック）
 - デモデータと状態: `src/lib/demo/`（seed・reducer・store）。Phase 2 で Supabase に置き換える

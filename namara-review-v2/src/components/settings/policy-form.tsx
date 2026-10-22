@@ -37,7 +37,7 @@ function splitWords(value: string) {
 export function PolicyForm({ store }: { store: Store }) {
   const me = useCurrentMember();
   const reviews = useDemoState((s) => s.reviews);
-  const canEdit = canOnStore(me, "policy.edit", store.id);
+  const canEdit = canOnStore(me, "policy.edit", store);
 
   const [tone, setTone] = useState<Tone>(store.policy.tone);
   const [signature, setSignature] = useState(store.policy.signature);

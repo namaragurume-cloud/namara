@@ -22,10 +22,16 @@ export type IntegrationStatus = "connected" | "not_connected" | "error";
 
 export type PlanId = "starter" | "standard" | "premium";
 
+export type ContractStatus = "trial" | "active" | "past_due" | "cancelled";
+
+/** 契約単位（法人・個人店）。法人ごとに専用ページ /o/{slug} を持つ */
 export interface Organization {
   id: string;
+  /** URL に使う英数字の識別子（例: hokkai-food） */
+  slug: string;
   name: string;
   plan: PlanId;
+  contractStatus: ContractStatus;
 }
 
 export interface ReplyPolicy {
@@ -121,6 +127,8 @@ export interface ReplyPublication {
 
 export interface Member {
   id: string;
+  /** 所属する法人。他の法人のデータには一切アクセスできない */
+  organizationId: string;
   name: string;
   email: string;
   role: Role;
@@ -133,6 +141,7 @@ export interface Member {
 
 export interface AuditLog {
   id: string;
+  organizationId: string;
   at: string;
   actor: string;
   action: string;

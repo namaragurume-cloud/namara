@@ -16,7 +16,7 @@ import type { Store } from "@/lib/types";
 export function IntegrationsPanel({ store }: { store: Store }) {
   const members = useDemoState((s) => s.members);
   const simulateFailure = useDemoState((s) => s.simulateFailure);
-  const lineLinked = members.filter((m) => m.lineLinked && (m.role === "owner" || m.storeIds.includes(store.id)));
+  const lineLinked = members.filter((m) => m.lineLinked && m.organizationId === store.organizationId && m.storeIds.includes(store.id));
 
   return (
     <div className="space-y-4">

@@ -44,7 +44,7 @@
 ```
 namara-review-v2/
 ├ src/app/
-│  ├ (console)/            店舗向け画面（共通レイアウト＝サイドバー・店舗切替・下部メニュー）
+│  ├ o/[org]/              法人専用ページ（/o/{法人ID}/…）。共通レイアウト＝サイドバー・店舗切替・下部メニュー
 │  │  ├ dashboard/ reviews/ replies/ reports/ settings/
 │  │  ├ loading.tsx error.tsx
 │  ├ admin/                運営管理（別レイアウト）
@@ -64,9 +64,18 @@ namara-review-v2/
 └ docs/
 ```
 
+## マルチテナント（法人ごとの専用ページ）
+
+- 契約法人ごとに専用URL `/o/{法人ID}/…` を発行する（例：`/o/hokkai-food/dashboard`）。法人IDは半角英小文字・数字・ハイフン、予約語（admin, login, api など）は不可（`src/lib/organizations.ts`）。
+- すべてのデータ（店舗・口コミ・返信・担当者・操作履歴）は法人に属する。店舗へのアクセスは「同じ法人」かつ「担当店舗」の両方を満たす場合のみ。
+- 専用ページの入口（`OrgGate`）で、URLの法人とログイン中ユーザーの所属法人が一致するかを確認する。一致しない場合と法人が存在しない場合は**同じ表示**にして、URLの推測で他社の契約有無や社名が分からないようにする。
+- 法人の発行は運営（なまらグルメ）が運営管理画面から行う。オーナー権限はこの発行時にのみ付与される。店舗の追加はオーナーが行い、プランの店舗数を上限とする。
+- Phase 2 では、URLの法人ID → organization_id の解決とメンバー確認をサーバー側で行い、データ取得はすべて RLS（`is_org_member` / `has_store_access`）を通す。画面側のチェックは表示のためだけに使う。
+- 将来の拡張：法人ごとのサブドメイン（`hokkai-food.namara-review.jp`）や独自ドメインにも、同じ法人IDの仕組みのまま対応できる（ワイルドカードDNSと Next.js の proxy で `/o/{slug}` に振り分け）。
+
 ## Phase 1 の仕組み（デモ）
 
-- `src/lib/demo/seed.ts` が約1年分・3店舗の口コミを**決定的に**生成（毎回同じデータ）。
+- `src/lib/demo/seed.ts` が3法人・6店舗分、約1年分の口コミを**決定的に**生成（毎回同じデータ）。
 - 状態遷移はすべて `src/lib/demo/reducer.ts` の純粋関数に集約。権限・遷移条件・二重投稿防止・重複取り込み防止をここでチェックし、テストしている。
 - `src/lib/demo/store.ts` が `useSyncExternalStore` で画面に配信し、ブラウザの localStorage に保存する（外部送信なし）。
 - デモの「今日」は `DEMO_TODAY`（2026-10-21）に固定。Phase 2 で現在時刻に切り替える。
@@ -79,7 +88,7 @@ Phase 2 では `store.ts` を Supabase 経由のデータ取得と Server Action
 
 | テーブル | 主な列 | 制約・備考 |
 | --- | --- | --- |
-| organizations | name, plan | 契約単位（企業・個人店） |
+| organizations | slug, name, plan, contract_status | 契約単位（企業・個人店）。**unique(slug)**。slug は専用ページのURLに使う |
 | profiles | user_id(=auth.users.id), display_name, email | 利用者 |
 | organization_members | organization_id, user_id, role(owner/manager/staff) | unique(organization_id, user_id) |
 | stores | organization_id, name, short_name, genre, area, address, phone, hours | |

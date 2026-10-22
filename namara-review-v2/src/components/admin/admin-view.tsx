@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { AlertTriangle, Building2, CircleDollarSign, Hourglass, LifeBuoy, Search, UserMinus } from "lucide-react";
+import { AlertTriangle, Building2, CircleDollarSign, Copy, Hourglass, LifeBuoy, Plus, Search, UserMinus } from "lucide-react";
+import { toast } from "sonner";
 
 import { RevenueChart } from "@/components/charts/revenue-chart";
 import { EmptyState } from "@/components/common/empty-state";
@@ -15,9 +16,15 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { percentChange } from "@/lib/analytics";
 import { PLANS } from "@/lib/constants";
-import { MONTHLY_REVENUE, TENANTS, TICKETS, type ContractStatus, type TicketStatus } from "@/lib/demo/admin-data";
+import { MONTHLY_REVENUE, TENANTS, TICKETS, type ContractStatus, type Tenant, type TicketStatus } from "@/lib/demo/admin-data";
+import { useDemoState } from "@/lib/demo/store";
+import { organizationPath } from "@/lib/organizations";
+import type { DemoState } from "@/lib/demo/reducer";
+import { Button } from "@/components/ui/button";
+import { CreateOrganizationDialog } from "./create-organization-dialog";
 import { Delta } from "@/components/common/delta";
 import { formatDate, formatRelative, formatYen } from "@/lib/format";
+import { DEMO_TODAY } from "@/lib/constants";
 
 const CONTRACT_LABELS: Record<ContractStatus, { label: string; variant: "success" | "brand" | "warning" | "secondary" }> = {
   active: { label: "契約中", variant: "success" },
@@ -32,30 +39,94 @@ const TICKET_LABELS: Record<TicketStatus, string> = {
   resolved: "解決済み",
 };
 
+/**
+ * デモで実際に動いている法人（専用ページあり）を、運営画面の契約データの形に集計する。
+ * Phase 6 ではサーバー側の集計クエリに置き換える。
+ */
+function summarizeOrganizations(state: Pick<DemoState, "organizations" | "stores" | "reviews" | "members">): Tenant[] {
+  const since = new Date(DEMO_TODAY).getTime() - 30 * 86400000;
+  return state.organizations.map((org) => {
+    const stores = state.stores.filter((s) => s.organizationId === org.id);
+    const storeIds = new Set(stores.map((s) => s.id));
+    const reviews = state.reviews.filter((r) => storeIds.has(r.storeId));
+    const recent = reviews.filter((r) => new Date(r.createdAt).getTime() >= since);
+    const members = state.members.filter((m) => m.organizationId === org.id);
+    const sample = TENANTS.find((t) => t.slug === org.slug);
+    return {
+      id: org.id,
+      slug: org.slug,
+      name: org.name,
+      plan: org.plan,
+      status: org.contractStatus,
+      stores: stores.length,
+      googleStatus: stores.some((s) => s.googleStatus === "error")
+        ? "error"
+        : stores.length > 0 && stores.every((s) => s.googleStatus === "connected")
+          ? "connected"
+          : "not_connected",
+      lineConnected: stores.some((s) => s.lineStatus === "connected"),
+      errors7d: reviews.filter((r) => r.status === "failed").length,
+      reviews30d: recent.length,
+      replyRate: reviews.length ? Math.round((reviews.filter((r) => r.status === "published").length / reviews.length) * 100) : 0,
+      startedAt: sample?.startedAt ?? DEMO_TODAY.slice(0, 10),
+      lastActiveAt: members.map((m) => m.lastActiveAt).sort().at(-1) ?? DEMO_TODAY,
+    };
+  });
+}
+
 export function AdminView() {
   const [query, setQuery] = useState("");
   const [status, setStatus] = useState<ContractStatus | "all">("all");
   const [tickets, setTickets] = useState(TICKETS);
+  const [creating, setCreating] = useState(false);
+  const organizations = useDemoState((s) => s.organizations);
+  const stores = useDemoState((s) => s.stores);
+  const reviews = useDemoState((s) => s.reviews);
+  const members = useDemoState((s) => s.members);
+  // 専用ページを持つ法人（デモで操作できる）＋ サンプルの契約データ
+  const allTenants = [
+    ...summarizeOrganizations({ organizations, stores, reviews, members }),
+    ...TENANTS.filter((t) => !t.slug),
+  ];
 
-  const paying = TENANTS.filter((t) => t.status === "active" || t.status === "past_due");
+  async function copyUrl(slug: string) {
+    const url = `${window.location.origin}${organizationPath(slug)}`;
+    try {
+      await navigator.clipboard.writeText(url);
+      toast.success("専用ページのURLをコピーしました", { description: url });
+    } catch {
+      toast(url);
+    }
+  }
+
+  const paying = allTenants.filter((t) => t.status === "active" || t.status === "past_due");
   const mrr = paying.reduce((sum, t) => sum + PLANS[t.plan].price, 0);
-  const storeCount = TENANTS.filter((t) => t.status !== "cancelled").reduce((sum, t) => sum + t.stores, 0);
-  const trials = TENANTS.filter((t) => t.status === "trial").length;
-  const cancelled = TENANTS.filter((t) => t.status === "cancelled").length;
-  const googleErrors = TENANTS.filter((t) => t.googleStatus === "error").length;
+  const storeCount = allTenants.filter((t) => t.status !== "cancelled").reduce((sum, t) => sum + t.stores, 0);
+  const trials = allTenants.filter((t) => t.status === "trial").length;
+  const cancelled = allTenants.filter((t) => t.status === "cancelled").length;
+  const googleErrors = allTenants.filter((t) => t.googleStatus === "error").length;
   const prevRevenue = MONTHLY_REVENUE[MONTHLY_REVENUE.length - 2].amount;
 
   const q = query.trim().toLowerCase();
-  const filtered = TENANTS.filter((t) => (status === "all" || t.status === status) && (!q || t.name.toLowerCase().includes(q)));
+  const filtered = allTenants.filter((t) => (status === "all" || t.status === status) && (!q || t.name.toLowerCase().includes(q)));
 
   const tenantName = (id: string) => TENANTS.find((t) => t.id === id)?.name ?? id;
 
   return (
     <div className="space-y-6">
-      <PageHeader title="運営ダッシュボード" description="契約店舗の利用状況・連携エラー・売上・サポートを確認します（サンプルデータ）。" />
+      <PageHeader
+        title="運営ダッシュボード"
+        description="契約法人の専用ページ発行・利用状況・連携エラー・売上・サポートを管理します。"
+        actions={
+          <Button onClick={() => setCreating(true)}>
+            <Plus aria-hidden />
+            法人の専用ページを発行
+          </Button>
+        }
+      />
 
       <section aria-label="運営の主要指標" className="grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-5">
-        <KpiCard title="契約店舗数" value={storeCount} unit="店舗" icon={Building2} footer={<span className="text-xs text-muted-foreground">{TENANTS.length - cancelled}社</span>} />
+        <KpiCard title="契約店舗数" value={storeCount} unit="店舗" icon={Building2} footer={<span className="text-xs text-muted-foreground">{allTenants.length - cancelled}社</span>} />
         <KpiCard title="月額売上（MRR）" value={formatYen(mrr)} icon={CircleDollarSign} footer={<Delta label="前月比" value={percentChange(mrr, prevRevenue)} />} />
         <KpiCard title="無料トライアル" value={trials} unit="社" icon={Hourglass} />
         <KpiCard title="解約" value={cancelled} unit="社" icon={UserMinus} footer={<span className="text-xs text-muted-foreground">累計</span>} />
@@ -80,7 +151,7 @@ export function AdminView() {
           <CardContent>
             <ul className="space-y-3">
               {(Object.keys(PLANS) as (keyof typeof PLANS)[]).map((id) => {
-                const count = TENANTS.filter((t) => t.plan === id && t.status !== "cancelled").length;
+                const count = allTenants.filter((t) => t.plan === id && t.status !== "cancelled").length;
                 return (
                   <li key={id} className="flex items-center justify-between rounded-lg border p-3">
                     <span>
@@ -132,6 +203,7 @@ export function AdminView() {
             <TableHeader>
               <TableRow>
                 <TableHead>企業・店舗</TableHead>
+                <TableHead>専用ページ</TableHead>
                 <TableHead>プラン</TableHead>
                 <TableHead>契約状況</TableHead>
                 <TableHead className="text-right">店舗数</TableHead>
@@ -148,6 +220,18 @@ export function AdminView() {
                   <TableCell>
                     <span className="block font-medium">{t.name}</span>
                     <span className="text-xs text-muted-foreground">開始 {formatDate(`${t.startedAt}T00:00:00+09:00`)}</span>
+                  </TableCell>
+                  <TableCell>
+                    {t.slug ? (
+                      <span className="inline-flex items-center gap-1">
+                        <code className="rounded bg-muted px-1.5 py-0.5 text-xs">{organizationPath(t.slug)}</code>
+                        <Button size="icon-sm" variant="ghost" aria-label={`${t.name}の専用ページURLをコピー`} onClick={() => copyUrl(t.slug!)}>
+                          <Copy />
+                        </Button>
+                      </span>
+                    ) : (
+                      <span className="text-xs text-muted-foreground">サンプル</span>
+                    )}
                   </TableCell>
                   <TableCell className="text-xs">{PLANS[t.plan].name}</TableCell>
                   <TableCell>
@@ -167,6 +251,8 @@ export function AdminView() {
           </Table>
         )}
       </Card>
+
+      <CreateOrganizationDialog key={String(creating)} open={creating} onOpenChange={setCreating} />
 
       <Card>
         <CardHeader>

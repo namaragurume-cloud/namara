@@ -7,14 +7,15 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { PLANS } from "@/lib/constants";
-import { useDemoState } from "@/lib/demo/store";
+import { useCurrentOrganization, useDemoState } from "@/lib/demo/store";
 import { formatYen } from "@/lib/format";
 import type { PlanId } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
 export function PlanPanel() {
-  const organization = useDemoState((s) => s.organization);
-  const storeCount = useDemoState((s) => s.stores.length);
+  const organization = useCurrentOrganization();
+  const stores = useDemoState((s) => s.stores);
+  const storeCount = stores.filter((s) => s.organizationId === organization.id).length;
   const plan = PLANS[organization.plan];
 
   return (
@@ -25,7 +26,7 @@ export function PlanPanel() {
           <CardDescription>{organization.name}</CardDescription>
           <CardTitle className="flex flex-wrap items-center gap-2 text-xl">
             現在のプラン：{plan.name}
-            <Badge variant="success">契約中</Badge>
+            {organization.contractStatus === "trial" ? <Badge variant="brand">無料トライアル中</Badge> : <Badge variant="success">契約中</Badge>}
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-2">

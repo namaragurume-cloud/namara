@@ -26,7 +26,7 @@ type FieldKey = (typeof FIELDS)[number][0];
 
 export function StoreInfoForm({ store }: { store: Store }) {
   const me = useCurrentMember();
-  const canEdit = canOnStore(me, "store.edit", store.id);
+  const canEdit = canOnStore(me, "store.edit", store);
   const [values, setValues] = useState<Record<FieldKey, string>>(() => ({
     name: store.name,
     shortName: store.shortName,

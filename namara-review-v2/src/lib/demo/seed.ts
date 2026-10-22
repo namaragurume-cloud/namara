@@ -20,11 +20,12 @@ import { createRandom, type Random } from "./random";
  * 外部APIに接続せずに全画面を操作できるよう、約1年分の口コミを決定的に生成する。
  */
 
-export const DEMO_ORGANIZATION: Organization = {
-  id: "org_demo",
-  name: "株式会社なまらダイニング（デモ）",
-  plan: "standard",
-};
+/** デモ用の契約法人。法人ごとに専用ページ /o/{slug} を持ち、データは完全に分かれる */
+export const DEMO_ORGANIZATIONS: Organization[] = [
+  { id: "org_namara", slug: "namara-dining", name: "株式会社なまらダイニング", plan: "standard", contractStatus: "active" },
+  { id: "org_hokkai", slug: "hokkai-food", name: "北海フードサービス株式会社", plan: "premium", contractStatus: "active" },
+  { id: "org_homura", slug: "kushiyaki-homura", name: "すすきの串焼き 炎", plan: "starter", contractStatus: "trial" },
+];
 
 const baseNotifications = {
   lineNewReview: true,
@@ -38,7 +39,7 @@ const baseNotifications = {
 export const DEMO_STORES: Store[] = [
   {
     id: "store_yakiniku",
-    organizationId: DEMO_ORGANIZATION.id,
+    organizationId: "org_namara",
     name: "炭火焼肉 なまら亭 すすきの本店",
     shortName: "なまら亭 すすきの",
     genre: "焼肉",
@@ -62,7 +63,7 @@ export const DEMO_STORES: Store[] = [
   },
   {
     id: "store_izakaya",
-    organizationId: DEMO_ORGANIZATION.id,
+    organizationId: "org_namara",
     name: "海鮮居酒屋 北の灯 札幌駅前店",
     shortName: "北の灯 札幌駅前",
     genre: "居酒屋",
@@ -86,7 +87,7 @@ export const DEMO_STORES: Store[] = [
   },
   {
     id: "store_cafe",
-    organizationId: DEMO_ORGANIZATION.id,
+    organizationId: "org_namara",
     name: "なまらカフェ 円山",
     shortName: "なまらカフェ 円山",
     genre: "カフェ",
@@ -108,20 +109,97 @@ export const DEMO_STORES: Store[] = [
     },
     notifications: { ...baseNotifications, lineNewReview: false },
   },
+  {
+    id: "store_hokkai_odori",
+    organizationId: "org_hokkai",
+    name: "ジンギスカン 北海 大通店",
+    shortName: "北海 大通",
+    genre: "焼肉",
+    area: "札幌市中央区",
+    address: "北海道札幌市中央区大通西5丁目（架空）",
+    phone: "011-000-0101",
+    hours: "17:00〜23:00",
+    googleStatus: "connected",
+    googleLocationName: "locations/demo-0101",
+    googleLastSyncedAt: "2026-10-21T17:45:00+09:00",
+    lineStatus: "connected",
+    policy: {
+      tone: "polite",
+      signature: "ジンギスカン 北海 大通店 店長",
+      rules: ["観光でのご利用には北海道観光へのお礼を添える"],
+      ngWords: [],
+      lowRatingGuidance: "",
+      maxLength: 300,
+    },
+    notifications: { ...baseNotifications },
+  },
+  {
+    id: "store_hokkai_otaru",
+    organizationId: "org_hokkai",
+    name: "北海 海鮮酒場 小樽運河店",
+    shortName: "北海 小樽運河",
+    genre: "居酒屋",
+    area: "小樽市",
+    address: "北海道小樽市港町（架空）",
+    phone: "0134-00-0102",
+    hours: "11:00〜22:00",
+    googleStatus: "connected",
+    googleLocationName: "locations/demo-0102",
+    googleLastSyncedAt: "2026-10-21T17:45:00+09:00",
+    lineStatus: "connected",
+    policy: {
+      tone: "friendly",
+      signature: "北海 海鮮酒場 小樽運河店",
+      rules: [],
+      ngWords: [],
+      lowRatingGuidance: "",
+      maxLength: 300,
+    },
+    notifications: { ...baseNotifications },
+  },
+  {
+    id: "store_homura",
+    organizationId: "org_homura",
+    name: "すすきの串焼き 炎",
+    shortName: "串焼き 炎",
+    genre: "居酒屋",
+    area: "札幌市中央区",
+    address: "北海道札幌市中央区南5条西2丁目（架空）",
+    phone: "011-000-0201",
+    hours: "18:00〜翌2:00",
+    googleStatus: "connected",
+    googleLocationName: "locations/demo-0201",
+    googleLastSyncedAt: "2026-10-21T17:45:00+09:00",
+    lineStatus: "connected",
+    policy: {
+      tone: "casual",
+      signature: "串焼き 炎 大将",
+      rules: [],
+      ngWords: [],
+      lowRatingGuidance: "",
+      maxLength: 220,
+    },
+    notifications: { ...baseNotifications },
+  },
 ];
+
+const storesOf = (organizationId: string) =>
+  DEMO_STORES.filter((s) => s.organizationId === organizationId).map((s) => s.id);
 
 export const DEMO_MEMBERS: Member[] = [
   {
     id: "user_owner",
+    organizationId: "org_namara",
     name: "山田 太郎",
     email: "owner@example.com",
     role: "owner",
-    storeIds: DEMO_STORES.map((s) => s.id),
+    storeIds: storesOf("org_namara"),
     lineLinked: true,
     lastActiveAt: "2026-10-21T17:40:00+09:00",
   },
   {
     id: "user_manager",
+    organizationId: "org_namara",
     name: "佐藤 花子",
     email: "manager@example.com",
     role: "manager",
@@ -131,12 +209,43 @@ export const DEMO_MEMBERS: Member[] = [
   },
   {
     id: "user_staff",
+    organizationId: "org_namara",
     name: "鈴木 健",
     email: "staff@example.com",
     role: "staff",
     storeIds: ["store_cafe"],
     lineLinked: false,
     lastActiveAt: "2026-10-20T19:30:00+09:00",
+  },
+  {
+    id: "user_hokkai_owner",
+    organizationId: "org_hokkai",
+    name: "高橋 誠",
+    email: "owner@hokkai.example.com",
+    role: "owner",
+    storeIds: storesOf("org_hokkai"),
+    lineLinked: true,
+    lastActiveAt: "2026-10-21T16:05:00+09:00",
+  },
+  {
+    id: "user_hokkai_manager",
+    organizationId: "org_hokkai",
+    name: "伊藤 美咲",
+    email: "otaru@hokkai.example.com",
+    role: "manager",
+    storeIds: ["store_hokkai_otaru"],
+    lineLinked: true,
+    lastActiveAt: "2026-10-21T13:20:00+09:00",
+  },
+  {
+    id: "user_homura_owner",
+    organizationId: "org_homura",
+    name: "中村 大輔",
+    email: "taisho@homura.example.com",
+    role: "owner",
+    storeIds: storesOf("org_homura"),
+    lineLinked: true,
+    lastActiveAt: "2026-10-21T11:20:00+09:00",
   },
 ];
 
@@ -341,7 +450,7 @@ export function createIncomingReview(store: Store, sequence: number, createdAt: 
 }
 
 export interface SeedData {
-  organization: Organization;
+  organizations: Organization[];
   stores: Store[];
   members: Member[];
   reviews: Review[];
@@ -356,9 +465,14 @@ export function createSeedData(): SeedData {
   const reviews: Review[] = [];
   const drafts: Record<string, ReplyDraft> = {};
   const publications: ReplyPublication[] = [];
-  const owner = DEMO_MEMBERS[0];
+  const ownerOf = (store: Store) =>
+    DEMO_MEMBERS.find((m) => m.organizationId === store.organizationId && m.role === "owner")!;
+  const requesterOf = (store: Store) =>
+    DEMO_MEMBERS.find((m) => m.organizationId === store.organizationId && m.role !== "owner" && m.storeIds.includes(store.id)) ??
+    ownerOf(store);
 
   for (const store of DEMO_STORES) {
+    const owner = ownerOf(store);
     const [minVolume, maxVolume] = MONTHLY_VOLUME[store.genre];
     for (let monthIndex = 0; monthIndex <= 12; monthIndex++) {
       // 2025年10月 〜 2026年10月
@@ -422,7 +536,7 @@ export function createSeedData(): SeedData {
             updatedAt: addDays(createdAt, 0, Math.min(23, hour + 1)),
             updatedBy: "AI（NAMARA REVIEW）",
             submittedAt: status === "pending" ? addDays(createdAt, 0, Math.min(23, hour + 1)) : null,
-            submittedBy: status === "pending" ? DEMO_MEMBERS[1].name : null,
+            submittedBy: status === "pending" ? requesterOf(store).name : null,
           };
         }
         reviews.push(review);
@@ -445,7 +559,7 @@ export function createSeedData(): SeedData {
       status: "failed",
       attempt: 1,
       attemptedAt: "2026-10-20T10:02:00+09:00",
-      actor: owner.name,
+      actor: DEMO_MEMBERS[0].name,
       text: draft.text,
       error: "Googleの認証の有効期限が切れています（デモ）。店舗設定からGoogle連携を再接続してください。",
     });
@@ -454,14 +568,21 @@ export function createSeedData(): SeedData {
   reviews.sort((a, b) => b.createdAt.localeCompare(a.createdAt));
 
   const auditLogs: AuditLog[] = [
-    { id: "log_1", at: "2026-10-21T17:45:00+09:00", actor: "システム", action: "Google口コミを同期", target: "全店舗" },
-    { id: "log_2", at: "2026-10-21T12:05:00+09:00", actor: DEMO_MEMBERS[1].name, action: "返信案を承認依頼", target: "北の灯 札幌駅前" },
-    { id: "log_3", at: "2026-10-20T10:02:00+09:00", actor: owner.name, action: "返信の投稿に失敗", target: "なまらカフェ 円山" },
-    { id: "log_4", at: "2026-10-19T09:12:00+09:00", actor: "システム", action: "Google連携エラーを検知", target: "なまらカフェ 円山" },
+    ...DEMO_ORGANIZATIONS.map((org, i) => ({
+      id: `log_sync_${i}`,
+      organizationId: org.id,
+      at: "2026-10-21T17:45:00+09:00",
+      actor: "システム",
+      action: "Google口コミを同期",
+      target: "全店舗",
+    })),
+    { id: "log_2", organizationId: "org_namara", at: "2026-10-21T12:05:00+09:00", actor: DEMO_MEMBERS[1].name, action: "返信案を承認依頼", target: "北の灯 札幌駅前" },
+    { id: "log_3", organizationId: "org_namara", at: "2026-10-20T10:02:00+09:00", actor: DEMO_MEMBERS[0].name, action: "返信の投稿に失敗", target: "なまらカフェ 円山" },
+    { id: "log_4", organizationId: "org_namara", at: "2026-10-19T09:12:00+09:00", actor: "システム", action: "Google連携エラーを検知", target: "なまらカフェ 円山" },
   ];
 
   return {
-    organization: DEMO_ORGANIZATION,
+    organizations: DEMO_ORGANIZATIONS,
     stores: DEMO_STORES,
     members: DEMO_MEMBERS,
     reviews,

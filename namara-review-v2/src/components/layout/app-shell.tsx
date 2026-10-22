@@ -8,10 +8,12 @@ import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
-import { syncReviews, useScopedReviews } from "@/lib/demo/store";
+import { PLANS } from "@/lib/constants";
+import { syncReviews, useCurrentOrganization, useScopedReviews } from "@/lib/demo/store";
 import { cn } from "@/lib/utils";
 import { Logo } from "./logo";
 import { NAV_ITEMS, type NavItem } from "./nav-items";
+import { useOrgHref } from "./org-context";
 import { StoreSwitcher } from "./store-switcher";
 import { UserMenu } from "./user-menu";
 
@@ -33,15 +35,16 @@ function isActive(pathname: string, href: string) {
 function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
   const pathname = usePathname();
   const counts = useBadgeCounts();
+  const href = useOrgHref();
   return (
     <nav aria-label="メインメニュー" className="flex flex-col gap-1">
       {NAV_ITEMS.map((item) => {
-        const active = isActive(pathname, item.href);
+        const active = isActive(pathname, href(item.href));
         const count = item.badge ? counts[item.badge] : 0;
         return (
           <Link
             key={item.href}
-            href={item.href}
+            href={href(item.href)}
             onClick={onNavigate}
             aria-current={active ? "page" : undefined}
             className={cn(
@@ -70,11 +73,20 @@ function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
 }
 
 function SidebarBody({ onNavigate }: { onNavigate?: () => void }) {
+  const href = useOrgHref();
+  const organization = useCurrentOrganization();
   return (
     <div className="flex h-full flex-col bg-sidebar px-3 py-5">
-      <Link href="/dashboard" onClick={onNavigate} className="mb-6 px-2">
+      <Link href={href("/dashboard")} onClick={onNavigate} className="mb-5 px-2">
         <Logo inverted />
       </Link>
+      <div className="mb-5 rounded-lg border border-white/10 px-3 py-2.5">
+        <p className="text-[11px] text-sidebar-foreground">ご契約法人</p>
+        <p className="mt-0.5 truncate text-sm font-semibold text-white" title={organization.name}>
+          {organization.name}
+        </p>
+        <p className="mt-0.5 text-[11px] text-sidebar-foreground">{PLANS[organization.plan].name}プラン</p>
+      </div>
       <SidebarNav onNavigate={onNavigate} />
       <div className="mt-auto rounded-lg bg-white/5 p-3 text-xs leading-relaxed text-sidebar-foreground">
         <p className="font-semibold text-white">デモモード（Phase 1）</p>
@@ -87,6 +99,7 @@ function SidebarBody({ onNavigate }: { onNavigate?: () => void }) {
 function MobileBottomNav() {
   const pathname = usePathname();
   const counts = useBadgeCounts();
+  const href = useOrgHref();
   return (
     <nav
       aria-label="メインメニュー"
@@ -94,12 +107,12 @@ function MobileBottomNav() {
     >
       <ul className="grid grid-cols-5">
         {NAV_ITEMS.map((item: NavItem) => {
-          const active = isActive(pathname, item.href);
+          const active = isActive(pathname, href(item.href));
           const count = item.badge ? counts[item.badge] : 0;
           return (
             <li key={item.href}>
               <Link
-                href={item.href}
+                href={href(item.href)}
                 aria-current={active ? "page" : undefined}
                 className={cn(
                   "relative flex flex-col items-center gap-0.5 py-2 text-[11px] font-medium",

@@ -17,8 +17,16 @@ describe("権限表", () => {
   });
 
   it("担当店舗以外では権限があっても操作できない", () => {
-    const manager = { role: "manager" as const, storeIds: ["a"] };
-    expect(canOnStore(manager, "reply.approve", "a")).toBe(true);
-    expect(canOnStore(manager, "reply.approve", "b")).toBe(false);
+    const manager = { role: "manager" as const, storeIds: ["a"], organizationId: "org1" };
+    expect(canOnStore(manager, "reply.approve", { id: "a", organizationId: "org1" })).toBe(true);
+    expect(canOnStore(manager, "reply.approve", { id: "b", organizationId: "org1" })).toBe(false);
+  });
+
+  it("オーナーでも他の法人の店舗は操作できない（テナント分離）", () => {
+    const owner = { role: "owner" as const, storeIds: ["a"], organizationId: "org1" };
+    expect(canOnStore(owner, "reply.approve", { id: "x", organizationId: "org2" })).toBe(false);
+    // 店舗IDが一致していても法人が違えば不可
+    expect(canOnStore(owner, "reply.approve", { id: "a", organizationId: "org2" })).toBe(false);
+    expect(canOnStore(owner, "reply.approve", undefined)).toBe(false);
   });
 });

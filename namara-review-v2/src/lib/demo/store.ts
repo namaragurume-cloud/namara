@@ -5,7 +5,7 @@ import { useMemo, useSyncExternalStore } from "react";
 import { DEMO_TODAY } from "@/lib/constants";
 import { canOnStore } from "@/lib/permissions";
 import type { Member, Review } from "@/lib/types";
-import { currentMember, demoReducer, STATE_VERSION, type DemoAction, type DemoState } from "./reducer";
+import { currentMember, currentOrganization, demoReducer, STATE_VERSION, type DemoAction, type DemoState } from "./reducer";
 import { createIncomingReview, createSeedData } from "./seed";
 
 /**
@@ -169,11 +169,16 @@ export function useCurrentMember(): Member {
   return useDemoState(currentMember);
 }
 
+/** ログイン中のユーザーが所属する法人 */
+export function useCurrentOrganization() {
+  return useDemoState(currentOrganization);
+}
+
 /** 現在のユーザーが見られる店舗 */
 export function useAccessibleStores() {
   const stores = useDemoState((s) => s.stores);
   const me = useCurrentMember();
-  return useMemo(() => stores.filter((store) => canOnStore(me, "reply.edit", store.id)), [stores, me]);
+  return useMemo(() => stores.filter((store) => canOnStore(me, "reply.edit", store)), [stores, me]);
 }
 
 /** 店舗切替の選択を反映した口コミ（担当外の店舗は常に除外） */

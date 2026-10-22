@@ -12,7 +12,7 @@ export default function NotFound() {
       <h1 className="text-xl font-bold text-primary">ページが見つかりません</h1>
       <p className="text-sm text-muted-foreground">URLが間違っているか、ページが移動した可能性があります。</p>
       <Button asChild>
-        <Link href="/dashboard">ダッシュボードへ戻る</Link>
+        <Link href="/login">ログイン画面へ</Link>
       </Button>
     </main>
   );
