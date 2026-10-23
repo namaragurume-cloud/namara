@@ -15,6 +15,15 @@ export const DEMO_USERS = {
 
 export type DemoAccount = keyof typeof DEMO_USERS;
 
+/** デモ出品の仮の商品画像（public/demo）。画像のないカテゴリーはアイコン表示のまま */
+const DEMO_IMAGES: Record<string, string> = {
+  bread: "/demo/bread.webp",
+  bento: "/demo/bento.webp",
+  deli: "/demo/deli.webp",
+  sweets: "/demo/sweets.webp",
+};
+const demoImage = (category: string) => DEMO_IMAGES[category] ?? null;
+
 type SeedStore = {
   slug: string;
   name: string;
@@ -470,6 +479,7 @@ export async function refreshDemoListings(q: Queryable, now = new Date()) {
       store.id,
       p.name,
       p.description,
+      demoImage(store.category),
       store.category,
       p.isBox,
       p.original,
@@ -489,6 +499,7 @@ export async function refreshDemoListings(q: Queryable, now = new Date()) {
       "store_id",
       "name",
       "description",
+      "image_url",
       "category",
       "is_box",
       "original_price",
@@ -665,6 +676,7 @@ export async function seedDemo(q: Queryable, now = new Date()) {
           storeId,
           t.name,
           t.description,
+          demoImage(s.category),
           s.category,
           t.isBox,
           t.original,
@@ -692,6 +704,7 @@ export async function seedDemo(q: Queryable, now = new Date()) {
       "store_id",
       "name",
       "description",
+      "image_url",
       "category",
       "is_box",
       "original_price",
@@ -807,10 +820,10 @@ async function seedDemoOrders(q: Queryable, now: Date) {
     const start = new Date(now.getTime() + minutes(spec.startIn));
     const end = new Date(now.getTime() + minutes(spec.endIn));
     const [product] = await q.query<{ id: string }>(
-      `insert into public.products (store_id, name, description, category, is_box, original_price, rescue_price, quantity,
-         pickup_start_at, pickup_end_at, status)
-       values ($1, $2, '事前決済のデモ注文用の商品です。', 'bread', true, 1500, $3, 1, $4, $5, 'closed') returning id`,
-      [store.id, spec.name, price, start.toISOString(), end.toISOString()],
+      `insert into public.products (store_id, name, description, image_url, category, is_box, original_price, rescue_price,
+         quantity, pickup_start_at, pickup_end_at, status)
+       values ($1, $2, '事前決済のデモ注文用の商品です。', $6, 'bread', true, 1500, $3, 1, $4, $5, 'closed') returning id`,
+      [store.id, spec.name, price, start.toISOString(), end.toISOString(), demoImage("bread")],
     );
     const commission = Math.floor((price * store.commission_bps) / 10000);
     const [order] = await q.query<{ id: string }>(
