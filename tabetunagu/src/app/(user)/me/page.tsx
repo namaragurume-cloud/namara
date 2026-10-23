@@ -69,7 +69,7 @@ export default async function MyPage() {
                 { href: "/orders?tab=ready", label: "受取待ちの注文（受取チケット）" },
                 { href: "/orders?tab=picked_up", label: "注文履歴" },
                 { href: "/favorites", label: "お気に入り店舗" },
-                { href: "/reservations?tab=past", label: "過去の予約" },
+                { href: "/reservations?tab=past", label: "以前の方式でのご利用履歴" },
               ]
             : [
                 { href: "/reservations", label: "今後の予約" },

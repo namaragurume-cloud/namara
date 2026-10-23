@@ -3,6 +3,7 @@ import Link from "next/link";
 import { ButtonLink } from "@/components/ui/Button";
 import { cn } from "@/components/ui/cn";
 import { EmptyState } from "@/components/ui/Section";
+import { features } from "@/lib/features";
 import { pickupLabel, yen } from "@/lib/format";
 import { requireViewer } from "@/server/auth/viewer";
 import { listMyOrders, type MyOrderTab } from "@/server/services/pickup";
@@ -30,7 +31,7 @@ export default async function OrdersPage({ searchParams }: { searchParams: Promi
       <div className="flex items-end justify-between">
         <h1 className="text-[20px] font-bold">注文履歴</h1>
         <Link href="/reservations" className="text-[12.5px] font-semibold text-forest underline-offset-2 hover:underline">
-          予約（店頭払い）はこちら
+          {features.v2Journey ? "以前の方式でのご利用履歴" : "予約（店頭払い）はこちら"}
         </Link>
       </div>
       <div className="no-scrollbar -mx-4 flex gap-1.5 overflow-x-auto px-4 text-[12.5px] font-semibold" role="tablist">

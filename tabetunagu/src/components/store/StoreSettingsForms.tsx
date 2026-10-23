@@ -7,7 +7,7 @@ import type { StoreInfo } from "@/lib/types";
 import { Notice } from "../ui/Section";
 import { SubmitButton } from "../ui/SubmitButton";
 
-export function StoreInfoForm({ store, editable }: { store: StoreInfo; editable: boolean }) {
+export function StoreInfoForm({ store, editable, v2 = false }: { store: StoreInfo; editable: boolean; v2?: boolean }) {
   const [state, action] = useActionState(updateStoreSettingsAction, null);
   const fields: { name: keyof StoreInfo; formName: string; label: string; multiline?: boolean; placeholder?: string }[] = [
     { name: "name", formName: "name", label: "店舗名" },
@@ -15,7 +15,13 @@ export function StoreInfoForm({ store, editable }: { store: StoreInfo; editable:
     { name: "phone", formName: "phone", label: "電話番号" },
     { name: "openingHours", formName: "openingHours", label: "営業時間" },
     { name: "description", formName: "description", label: "店舗紹介", multiline: true },
-    { name: "pickupNote", formName: "pickupNote", label: "受け取り時のご案内", multiline: true, placeholder: "例：レジで「TABETUNAGUの予約です」とお伝えください。" },
+    {
+      name: "pickupNote",
+      formName: "pickupNote",
+      label: "受け取り時のご案内",
+      multiline: true,
+      placeholder: v2 ? "例：入口すぐのカウンターで、スタッフに受取チケットをお見せください。" : "例：レジで「TABETUNAGUの予約です」とお伝えください。",
+    },
   ];
   return (
     <form action={action} className="space-y-4">

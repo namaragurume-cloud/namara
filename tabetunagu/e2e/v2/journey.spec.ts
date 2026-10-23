@@ -5,7 +5,7 @@ import { expect, test, type Page } from "@playwright/test";
  * Stripe には通信しない: Checkout は「決済を開始できない（Stripe 未設定）」までを確認し、
  * 決済済みの注文はデモデータ（seedDemoOrders）を使う。
  */
-async function demoLogin(page: Page, account: "user" | "storeOwner") {
+async function demoLogin(page: Page, account: "user" | "storeOwner" | "storeStaff") {
   await page.goto("/login");
   await page.locator(`form:has(input[value="${account}"]) button`).click();
   await page.waitForLoadState("networkidle");
@@ -38,6 +38,10 @@ test("商品詳細 →「食べつなぐ」→ ログイン → 購入確認（�
   await expect(page.getByText("2,400円相当 → 1,200円")).toBeVisible();
   await expect(page.getByTestId("charge-note")).toContainText("つなぐチャージ30円につき、30ptを付与します。");
   await expect(page.getByText("お支払いは事前にオンラインで。")).toBeVisible();
+  // 受け取り方の案内は v2 の文言だけ（旧フローの「レジ」「QR」「お会計になります」は出さない）
+  await expect(page.getByTestId("pickup-guide")).toContainText("スタッフへ受取チケットをご提示ください");
+  await expect(page.getByTestId("pickup-guide")).toContainText("店頭でのお会計はありません。");
+  await expect(page.getByText(/TABETUNAGUの予約です|店頭のQRを読み取って|お会計になります/)).toHaveCount(0);
   const cta = page.getByTestId("product-cta");
   await expect(cta).toHaveText("食べつなぐ");
   await expectInViewport(page, "product-cta");
@@ -121,6 +125,59 @@ test("マイページ: ポイント（台帳）と注文履歴への導線", asy
   await page.goto("/me");
   await expect(page.getByTestId("my-points")).toBeVisible();
   await expect(page.getByRole("link", { name: "受取待ちの注文（受取チケット）" })).toBeVisible();
-  await expect(page.getByRole("link", { name: "過去の予約" })).toBeVisible();
+  await expect(page.getByRole("link", { name: "以前の方式でのご利用履歴" })).toBeVisible();
+  await expect(page.getByRole("link", { name: /予約/ })).toHaveCount(0);
   await expectNoHorizontalScroll(page);
+});
+
+/** v2 では旧フローの言葉（予約・QR・チェックイン・店頭/レジでの支払い・No Show・レスキュー）を通常の画面に出さない */
+const LEGACY_WORDS = /予約|QR|チェックイン|店頭払い|店頭支払|レジで|お会計になります|お会計はいつもの|No ?Show|レスキュー/;
+
+test("デモログイン: v2 の説明（受取チケット・スワイプ・受取モニター・未受取・決済状況）", async ({ page }) => {
+  await page.goto("/login");
+  await expect(page.getByText("商品を食べつないで、受取チケット・スワイプ完了まで確認")).toBeVisible();
+  await expect(page.getByText("出品・注文・売上・受取モニターを確認")).toBeVisible();
+  await expect(page.getByText("注文・受取状況・店舗モニターを確認")).toBeVisible();
+  await expect(page.getByText("KPI・店舗・注文・未受取・決済状況を確認")).toBeVisible();
+  expect(await page.locator("main").innerText()).not.toMatch(LEGACY_WORDS);
+});
+
+test("店舗画面: ダッシュボード・売上・設定・出品に旧フローの言葉を出さない（店頭QRは障害時用としてナビにだけ残す）", async ({ page }) => {
+  await demoLogin(page, "storeOwner");
+  await page.goto("/store");
+  const nav = page.getByRole("navigation").first();
+  await expect(page.getByRole("link", { name: "予約状況" })).toHaveCount(0);
+  await expect(page.getByRole("link", { name: "QRコード（障害時用）" })).toBeAttached();
+  await expect(nav).toBeAttached();
+  expect(await page.locator("main").innerText()).not.toMatch(LEGACY_WORDS);
+  await expect(page.getByText("受取モニターを見る")).toBeVisible();
+
+  // 売上: 以前の方式の実績は折りたたみ（開かない限り表示しない）
+  await page.goto("/store/sales");
+  await expect(page.getByTestId("v2-sales")).toBeVisible();
+  await expect(page.getByTestId("legacy-sales")).not.toHaveAttribute("open", "");
+  expect(await page.getByTestId("v2-sales").innerText()).not.toMatch(LEGACY_WORDS);
+
+  await page.goto("/store/settings");
+  await expect(page.getByText("商品出品・LINE / Web 掲載・注文受付").first()).toBeVisible();
+  await expect(page.getByPlaceholder(/レジ|予約/)).toHaveCount(0);
+
+  for (const path of ["/store/products", "/store/products/new", "/store/orders", "/store/monitor"]) {
+    await page.goto(path);
+    expect(await page.locator("main").innerText(), path).not.toMatch(LEGACY_WORDS);
+  }
+});
+
+test("店舗スタッフ: ダッシュボードに旧フローの言葉を出さない", async ({ page }) => {
+  await demoLogin(page, "storeStaff");
+  await page.goto("/store");
+  expect(await page.locator("main").innerText()).not.toMatch(LEGACY_WORDS);
+});
+
+test("ユーザー画面: ホーム・商品一覧・注文・お気に入り・マイページに旧フローの言葉を出さない", async ({ page }) => {
+  await demoLogin(page, "user");
+  for (const path of ["/", "/products", "/orders", "/favorites", "/me"]) {
+    await page.goto(path);
+    expect(await page.locator("body").innerText(), path).not.toMatch(LEGACY_WORDS);
+  }
 });

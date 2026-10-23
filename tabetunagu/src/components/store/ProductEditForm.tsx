@@ -10,10 +10,13 @@ export function ProductEditForm({
   storeId,
   product,
   reserved,
+  v2 = false,
 }: {
   storeId: string;
   product: { id: string; name: string; description: string; quantity: number; rescuePrice: number; originalPrice: number };
   reserved: number;
+  /** v2（事前決済）がメインのときは「注文」の表現にする */
+  v2?: boolean;
 }) {
   const [state, action] = useActionState(updateProductAction, null);
   const [delState, delAction] = useActionState(deleteProductAction, null);
@@ -34,8 +37,18 @@ export function ProductEditForm({
             <label className="label" htmlFor="quantity">
               数量
             </label>
-            <input id="quantity" name="quantity" type="number" min={Math.max(1, reserved)} max={999} defaultValue={product.quantity} className="field tnum" />
-            <p className="mt-1 text-[11px] text-muted">予約済み {reserved} 以上</p>
+            <input
+              id="quantity"
+              name="quantity"
+              type="number"
+              min={Math.max(1, reserved)}
+              max={999}
+              defaultValue={product.quantity}
+              className="field tnum"
+            />
+            <p className="mt-1 text-[11px] text-muted">
+              {v2 ? "販売済み" : "予約済み"} {reserved} 以上
+            </p>
           </div>
           <div>
             <label className="label" htmlFor="originalPrice">
@@ -56,7 +69,11 @@ export function ProductEditForm({
           </label>
           <textarea id="description" name="description" rows={4} maxLength={600} defaultValue={product.description} className="field" />
         </div>
-        <p className="text-[12px] text-muted">価格の変更は、これからの予約に反映されます（予約済みの方は予約時の価格のままです）。</p>
+        <p className="text-[12px] text-muted">
+          {v2
+            ? "価格の変更は、これからのご注文に反映されます（注文済みの方は注文時の価格のままです）。"
+            : "価格の変更は、これからの予約に反映されます（予約済みの方は予約時の価格のままです）。"}
+        </p>
         {state && <Notice tone={state.ok ? "success" : "error"}>{state.message}</Notice>}
         <SubmitButton>保存する</SubmitButton>
       </form>

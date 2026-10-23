@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { productStatusAction } from "@/app/actions/store";
 import { PageHeader } from "@/components/layout/ConsoleShell";
 import { ProductEditForm } from "@/components/store/ProductEditForm";
+import { features } from "@/lib/features";
 import { ButtonLink } from "@/components/ui/Button";
 import { Stat } from "@/components/ui/Section";
 import { ProductStatusBadge } from "@/components/ui/StatusBadge";
@@ -55,7 +56,7 @@ export default async function StoreProductPage({ params }: { params: Promise<{ i
         <Stat label="キャンセル" value={`${p.cancelledCount}件`} />
       </div>
       <div className="card p-5">
-        <ProductEditForm storeId={store.storeId} product={p} reserved={p.quantity - p.remaining} />
+        <ProductEditForm storeId={store.storeId} product={p} reserved={p.quantity - p.remaining} v2={features.v2Journey} />
       </div>
       <Link href="/store/products" className="text-[13px] font-semibold text-forest">
         ← 出品商品へ

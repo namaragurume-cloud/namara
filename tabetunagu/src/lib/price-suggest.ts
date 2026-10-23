@@ -43,7 +43,7 @@ export function suggestPrice(input: { originalPrice: number; currentPrice: numbe
       return {
         suggestedPrice: price,
         direction: "up",
-        reason: `直近${history.length}回はほぼ完売（予約率${pct}%）で、早い時間につながっています。少し価格を上げても食べつなげる見込みです。`,
+        reason: `直近${history.length}回はほぼ完売（販売率${pct}%）で、早い時間につながっています。少し価格を上げても食べつなげる見込みです。`,
         sampleSize: history.length,
       };
     }
@@ -54,7 +54,7 @@ export function suggestPrice(input: { originalPrice: number; currentPrice: numbe
       return {
         suggestedPrice: price,
         direction: "down",
-        reason: `直近${history.length}回の予約率は${pct}%です。価格を少し下げるか、数量を控えめにすると食べつなぎやすくなります。`,
+        reason: `直近${history.length}回の販売率は${pct}%です。価格を少し下げるか、数量を控えめにすると食べつなぎやすくなります。`,
         sampleSize: history.length,
       };
     }
@@ -62,7 +62,7 @@ export function suggestPrice(input: { originalPrice: number; currentPrice: numbe
   return {
     suggestedPrice: clamp(currentPrice),
     direction: "keep",
-    reason: `直近${history.length}回の予約率は${pct}%です。今の価格がちょうど良さそうです。`,
+    reason: `直近${history.length}回の販売率は${pct}%です。今の価格がちょうど良さそうです。`,
     sampleSize: history.length,
   };
 }

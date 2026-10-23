@@ -4,6 +4,7 @@ import { PageHeader } from "@/components/layout/ConsoleShell";
 import { ChangePlanForm, StoreInfoForm } from "@/components/store/StoreSettingsForms";
 import { Badge } from "@/components/ui/Badge";
 import { cn } from "@/components/ui/cn";
+import { features } from "@/lib/features";
 import { BREAK_EVEN_GMV, PLANS } from "@/lib/fees";
 import { yen } from "@/lib/format";
 import { requireStoreMember } from "@/server/auth/viewer";
@@ -21,6 +22,7 @@ const FEATURES = [
   { label: "優先掲載", free: false, standard: true },
   { label: "お気に入りユーザーへの通知", free: false, standard: true },
 ];
+const V2_FEATURES = FEATURES.map((f, i) => (i === 0 ? { ...f, label: "商品出品・LINE / Web 掲載・注文受付" } : f));
 
 export default async function StoreSettingsPage() {
   const { viewer, store } = await requireStoreMember("/store/settings");
@@ -48,7 +50,7 @@ export default async function StoreSettingsPage() {
                   <span className="ml-2 text-[14px] text-muted">成約手数料 {p.commissionBps / 100}%</span>
                 </p>
                 <ul className="mt-4 space-y-1.5 text-[13px]">
-                  {FEATURES.map((f) => {
+                  {(features.v2Journey ? V2_FEATURES : FEATURES).map((f) => {
                     const v = f[code];
                     return (
                       <li key={f.label} className={cn("flex items-center gap-2", !v && "text-muted/60 line-through")}>
@@ -126,7 +128,7 @@ export default async function StoreSettingsPage() {
         <div>
           <h2 className="mb-3 text-[16px] font-bold">店舗情報</h2>
           <div className="card p-5">
-            <StoreInfoForm store={settings.store} editable={owner} />
+            <StoreInfoForm store={settings.store} editable={owner} v2={features.v2Journey} />
           </div>
         </div>
         <div className="space-y-6">

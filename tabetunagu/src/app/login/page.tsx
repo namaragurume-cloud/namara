@@ -21,6 +21,14 @@ const DEMO = [
   { account: "admin", label: "管理者", body: "KPI・店舗・予約・No Show・通知" },
 ] as const;
 
+/** v2（事前決済）がメインのときのデモアカウントの説明 */
+const V2_DEMO = [
+  { account: "user", label: "ユーザー", body: "商品を食べつないで、受取チケット・スワイプ完了まで確認" },
+  { account: "storeOwner", label: "店舗オーナー", body: "出品・注文・売上・受取モニターを確認" },
+  { account: "storeStaff", label: "店舗スタッフ", body: "注文・受取状況・店舗モニターを確認" },
+  { account: "admin", label: "管理者", body: "KPI・店舗・注文・未受取・決済状況を確認" },
+] as const;
+
 export default async function LoginPage({ searchParams }: { searchParams: Promise<{ next?: string; error?: string }> }) {
   const { next: rawNext, error } = await searchParams;
   const next = safeNextPath(rawNext, "/");
@@ -60,7 +68,7 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
           <p className="text-[12px] font-bold tracking-[0.15em] text-clay">DEMO LOGIN</p>
           <p className="mt-1 text-[12px] text-muted">開発・確認用です。本番環境（APP_ENV=production）では表示されません。</p>
           <div className="mt-4 space-y-2">
-            {DEMO.map((d) => (
+            {(features.v2Journey ? V2_DEMO : DEMO).map((d) => (
               <form key={d.account} action={demoLoginAction}>
                 <input type="hidden" name="account" value={d.account} />
                 <input type="hidden" name="next" value={rawNext ? next : ""} />

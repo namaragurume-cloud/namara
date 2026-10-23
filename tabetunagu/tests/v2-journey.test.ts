@@ -1,6 +1,6 @@
 import { afterAll, afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { features } from "@/lib/features";
-import { chargeNote, v2ProductCta } from "@/lib/purchase";
+import { chargeNote, isLegacyPickupNote, pickupGuide, v2ProductCta } from "@/lib/purchase";
 import { asService } from "@/server/db";
 import type { Driver } from "@/server/db/types";
 import { getProductDetail } from "@/server/services/catalog";
@@ -128,6 +128,16 @@ describe("商品詳細の CTA（v2）", () => {
     expect(chargeNote.short).toBe("購入時に30円のつなぐチャージが加算されます。");
     expect(chargeNote.points).toBe("つなぐチャージ30円につき、30ptを付与します。");
     expect(`${chargeNote.short}${chargeNote.points}`).not.toMatch(/実質無料|必ず|得する/);
+  });
+
+  it("受け取り方の案内: 受取チケットの提示・自分でスワイプ・店頭でのお会計なし。旧フローの店舗の案内は v2 で出さない", () => {
+    expect(pickupGuide).toContain("スタッフへ受取チケットをご提示ください");
+    expect(pickupGuide).toContain("ご自身で画面をスワイプして受取完了");
+    expect(pickupGuide).toContain("店頭でのお会計はありません");
+    expect(pickupGuide).not.toMatch(/予約|QR|レジ/);
+    expect(isLegacyPickupNote("レジで「TABETUNAGUの予約です」とお伝えください。店頭のQRを読み取ってからお会計になります。")).toBe(true);
+    expect(isLegacyPickupNote("店頭のＱＲを読み取ってください")).toBe(true);
+    expect(isLegacyPickupNote("入口すぐのカウンターで、スタッフに受取チケットをお見せください。")).toBe(false);
   });
 
   it("商品詳細のデータ: 店舗の決済可否と、自分の有効な注文", async () => {

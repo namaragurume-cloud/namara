@@ -5,17 +5,25 @@ import { OneTapPublish } from "@/components/store/OneTapPublish";
 import { ButtonLink } from "@/components/ui/Button";
 import { EmptyState, Notice, Stat } from "@/components/ui/Section";
 import { ProductStatusBadge } from "@/components/ui/StatusBadge";
+import { features } from "@/lib/features";
 import { BREAK_EVEN_GMV, PLANS } from "@/lib/fees";
 import { hhmm, percent, yen } from "@/lib/format";
 import { requireStoreMember } from "@/server/auth/viewer";
 import { getStoreDashboard } from "@/server/services/store";
 import { getStoreReadiness } from "@/server/services/readiness";
+import { getStoreOrderSales } from "@/server/services/v2-metrics";
 import { ReadinessCard } from "@/components/store/ReadinessCard";
 
 export default async function StoreDashboardPage({ searchParams }: { searchParams: Promise<{ published?: string }> }) {
   const { published } = await searchParams;
   const { viewer, store } = await requireStoreMember("/store");
-  const [d, readinessMap] = await Promise.all([getStoreDashboard(viewer.id, store.storeId), getStoreReadiness([store.storeId])]);
+  const v2 = features.v2Journey;
+  // v2 がメインのときは、今日・今月の数字を事前決済の注文（paid 基準）で出す。旧フローの予約の数字は「売上・手数料」の「以前の方式の実績」へ
+  const [d, readinessMap, orders] = await Promise.all([
+    getStoreDashboard(viewer.id, store.storeId),
+    getStoreReadiness([store.storeId]),
+    v2 ? getStoreOrderSales(viewer.id, store.storeId) : null,
+  ]);
   const readiness = readinessMap.get(store.storeId);
   const fee = d.month.fee;
   const plan = PLANS[d.store.plan];
@@ -65,33 +73,70 @@ export default async function StoreDashboardPage({ searchParams }: { searchParam
         </div>
         <div className="card p-5">
           <h2 className="text-[15px] font-bold">今月（{d.month.label}）</h2>
-          <dl className="mt-3 space-y-2 text-[13.5px]">
-            <div className="flex justify-between">
-              <dt className="text-muted">成約件数</dt>
-              <dd className="tnum font-semibold">{d.month.completedCount}件</dd>
-            </div>
-            <div className="flex justify-between">
-              <dt className="text-muted">月間成約額（GMV）</dt>
-              <dd className="tnum font-semibold">{yen(fee.gmv)}</dd>
-            </div>
-            <div className="flex justify-between">
-              <dt className="text-muted">QR完了率</dt>
-              <dd className="tnum font-semibold">{percent(d.month.qrRate)}</dd>
-            </div>
-            <div className="flex justify-between border-t border-line pt-2">
-              <dt className="text-muted">
-                TABETUNAGU 手数料（{plan.name}）
-                <span className="block text-[11px]">
-                  {plan.monthlyFee > 0 ? `月額 ${yen(plan.monthlyFee)} + ` : ""}成約売上 × {plan.commissionBps / 100}%
-                </span>
-              </dt>
-              <dd className="tnum text-[18px] font-semibold">{yen(fee.total)}</dd>
-            </div>
-          </dl>
-          {d.store.plan === "free" && fee.gmv > BREAK_EVEN_GMV * 0.8 && (
-            <p className="mt-3 rounded-xl bg-leaf-soft px-3 py-2 text-[12px] text-forest">
-              月間成約額が {yen(BREAK_EVEN_GMV)} を超えると STANDARD のほうがお得です。
-            </p>
+          {orders ? (
+            <>
+              <dl className="mt-3 space-y-2 text-[13.5px]">
+                <div className="flex justify-between">
+                  <dt className="text-muted">注文件数</dt>
+                  <dd className="tnum font-semibold">{orders.month.orders}件</dd>
+                </div>
+                <div className="flex justify-between">
+                  <dt className="text-muted">月間売上</dt>
+                  <dd className="tnum font-semibold">{yen(orders.month.sales)}</dd>
+                </div>
+                <div className="flex justify-between">
+                  <dt className="text-muted">受取完了 / 未受取</dt>
+                  <dd className="tnum font-semibold">
+                    {orders.month.pickedUp}件 / {orders.month.unclaimed}件
+                  </dd>
+                </div>
+                <div className="flex justify-between border-t border-line pt-2">
+                  <dt className="text-muted">
+                    TABETUNAGU 手数料（{plan.name}）
+                    <span className="block text-[11px]">
+                      {plan.monthlyFee > 0 ? `月額 ${yen(plan.monthlyFee)} + ` : ""}売上 × {plan.commissionBps / 100}%
+                    </span>
+                  </dt>
+                  <dd className="tnum text-[18px] font-semibold">{yen(plan.monthlyFee + orders.month.commission)}</dd>
+                </div>
+              </dl>
+              {d.store.plan === "free" && orders.month.sales > BREAK_EVEN_GMV * 0.8 && (
+                <p className="mt-3 rounded-xl bg-leaf-soft px-3 py-2 text-[12px] text-forest">
+                  月間売上が {yen(BREAK_EVEN_GMV)} を超えると STANDARD のほうがお得です。
+                </p>
+              )}
+            </>
+          ) : (
+            <>
+              <dl className="mt-3 space-y-2 text-[13.5px]">
+                <div className="flex justify-between">
+                  <dt className="text-muted">成約件数</dt>
+                  <dd className="tnum font-semibold">{d.month.completedCount}件</dd>
+                </div>
+                <div className="flex justify-between">
+                  <dt className="text-muted">月間成約額（GMV）</dt>
+                  <dd className="tnum font-semibold">{yen(fee.gmv)}</dd>
+                </div>
+                <div className="flex justify-between">
+                  <dt className="text-muted">QR完了率</dt>
+                  <dd className="tnum font-semibold">{percent(d.month.qrRate)}</dd>
+                </div>
+                <div className="flex justify-between border-t border-line pt-2">
+                  <dt className="text-muted">
+                    TABETUNAGU 手数料（{plan.name}）
+                    <span className="block text-[11px]">
+                      {plan.monthlyFee > 0 ? `月額 ${yen(plan.monthlyFee)} + ` : ""}成約売上 × {plan.commissionBps / 100}%
+                    </span>
+                  </dt>
+                  <dd className="tnum text-[18px] font-semibold">{yen(fee.total)}</dd>
+                </div>
+              </dl>
+              {d.store.plan === "free" && fee.gmv > BREAK_EVEN_GMV * 0.8 && (
+                <p className="mt-3 rounded-xl bg-leaf-soft px-3 py-2 text-[12px] text-forest">
+                  月間成約額が {yen(BREAK_EVEN_GMV)} を超えると STANDARD のほうがお得です。
+                </p>
+              )}
+            </>
           )}
         </div>
       </section>
@@ -100,10 +145,20 @@ export default async function StoreDashboardPage({ searchParams }: { searchParam
         <h2 className="mb-3 text-[15px] font-bold">今日</h2>
         <div className="grid grid-cols-2 gap-2 md:grid-cols-3 xl:grid-cols-6">
           <Stat label="本日の出品" value={`${d.today.listings}件`} />
-          <Stat label="予約数" value={`${d.today.reserved}件`} sub={`来店待ち ${d.today.waiting}件`} />
-          <Stat label="残数" value={d.today.remaining} />
-          <Stat label="食べつなぎ完了" value={`${d.today.completed}件`} />
-          <Stat label="キャンセル" value={`${d.today.cancelled}件`} />
+          {orders ? (
+            <>
+              <Stat label="本日の注文" value={`${orders.today.orders}件`} />
+              <Stat label="本日の売上" value={yen(orders.today.sales)} />
+              <Stat label="残数" value={d.today.remaining} />
+            </>
+          ) : (
+            <>
+              <Stat label="予約数" value={`${d.today.reserved}件`} sub={`来店待ち ${d.today.waiting}件`} />
+              <Stat label="残数" value={d.today.remaining} />
+              <Stat label="食べつなぎ完了" value={`${d.today.completed}件`} />
+              <Stat label="キャンセル" value={`${d.today.cancelled}件`} />
+            </>
+          )}
           <Stat label="お気に入り登録" value={`${d.favoriteCount}人`} />
         </div>
       </section>
@@ -111,8 +166,8 @@ export default async function StoreDashboardPage({ searchParams }: { searchParam
       <section>
         <div className="mb-3 flex items-center justify-between">
           <h2 className="text-[15px] font-bold">本日の出品</h2>
-          <Link href="/store/reservations" className="text-[13px] font-semibold text-forest">
-            予約状況を見る
+          <Link href={v2 ? "/store/monitor" : "/store/reservations"} className="text-[13px] font-semibold text-forest">
+            {v2 ? "受取モニターを見る" : "予約状況を見る"}
           </Link>
         </div>
         {d.todayProducts.length === 0 ? (
@@ -126,8 +181,14 @@ export default async function StoreDashboardPage({ searchParams }: { searchParam
                   <th className="px-3 py-2.5 font-semibold">受取時間</th>
                   <th className="px-3 py-2.5 text-right font-semibold">価格</th>
                   <th className="px-3 py-2.5 text-right font-semibold">残数 / 数量</th>
-                  <th className="px-3 py-2.5 text-right font-semibold">来店待ち</th>
-                  <th className="px-3 py-2.5 text-right font-semibold">完了</th>
+                  {v2 ? (
+                    <th className="px-3 py-2.5 text-right font-semibold">販売数</th>
+                  ) : (
+                    <>
+                      <th className="px-3 py-2.5 text-right font-semibold">来店待ち</th>
+                      <th className="px-3 py-2.5 text-right font-semibold">完了</th>
+                    </>
+                  )}
                   <th className="px-4 py-2.5 font-semibold">状態</th>
                 </tr>
               </thead>
@@ -146,8 +207,14 @@ export default async function StoreDashboardPage({ searchParams }: { searchParam
                     <td className="tnum px-3 py-3 text-right">
                       <span className="font-semibold">{p.remaining}</span> / {p.quantity}
                     </td>
-                    <td className="tnum px-3 py-3 text-right">{p.activeCount}</td>
-                    <td className="tnum px-3 py-3 text-right">{p.completedCount}</td>
+                    {v2 ? (
+                      <td className="tnum px-3 py-3 text-right">{p.quantity - p.remaining}</td>
+                    ) : (
+                      <>
+                        <td className="tnum px-3 py-3 text-right">{p.activeCount}</td>
+                        <td className="tnum px-3 py-3 text-right">{p.completedCount}</td>
+                      </>
+                    )}
                     <td className="px-4 py-3">
                       <ProductStatusBadge status={p.status} pickupEndAt={p.pickupEndAt} />
                     </td>
@@ -158,7 +225,9 @@ export default async function StoreDashboardPage({ searchParams }: { searchParam
           </div>
         )}
         <p className="mt-3 text-[12px] text-muted">
-          成約（食べつなぎ完了）は、お客様が店頭のQRを読み取ると自動で記録されます。お会計はいつものレジでお願いします。
+          {v2
+            ? "お支払いはお客様がオンラインで済ませています。お客様がご自身で受取チケットをスワイプすると、受取モニターに受取完了が表示されます（店舗側の完了操作は不要です）。"
+            : "成約（食べつなぎ完了）は、お客様が店頭のQRを読み取ると自動で記録されます。お会計はいつものレジでお願いします。"}
         </p>
       </section>
     </div>

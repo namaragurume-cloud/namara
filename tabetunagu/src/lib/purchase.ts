@@ -37,3 +37,15 @@ export const chargeNote = {
   short: `購入時に${PRICING.tsunaguCharge}円のつなぐチャージが加算されます。`,
   points: `つなぐチャージ${PRICING.tsunaguCharge}円につき、${PRICING.orderPoints}ptを付与します。`,
 };
+
+/** v2 の受け取り方の案内（商品詳細）。店頭でのお会計・QR はない */
+export const pickupGuide =
+  "受取時間内にご来店いただき、スタッフへ受取チケットをご提示ください。商品を受け取ったら、ご自身で画面をスワイプして受取完了です。店頭でのお会計はありません。";
+
+/**
+ * 店舗の「受け取り時のご案内」が旧フロー（予約 → 店頭 QR → レジ）向けの文言か。
+ * v2 では表示しない（DB の値は旧導線で使うため変えない）。
+ */
+export function isLegacyPickupNote(note: string): boolean {
+  return /予約|QR|ＱＲ|レジ|お会計|チェックイン/i.test(note);
+}

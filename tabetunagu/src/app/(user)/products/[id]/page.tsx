@@ -18,7 +18,7 @@ import { getProductDetail } from "@/server/services/catalog";
 import { logEvent } from "@/server/services/events";
 import { nowMs } from "@/lib/clock";
 import { features } from "@/lib/features";
-import { chargeNote, v2ProductCta } from "@/lib/purchase";
+import { chargeNote, isLegacyPickupNote, pickupGuide, v2ProductCta } from "@/lib/purchase";
 
 type Props = { params: Promise<{ id: string }> };
 
@@ -149,7 +149,14 @@ export default async function ProductPage({ params }: Props) {
               </div>
             )}
           </dl>
-          {store.pickupNote && <p className="rounded-xl bg-canvas px-4 py-3 text-[12.5px] leading-relaxed text-ink-2">{store.pickupNote}</p>}
+          {v2 && (
+            <p className="rounded-xl bg-canvas px-4 py-3 text-[12.5px] leading-relaxed text-ink-2" data-testid="pickup-guide">
+              {pickupGuide}
+            </p>
+          )}
+          {store.pickupNote && !(v2 && isLegacyPickupNote(store.pickupNote)) && (
+            <p className="rounded-xl bg-canvas px-4 py-3 text-[12.5px] leading-relaxed text-ink-2">{store.pickupNote}</p>
+          )}
         </section>
       </div>
 
