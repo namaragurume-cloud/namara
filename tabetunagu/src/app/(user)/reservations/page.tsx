@@ -7,6 +7,7 @@ import { EmptyState } from "@/components/ui/Section";
 import { ReservationStatusBadge } from "@/components/ui/StatusBadge";
 import { pickupLabel } from "@/lib/format";
 import { requireViewer } from "@/server/auth/viewer";
+import { hasMyOrders } from "@/server/services/pickup";
 import { listMyReservations, type ReservationTab } from "@/server/services/reservations";
 
 export const metadata: Metadata = { title: "予約" };
@@ -21,11 +22,18 @@ export default async function ReservationsPage({ searchParams }: { searchParams:
   const { tab: rawTab } = await searchParams;
   const tab = (TABS.find((t) => t.id === rawTab)?.id ?? "upcoming") as ReservationTab;
   const viewer = await requireViewer("/reservations");
-  const items = await listMyReservations(viewer.id, tab);
+  const [items, showOrders] = await Promise.all([listMyReservations(viewer.id, tab), hasMyOrders(viewer.id)]);
 
   return (
     <div className="space-y-4">
-      <h1 className="text-[20px] font-bold">予約</h1>
+      <div className="flex items-end justify-between">
+        <h1 className="text-[20px] font-bold">予約</h1>
+        {showOrders && (
+          <Link href="/orders" className="text-[12.5px] font-semibold text-forest underline-offset-2 hover:underline">
+            事前決済の注文はこちら
+          </Link>
+        )}
+      </div>
       <div className="grid grid-cols-3 rounded-full bg-canvas p-1 text-[12.5px] font-semibold" role="tablist">
         {TABS.map((t) => (
           <Link

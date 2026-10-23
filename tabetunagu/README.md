@@ -234,7 +234,7 @@ DATABASE_URL=... npm run db:migrate -- --bootstrap
 
 ## 8. Supabase 設定
 
-> **いちばん簡単な方法（Node.js 不要）**：Supabase の **SQL Editor** に [`supabase/setup/01_schema.sql`](./supabase/setup/01_schema.sql)（テーブル）→ [`supabase/setup/02_demo_data.sql`](./supabase/setup/02_demo_data.sql)（デモデータ・プレビュー用）→ [`supabase/setup/03_v2_foundation.sql`](./supabase/setup/03_v2_foundation.sql)（v2 の注文・ポイント台帳）→ [`supabase/setup/04_v2_stripe.sql`](./supabase/setup/04_v2_stripe.sql)（v2 の決済・返金・Connect）の順に中身を貼り付けて Run するだけで準備できます。本番の DB には 01・03・04 だけを使ってください（02 を入れる場合は 03 より前に）。01・03・04 は `supabase/migrations/` から作ったもので、適用済みとして記録されるため、あとから `npm run db:migrate` を実行しても二重には適用されません。
+> **いちばん簡単な方法（Node.js 不要）**：Supabase の **SQL Editor** に [`supabase/setup/01_schema.sql`](./supabase/setup/01_schema.sql)（テーブル）→ [`supabase/setup/02_demo_data.sql`](./supabase/setup/02_demo_data.sql)（デモデータ・プレビュー用）→ [`supabase/setup/03_v2_foundation.sql`](./supabase/setup/03_v2_foundation.sql)（v2 の注文・ポイント台帳）→ [`supabase/setup/04_v2_stripe.sql`](./supabase/setup/04_v2_stripe.sql)（v2 の決済・返金・Connect）→ [`supabase/setup/05_v2_pickup.sql`](./supabase/setup/05_v2_pickup.sql)（v2 の受取）の順に中身を貼り付けて Run するだけで準備できます。本番の DB には 01・03・04・05 だけを使ってください（02 を入れる場合は 03 より前に）。01・03・04・05 は `supabase/migrations/` から作ったもので、適用済みとして記録されるため、あとから `npm run db:migrate` を実行しても二重には適用されません。
 
 1. プロジェクトを作成（リージョン：Tokyo `ap-northeast-1`）
 2. **Database → Connection string → Transaction pooler（:6543）** を `DATABASE_URL` に設定し、`npm run db:migrate`
@@ -327,6 +327,23 @@ stripe listen --forward-to localhost:3000/api/stripe/webhook --forward-connect-t
 stripe trigger payment_intent.succeeded   # この注文システム以外の決済は無視される（200）ことの確認
 ```
 
+## 11-3. v2 の受取（デジタル受取チケット・店舗モニター）
+
+> STEP 3 時点でも商品詳細のメインの導線は旧フロー（予約 → 店頭 QR）のまま。v2 の画面は `/products/[id]/buy`・`/orders`・`/store/monitor`・`/store/orders`。
+
+- **受取チケット**（`/orders/[id]`、決済済みの注文）：店舗名・商品・数量・受取日時・注文番号・支払い済み・合計・受取状態。店舗スタッフに見せ、**ユーザー自身が「→ スワイプして受取完了」**。
+  - 一定距離（トラックの 90%）以上の横スワイプでのみ確定。タップ・クリックだけでは確定しない。キーボードではつまみにフォーカスして → キーで右端まで動かす。
+  - 受取できるのは「受取開始 − `pickup_early_grace_minutes`（10分）」〜「受取終了 + `pickup_late_grace_minutes`（15分）」。旧フローの店頭 QR の猶予（30分）とは別の設定。
+  - 受取完了（`pickup_order`）は本人のみ・paid のみ・冪等。`pickup_events` に swipe（IP・User-Agent・スワイプ時間）を追記する。位置情報は使わない。将来の店舗コード・NFC などは `metadata.verification` に追加できる。
+- **未受取**：受取終了 + 15分を過ぎた paid の注文は `unclaimed`（`pickup_events` に auto_unclaimed）。売上は確定のまま、返金・ポイント取り消し・在庫の戻しはしない。
+- **店舗モニター**（`/store/monitor`）：今日の注文を「受取時間中 / これから / 受取完了 / 未受取」で表示。**店舗の完了・受取・決済などの操作ボタンはない**。2 秒ごとの軽量ポーリング（`/api/store/monitor`、変化がなければ差分なし）で、受取完了から 1〜3 秒で反映。新しい受取完了のときだけ「チリン♪」（初回表示の受取済みでは鳴らさない。最初に「受取通知音をON」を1回押す）。
+- **注文（事前決済）**（`/store/orders`）：今日の注文と受取状況。店舗都合のキャンセル・全額返金は折りたたんだ「その他の操作」から（理由必須・確認あり・在庫は戻さない）。
+
+### 定期処理（決済期限切れ・未受取）の推奨運用
+1. **画面を開いたときの処理（追加費用なし・常に有効）**：店舗モニター・注文画面・ユーザーの注文画面を開くと、その店舗の決済期限切れと未受取を反映する（同じ店舗は 15 秒に1回まで）。表示上も、受取終了 + 猶予を過ぎた注文は DB の更新前から「未受取」として扱う。
+2. **`/api/cron/orders` を 5 分ごとに呼ぶ（推奨）**：全店舗の決済期限切れ・Checkout Session の期限切れ・未受取をまとめて処理する。`Authorization: Bearer <CRON_SECRET>` が必要。Vercel Hobby の Cron は1日1回までなので、Vercel Pro の Cron か、すでに使っている無料のスケジューラー（例：GitHub Actions の schedule など）から呼ぶ。新しい有料サービスは不要。
+3. 既存の `vercel.json` の日次 Cron（旧フロー）はそのまま。
+
 ## 12. ローカル開発
 
 - DB：未設定なら PGlite（`.data/pglite`）。本物の PostgreSQL で確認する場合は `DATABASE_URL` を設定して `npm run db:migrate -- --bootstrap && npm run db:seed`
@@ -380,6 +397,9 @@ E2E_BASE_URL=http://localhost:3000 npm run test:e2e
 | 売上受取設定（Connect）と Connect 情報の保護 | `tests/connect.test.ts` |
 | 返金・決済関数の権限 | `tests/payments-authorization.test.ts` |
 | 購入確認・売上受取設定の画面 | `e2e/prepaid.spec.ts` |
+| 受取（スワイプ・時間・猶予・冪等・未受取）・店舗モニター・注文履歴・受取イベントの RLS | `tests/pickup.test.ts` |
+| 受取の Server Action・店舗都合返金 UI・モニター API | `tests/pickup-routes.test.ts` |
+| 受取チケット → スワイプ → 店舗モニター反映、未受取の表示 | `e2e/pickup.spec.ts` |
 | AI 文章（テンプレート・禁止語）・値引き提案 | `tests/ai-copy.test.ts` |
 | UI に「レスキュー」「救う」「半額」を使っていない | `tests/copy-guard.test.ts` |
 | 出品 → 予約 → 店舗 QR → 完了、権限、改ざん QR | `e2e/core-flow.spec.ts` |

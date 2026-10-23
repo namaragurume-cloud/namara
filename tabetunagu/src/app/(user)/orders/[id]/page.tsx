@@ -3,18 +3,23 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { CancelPendingOrderForm, ResumeCheckoutForm, UserRefundForm } from "@/components/orders/OrderActions";
 import { PaymentStatusPoller } from "@/components/orders/PaymentStatusPoller";
+import { PickupTicket } from "@/components/orders/PickupTicket";
+import { SwipeToConfirm } from "@/components/orders/SwipeToConfirm";
 import { ButtonLink } from "@/components/ui/Button";
 import { Notice } from "@/components/ui/Section";
-import { dateTime, pickupLabel, yen } from "@/lib/format";
+import { dateTime, hhmm, pickupLabel, yen } from "@/lib/format";
 import { ORDER_POLICY } from "@/lib/orders";
 import { requireViewer } from "@/server/auth/viewer";
+import { logEvent } from "@/server/services/events";
 import { getMyOrder, type MyOrderView } from "@/server/services/payments";
+import { maintainStoreOrders } from "@/server/services/pickup";
 
 export const metadata: Metadata = { title: "ご注文" };
 
 /**
- * v2 注文詳細・決済確認。Stripe から戻ったとき（?from=checkout）も、表示はサーバーの注文状態だけで決める。
- * paid になるのは Webhook を受け取ったときだけ。
+ * v2 注文詳細・決済確認・デジタル受取チケット。
+ * Stripe から戻ったとき（?from=checkout）も、表示はサーバーの注文状態だけで決める（paid になるのは Webhook のみ）。
+ * 決済済みの注文は受取チケットを表示し、受取時間内ならユーザー自身のスワイプで受取完了にする。
  */
 export default async function OrderPage({
   params,
@@ -26,10 +31,64 @@ export default async function OrderPage({
   const { id } = await params;
   const { from } = await searchParams;
   const viewer = await requireViewer(`/orders/${id}`);
-  const order = await getMyOrder(viewer.id, id);
+  let order = await getMyOrder(viewer.id, id);
   if (!order) notFound();
-  const confirming = order.status === "pending_payment" && from === "checkout" && order.payable;
+  // 決済期限切れ・未受取を Cron より先に店舗単位で反映する（同じ店舗は一定間隔に1回。表示は DB の更新前から期限で判定する）
+  if ((order.status === "pending_payment" && !order.payable) || (order.status === "paid" && order.phase === "unclaimed")) {
+    if (await maintainStoreOrders(order.storeId)) order = (await getMyOrder(viewer.id, id)) ?? order;
+  }
+  const ticket = order.status === "paid" || order.status === "picked_up" || order.status === "unclaimed";
+  if (order.status === "paid") {
+    await logEvent("pickup_ticket_viewed", { userId: viewer.id, properties: { order_id: order.id } });
+  }
 
+  if (ticket) {
+    return (
+      <div className="space-y-4" data-testid="order-page" data-status={order.status}>
+        {order.status === "paid" && from === "checkout" && <Notice tone="success">お支払いが完了しました。</Notice>}
+        {order.status === "picked_up" && (
+          <div className="pt-1 text-center" data-testid="pickup-done">
+            <CircleCheck className="anim-ring mx-auto h-12 w-12 text-forest" strokeWidth={1.6} aria-hidden />
+            <h1 className="mt-2 text-[22px] font-bold">✓ 受取完了</h1>
+            <p className="mt-1 text-[13px] leading-relaxed text-muted">
+              ありがとうございました。
+              <br />
+              この食事が、次の食につながりました。
+            </p>
+          </div>
+        )}
+        {order.phase === "unclaimed" && (
+          <div className="space-y-2">
+            <h1 className="text-[20px] font-bold">受取時間を過ぎました</h1>
+            <Notice>受取時間内に受取完了が確認できませんでした。お支払い済みの代金の返金はありません。</Notice>
+          </div>
+        )}
+        {order.status === "paid" && order.phase !== "unclaimed" && <h1 className="sr-only">受取チケット</h1>}
+
+        <PickupTicket order={order}>
+          {order.status === "paid" && order.phase === "active" && <SwipeToConfirm orderId={order.id} />}
+          {order.status === "paid" && order.phase === "upcoming" && (
+            <Notice>
+              受取時間になったら、お店でスタッフに画面を見せてからスワイプしてください（{hhmm(order.pickupOpensAt)}からスワイプできます）。
+            </Notice>
+          )}
+        </PickupTicket>
+
+        {order.userRefundable && <UserRefundForm orderId={order.id} windowMinutes={ORDER_POLICY.userRefundWindowMinutes} />}
+        {order.storeAddress && (
+          <p className="flex items-start gap-1.5 px-1 text-[12.5px] text-muted">
+            <MapPin className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />
+            {order.storeName}（{order.storeAddress}）
+          </p>
+        )}
+        <ButtonLink href="/orders" variant="ghost" className="w-full">
+          注文履歴を見る
+        </ButtonLink>
+      </div>
+    );
+  }
+
+  const confirming = order.status === "pending_payment" && from === "checkout" && order.payable;
   return (
     <div className="space-y-5" data-testid="order-page" data-status={order.status}>
       <StatusHeader order={order} confirming={confirming} />
@@ -89,7 +148,6 @@ export default async function OrderPage({
           <CancelPendingOrderForm orderId={order.id} />
         </div>
       )}
-      {order.userRefundable && <UserRefundForm orderId={order.id} windowMinutes={ORDER_POLICY.userRefundWindowMinutes} />}
       {order.productId && (order.status === "cancelled" || (order.status === "pending_payment" && !order.payable)) && (
         <ButtonLink href={`/products/${order.productId}/buy`} variant="secondary" size="lg" className="w-full">
           もう一度注文する
@@ -100,15 +158,6 @@ export default async function OrderPage({
 }
 
 function StatusHeader({ order, confirming }: { order: MyOrderView; confirming: boolean }) {
-  if (order.status === "paid") {
-    return (
-      <div className="pt-2 text-center">
-        <CircleCheck className="anim-ring mx-auto h-12 w-12 text-forest" strokeWidth={1.6} aria-hidden />
-        <h1 className="mt-3 text-[22px] font-bold">お支払い完了</h1>
-        <p className="mt-1 text-[13px] text-muted">受取時間にお店へお越しください。</p>
-      </div>
-    );
-  }
   if (order.status === "pending_payment") {
     if (confirming) {
       return (
@@ -129,8 +178,6 @@ function StatusHeader({ order, confirming }: { order: MyOrderView; confirming: b
     );
   }
   const messages: Record<string, { title: string; body: string }> = {
-    picked_up: { title: "受取済み", body: "ご利用ありがとうございました。" },
-    unclaimed: { title: "受取時間が終了しました", body: "受取時間内に受け取りが確認できませんでした。" },
     refunded: {
       title: "返金済み",
       body: order.refundStatus === "pending" ? "返金の手続き中です。反映まで数日かかる場合があります。" : "この注文はキャンセルし、全額を返金しました。",

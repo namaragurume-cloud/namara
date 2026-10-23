@@ -11,6 +11,8 @@ const NAV = [
   { href: "/store/products/new", label: "出品する" },
   { href: "/store/products", label: "出品商品", exact: true },
   { href: "/store/reservations", label: "予約状況" },
+  { href: "/store/monitor", label: "受取モニター" },
+  { href: "/store/orders", label: "注文（事前決済）" },
   { href: "/store/sales", label: "売上・手数料" },
   { href: "/store/qr", label: "QRコード" },
   { href: "/store/payouts", label: "売上受取設定" },

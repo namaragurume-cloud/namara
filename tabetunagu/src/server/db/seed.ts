@@ -3,7 +3,7 @@
  * 実在の店舗名は使用していません。本番 DB には投入しないでください（scripts/seed.ts が拒否します）。
  */
 import { estimatedWeightG } from "@/lib/categories";
-import { PLANS } from "@/lib/fees";
+import { PLANS, PRICING } from "@/lib/fees";
 import type { Queryable } from "./types";
 
 export const DEMO_USERS = {
@@ -502,6 +502,8 @@ export async function refreshDemoListings(q: Queryable, now = new Date()) {
     ],
     rows,
   );
+  await seedDemoOrders(q, now);
+
   // 完売デモ（すべてつながった状態）
   const soldOut = TODAY_PRODUCTS.filter((p) => p.soldOut).map((p) => p.store);
   if (soldOut.length > 0) {
@@ -772,3 +774,66 @@ export async function seedDemo(q: Queryable, now = new Date()) {
   // ---- 今日の出品 ----
   await refreshDemoListings(q, now);
 }
+
+/**
+ * v2（事前決済）のデモ注文。決済済み（paid）の状態を Stripe を使わずに作る（ローカル・E2E 用）。
+ * - 受取時間中の注文（受取チケット・スワイプの確認用）
+ * - 受取時間を過ぎた注文（画面を開くと未受取になる）
+ * 商品は一覧に出さない（closed）。
+ */
+async function seedDemoOrders(q: Queryable, now: Date) {
+  const [store] = await q.query<{ id: string; plan_code: "free" | "standard"; commission_bps: number }>(
+    `select s.id, s.plan_code, p.commission_bps from public.stores s join public.plans p on p.code = s.plan_code
+     where s.slug = 'odori-bakery' and s.is_demo`,
+  );
+  if (!store) return;
+  const specs = [
+    { name: "受取チケットのデモBOX", startIn: -10, endIn: 50 },
+    { name: "受取時間を過ぎたデモBOX", startIn: -120, endIn: -30 },
+  ];
+  for (const spec of specs) {
+    const price = 800;
+    const start = new Date(now.getTime() + minutes(spec.startIn));
+    const end = new Date(now.getTime() + minutes(spec.endIn));
+    const [product] = await q.query<{ id: string }>(
+      `insert into public.products (store_id, name, description, category, is_box, original_price, rescue_price, quantity,
+         pickup_start_at, pickup_end_at, status)
+       values ($1, $2, '事前決済のデモ注文用の商品です。', 'bread', true, 1500, $3, 1, $4, $5, 'closed') returning id`,
+      [store.id, spec.name, price, start.toISOString(), end.toISOString()],
+    );
+    const commission = Math.floor((price * store.commission_bps) / 10000);
+    const [order] = await q.query<{ id: string }>(
+      `insert into public.orders (order_number, user_id, store_id, status, subtotal, tsunagu_charge, total, commission_bps,
+         commission_amount, platform_fee_total, plan_code, pickup_start, pickup_end, payment_expires_at)
+       values (public.gen_reservation_code(), $1, $2, 'pending_payment', $3, $4, $5, $6, $7, $8, $9, $10, $11, now())
+       returning id`,
+      [
+        DEMO_USERS.user.id,
+        store.id,
+        price,
+        PRICING.tsunaguCharge,
+        price + PRICING.tsunaguCharge,
+        store.commission_bps,
+        commission,
+        commission + PRICING.tsunaguCharge,
+        store.plan_code,
+        start.toISOString(),
+        end.toISOString(),
+      ],
+    );
+    await q.query(
+      `insert into public.order_items (order_id, product_id, product_name_snapshot, unit_price, quantity, line_total)
+       values ($1, $2, $3, $4, 1, $4)`,
+      [order.id, product.id, spec.name, price],
+    );
+    await q.query(
+      `insert into public.payments (order_id, provider, provider_payment_id, amount, application_fee_amount, status, paid_at)
+       select id, 'stripe', 'pi_demo_' || replace(id::text, '-', ''), total, platform_fee_total, 'succeeded', now()
+       from public.orders where id = $1`,
+      [order.id],
+    );
+    await q.query("update public.orders set status = 'paid' where id = $1", [order.id]);
+    await q.query("select public.grant_order_points($1::uuid)", [order.id]);
+  }
+}
+

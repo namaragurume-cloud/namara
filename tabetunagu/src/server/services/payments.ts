@@ -1,6 +1,7 @@
 import "server-only";
 import type Stripe from "stripe";
 import { AppError } from "@/lib/errors";
+import { pickupPhase, pickupWindow, type PickupPhase } from "@/lib/monitor";
 import { ORDER_POLICY, type OrderStatus } from "@/lib/orders";
 import { asService, asUser } from "../db";
 import { env } from "../env";
@@ -204,6 +205,8 @@ export type MyOrderView = {
   pickupEndAt: string;
   paymentExpiresAt: string;
   paidAt: string | null;
+  pickedUpAt: string | null;
+  storeId: string;
   storeName: string;
   storeAddress: string;
   productId: string | null;
@@ -216,6 +219,11 @@ export type MyOrderView = {
   payable: boolean;
   /** お客様都合で全額返金できる（決済から一定時間内かつ受取開始前） */
   userRefundable: boolean;
+  /** 受取の区分（決済済み以降のみ） */
+  phase: PickupPhase | null;
+  /** 受取完了（スワイプ）できる時間帯 */
+  pickupOpensAt: string;
+  pickupClosesAt: string;
 };
 
 const iso = (v: unknown) => (v ? new Date(v as string).toISOString() : null);
@@ -225,7 +233,8 @@ export async function getMyOrder(userId: string, orderId: string, now = new Date
   return asUser(userId, async (q) => {
     const [o] = await q.query<Record<string, unknown>>(
       `select o.id, o.order_number, o.status::text as status, o.subtotal, o.tsunagu_charge, o.total, o.pickup_start,
-              o.pickup_end, o.payment_expires_at, o.paid_at, s.name as store_name, s.address as store_address
+              o.pickup_end, o.payment_expires_at, o.paid_at, o.picked_up_at, o.store_id, s.name as store_name,
+              s.address as store_address
        from public.orders o join public.stores s on s.id = o.store_id
        where o.id = $1 and o.user_id = $2`,
       [orderId, userId],
@@ -248,6 +257,8 @@ export async function getMyOrder(userId: string, orderId: string, now = new Date
     const pickupStartAt = iso(o.pickup_start)!;
     const paymentExpiresAt = iso(o.payment_expires_at)!;
     const t = now.getTime();
+    const pickupEndAt = iso(o.pickup_end)!;
+    const window = pickupWindow(pickupStartAt, pickupEndAt);
     return {
       id: String(o.id),
       orderNumber: String(o.order_number),
@@ -256,9 +267,11 @@ export async function getMyOrder(userId: string, orderId: string, now = new Date
       tsunaguCharge: Number(o.tsunagu_charge),
       total: Number(o.total),
       pickupStartAt,
-      pickupEndAt: iso(o.pickup_end)!,
+      pickupEndAt,
       paymentExpiresAt,
       paidAt,
+      pickedUpAt: iso(o.picked_up_at),
+      storeId: String(o.store_id),
       storeName: String(o.store_name),
       storeAddress: String(o.store_address ?? ""),
       productId: items[0]?.product_id ?? null,
@@ -276,6 +289,12 @@ export async function getMyOrder(userId: string, orderId: string, now = new Date
         paidAt !== null &&
         t <= Date.parse(paidAt) + ORDER_POLICY.userRefundWindowMinutes * 60_000 &&
         t < Date.parse(pickupStartAt),
+      phase:
+        status === "paid" || status === "picked_up" || status === "unclaimed"
+          ? pickupPhase({ status, pickupStartAt, pickupEndAt }, t)
+          : null,
+      pickupOpensAt: new Date(window.opensAt).toISOString(),
+      pickupClosesAt: new Date(window.closesAt).toISOString(),
     };
   });
 }

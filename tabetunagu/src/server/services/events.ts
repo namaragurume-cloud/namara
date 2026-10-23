@@ -12,7 +12,9 @@ export type EventName =
   | "unfavorite_store"
   | "ai_description_generated"
   | "product_published"
-  | "login";
+  | "login"
+  | "pickup_ticket_viewed"
+  | "pickup_swipe_started";
 
 /** 分析イベントを記録する。失敗しても本処理は止めない。 */
 export async function logEvent(

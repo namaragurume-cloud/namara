@@ -33,4 +33,8 @@ export const ORDER_POLICY = {
   userRefundWindowMinutes: 5,
   /** 1人が同時に持てる決済待ちの注文数 */
   maxPendingOrdersPerUser: 3,
+  /** 受取開始の何分前から受取完了（スワイプ）できるか */
+  pickupEarlyGraceMinutes: 10,
+  /** 受取終了の何分後まで受取完了できるか（過ぎると未受取） */
+  pickupLateGraceMinutes: 15,
 } as const;

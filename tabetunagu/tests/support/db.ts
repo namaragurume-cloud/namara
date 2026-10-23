@@ -137,3 +137,20 @@ export async function expireOrderPayment(id: string) {
     q.query("update public.orders set payment_expires_at = now() - interval '1 minute' where id = $1", [id]),
   );
 }
+
+/**
+ * テスト専用: 注文の受取時間を現在時刻からの分でずらす（受取時間は通常変更できないため、同じトランザクション内でガードを外す）。
+ * 受取時間を過ぎた注文は create_order で作れないため、作成後にずらして再現する。
+ */
+export async function shiftOrderWindow(id: string, startIn: number, endIn: number) {
+  const now = Date.now();
+  await asService(async (q) => {
+    await q.query("alter table public.orders disable trigger orders_guard");
+    await q.query("update public.orders set pickup_start = $2, pickup_end = $3 where id = $1", [
+      id,
+      new Date(now + startIn * 60_000).toISOString(),
+      new Date(now + endIn * 60_000).toISOString(),
+    ]);
+    await q.query("alter table public.orders enable trigger orders_guard");
+  });
+}

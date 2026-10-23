@@ -41,6 +41,8 @@ describe("料金設定の一元管理（アプリと DB の一致）", () => {
       payment_hold_minutes: ORDER_POLICY.paymentHoldMinutes,
       user_refund_window_minutes: ORDER_POLICY.userRefundWindowMinutes,
       max_pending_orders_per_user: ORDER_POLICY.maxPendingOrdersPerUser,
+      pickup_early_grace_minutes: ORDER_POLICY.pickupEarlyGraceMinutes,
+      pickup_late_grace_minutes: ORDER_POLICY.pickupLateGraceMinutes,
     });
   });
 });
