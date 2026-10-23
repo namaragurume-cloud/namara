@@ -1,8 +1,9 @@
 import type { Metadata } from "next";
 import { PageHeader } from "@/components/layout/ConsoleShell";
 import { ProductForm, type ProductFormDefaults } from "@/components/store/ProductForm";
-import { ymd, hhmm } from "@/lib/format";
+import { ymd } from "@/lib/format";
 import { suggestPrice } from "@/lib/price-suggest";
+import { duplicateDefaults } from "@/lib/store-dashboard";
 import { roundedTimeFromNow } from "@/lib/time";
 import { requireStoreMember } from "@/server/auth/viewer";
 import { getStoreDashboard, getStoreProduct, getTemplate, recentSalesHistory } from "@/server/services/store";
@@ -36,6 +37,7 @@ export default async function NewProductPage({ searchParams }: { searchParams: P
     templateId: "",
   };
   let source: string | null = null;
+  let duplicated = false;
 
   if (template) {
     const t = await getTemplate(viewer.id, store.storeId, template);
@@ -46,21 +48,10 @@ export default async function NewProductPage({ searchParams }: { searchParams: P
   } else if (from) {
     const p = await getStoreProduct(viewer.id, store.storeId, from);
     if (p) {
-      defaults = {
-        ...defaults,
-        name: p.name,
-        description: p.description,
-        category: p.category,
-        isBox: p.isBox,
-        originalPrice: p.originalPrice,
-        rescuePrice: p.rescuePrice,
-        quantity: p.quantity,
-        pickupStart: hhmm(p.pickupStartAt),
-        pickupEnd: hhmm(p.pickupEndAt),
-        imageUrl: p.imageUrl ?? "",
-        templateId: p.templateId ?? "",
-      };
-      source = "前回の出品";
+      // 複製: 商品名・画像・価格・参考価格・説明・BOX は引き継ぎ、数量と受取時間は必ず入力し直す（過去の在庫・日時を公開しない）
+      defaults = { ...defaults, ...duplicateDefaults(p) };
+      source = "複製元の商品";
+      duplicated = true;
     }
   }
 
@@ -72,7 +63,16 @@ export default async function NewProductPage({ searchParams }: { searchParams: P
 
   return (
     <div className="max-w-2xl">
-      <PageHeader title="出品する" sub={source ? `${source}の内容を入れました。受取時間と数量を確認して公開してください。` : "商品名・数量・価格・受取時間を入れるだけで公開できます。"} />
+      <PageHeader
+        title="出品する"
+        sub={
+          duplicated
+            ? "複製元の商品名・写真・価格・説明を入れました。数量と受取時間を入力して公開してください。"
+            : source
+              ? `${source}の内容を入れました。受取時間と数量を確認して公開してください。`
+              : "商品名・価格・数量・受取時間を入れるだけで公開できます。"
+        }
+      />
       <div className="card p-5 md:p-6">
         <ProductForm
           storeId={store.storeId}

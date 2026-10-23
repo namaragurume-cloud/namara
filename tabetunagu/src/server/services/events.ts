@@ -20,7 +20,8 @@ export type EventName =
   | "monitor_fullscreen_enabled"
   | "my_page_viewed"
   | "orders_viewed"
-  | "points_history_viewed";
+  | "points_history_viewed"
+  | "store_dashboard_viewed";
 
 /** 分析イベントを記録する。失敗しても本処理は止めない。 */
 export async function logEvent(

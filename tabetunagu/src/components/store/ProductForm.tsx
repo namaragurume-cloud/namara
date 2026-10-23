@@ -1,10 +1,12 @@
 "use client";
 
-import { ImagePlus, Sparkles } from "lucide-react";
+import { Eye, ImagePlus, Sparkles } from "lucide-react";
 import Image from "next/image";
 import { useActionState, useRef, useState, useTransition } from "react";
 import { createProductAction, generateDescriptionAction } from "@/app/actions/store";
 import { CATEGORIES } from "@/lib/categories";
+import { discountOf } from "@/lib/deals";
+import { pickupPreview } from "@/lib/store-dashboard";
 import type { PriceSuggestion } from "@/lib/price-suggest";
 import { Button } from "../ui/Button";
 import { cn } from "../ui/cn";
@@ -18,7 +20,8 @@ export type ProductFormDefaults = {
   isBox: boolean;
   originalPrice: number | "";
   rescuePrice: number | "";
-  quantity: number;
+  /** 複製時は空（必ず入力し直す） */
+  quantity: number | "";
   pickupDate: string;
   pickupStart: string;
   pickupEnd: string;
@@ -63,7 +66,9 @@ export function ProductForm({
   const [category, setCategory] = useState(defaults.category);
   const [original, setOriginal] = useState<string>(String(defaults.originalPrice));
   const [price, setPrice] = useState<string>(String(defaults.rescuePrice));
-  const [quantity, setQuantity] = useState<number>(defaults.quantity);
+  const [quantity, setQuantity] = useState<string>(String(defaults.quantity));
+  const [pickupDate, setPickupDate] = useState(defaults.pickupDate);
+  const [pickupStart, setPickupStart] = useState(defaults.pickupStart);
   const [pickupEnd, setPickupEnd] = useState(defaults.pickupEnd);
   const [description, setDescription] = useState(defaults.description);
   const [keywords, setKeywords] = useState("");
@@ -94,7 +99,7 @@ export function ProductForm({
         category,
         rescuePrice: Number(price),
         originalPrice: original ? Number(original) : null,
-        quantity,
+        quantity: Number(quantity) || 1,
         pickupEnd,
         keywords: keywords || undefined,
       });
@@ -108,6 +113,10 @@ export function ProductForm({
   }
 
   const err = (key: string) => (errors[key] ? <p className="mt-1 text-[12px] text-clay">{errors[key]}</p> : null);
+  // お得率・受取時間のプレビュー（表示だけ。割引率は保存しない。共通関数 discountOf / pickupPreview）
+  const discount = discountOf(original === "" ? null : Number(original), price === "" ? null : Number(price));
+  const slot = pickupPreview(pickupDate, pickupStart, pickupEnd);
+  const BOX_NOTE = "中身は当日のお楽しみです。";
 
   return (
     <form action={action} className="space-y-6">
@@ -116,129 +125,16 @@ export function ProductForm({
       <input type="hidden" name="imageUrl" value={preview && !preview.startsWith("blob:") ? preview : ""} />
       <input type="hidden" name="isBox" value={isBox ? "on" : ""} />
 
-      <div className="grid grid-cols-2 gap-2 rounded-full bg-canvas p-1 text-[13px] font-semibold">
-        {[
-          { v: true, label: "食べつなぎBOX" },
-          { v: false, label: "単品" },
-        ].map((o) => (
-          <button
-            key={o.label}
-            type="button"
-            aria-pressed={isBox === o.v}
-            onClick={() => {
-              setIsBox(o.v);
-              if (o.v && !name) setName("本日の食べつなぎBOX");
-            }}
-            className={cn("rounded-full py-2", isBox === o.v ? "bg-paper text-ink shadow-sm" : "text-muted")}
-          >
-            {o.label}
-          </button>
-        ))}
-      </div>
-      {isBox && <p className="-mt-3 text-[12px] text-muted">中身は当日のお楽しみ。定価販売に影響しにくく、毎日続けやすい出し方です。</p>}
-
+      {/* 1. 商品名 */}
       <div>
         <label htmlFor="name" className="label">
           商品名
         </label>
-        <input id="name" name="name" required maxLength={60} value={name} onChange={(e) => setName(e.target.value)} className="field" placeholder="本日の食べつなぎBOX" />
+        <input id="name" name="name" required maxLength={60} value={name} onChange={(e) => setName(e.target.value)} className="field" placeholder="本日のパン 食べつなぎBOX" />
         {err("name")}
       </div>
 
-      <div className="grid grid-cols-3 gap-3">
-        <div>
-          <label htmlFor="quantity" className="label">
-            数量
-          </label>
-          <input
-            id="quantity"
-            name="quantity"
-            type="number"
-            inputMode="numeric"
-            min={1}
-            max={999}
-            required
-            value={quantity}
-            onChange={(e) => setQuantity(Number(e.target.value))}
-            className="field tnum"
-          />
-          {err("quantity")}
-        </div>
-        <div>
-          <label htmlFor="originalPrice" className="label">
-            通常価格（相当）
-          </label>
-          <input
-            id="originalPrice"
-            name="originalPrice"
-            type="number"
-            inputMode="numeric"
-            min={1}
-            required
-            value={original}
-            onChange={(e) => setOriginal(e.target.value)}
-            className="field tnum"
-            placeholder="1500"
-          />
-          {err("originalPrice")}
-        </div>
-        <div>
-          <label htmlFor="rescuePrice" className="label">
-            食べつなぎ価格
-          </label>
-          <input
-            id="rescuePrice"
-            name="rescuePrice"
-            type="number"
-            inputMode="numeric"
-            min={1}
-            required
-            value={price}
-            onChange={(e) => setPrice(e.target.value)}
-            className="field tnum font-semibold"
-            placeholder="800"
-          />
-          {err("rescuePrice")}
-        </div>
-      </div>
-
-      {plan === "standard" && priceSuggestion ? (
-        <div className="rounded-2xl border border-forest/20 bg-leaf-soft px-4 py-3 text-[12.5px] text-forest">
-          <p className="flex items-center gap-1.5 font-bold">
-            <Sparkles className="h-4 w-4" aria-hidden />
-            AI値引き提案：{priceSuggestion.suggestedPrice.toLocaleString("ja-JP")}円
-            {priceSuggestion.direction !== "keep" && (
-              <button type="button" onClick={() => setPrice(String(priceSuggestion.suggestedPrice))} className="ml-auto rounded-full bg-paper px-3 py-1 text-[12px] font-semibold">
-                この価格にする
-              </button>
-            )}
-          </p>
-          <p className="mt-1 leading-relaxed">{priceSuggestion.reason}</p>
-        </div>
-      ) : plan === "free" ? (
-        <p className="text-[12px] text-muted">STANDARD プランでは、販売履歴からAIが価格を提案します。</p>
-      ) : null}
-
-      <div>
-        <span className="label">受取時間</span>
-        <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2">
-          <input aria-label="受取開始" name="pickupStart" type="time" required defaultValue={defaults.pickupStart} step={900} className="field tnum" />
-          <span className="text-muted">〜</span>
-          <input aria-label="受取終了" name="pickupEnd" type="time" required value={pickupEnd} onChange={(e) => setPickupEnd(e.target.value)} step={900} className="field tnum" />
-        </div>
-        <div className="mt-2 flex gap-4 text-[13px]">
-          <label className="flex items-center gap-1.5">
-            <input type="radio" name="pickupDate" value={today} defaultChecked={defaults.pickupDate !== tomorrow} className="accent-[var(--forest)]" />
-            今日
-          </label>
-          <label className="flex items-center gap-1.5">
-            <input type="radio" name="pickupDate" value={tomorrow} defaultChecked={defaults.pickupDate === tomorrow} className="accent-[var(--forest)]" />
-            明日
-          </label>
-        </div>
-        {err("pickupStart") || err("pickupEnd") || err("pickupDate")}
-      </div>
-
+      {/* 2. 写真 */}
       <div>
         <span className="label">写真（任意）</span>
         <div className="flex items-center gap-3">
@@ -246,6 +142,7 @@ export function ProductForm({
             type="button"
             onClick={() => fileRef.current?.click()}
             disabled={!uploadsAvailable}
+            aria-label="写真を選ぶ"
             className="relative flex h-24 w-24 shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-dashed border-line bg-canvas text-muted disabled:opacity-50"
           >
             {preview ? (
@@ -273,10 +170,163 @@ export function ProductForm({
         </div>
       </div>
 
+      {/* 3〜4. 販売価格・参考価格 */}
+      <div className="grid grid-cols-2 gap-3">
+        <div>
+          <label htmlFor="rescuePrice" className="label">
+            食べつなぎ価格（販売価格）
+          </label>
+          <input
+            id="rescuePrice"
+            name="rescuePrice"
+            type="number"
+            inputMode="numeric"
+            min={1}
+            required
+            value={price}
+            onChange={(e) => setPrice(e.target.value)}
+            className="field tnum font-semibold"
+            placeholder="750"
+          />
+          {err("rescuePrice")}
+        </div>
+        <div>
+          <label htmlFor="originalPrice" className="label">
+            通常価格（相当）
+          </label>
+          <input
+            id="originalPrice"
+            name="originalPrice"
+            type="number"
+            inputMode="numeric"
+            min={1}
+            required
+            value={original}
+            onChange={(e) => setOriginal(e.target.value)}
+            className="field tnum"
+            placeholder="1500"
+            aria-describedby="original-help"
+          />
+          <p id="original-help" className="mt-1 text-[11.5px] text-muted">
+            参考価格。お客様には「○円相当」と表示します
+          </p>
+          {err("originalPrice")}
+        </div>
+      </div>
+      <p className="-mt-3 text-[13px] font-bold text-forest-2" aria-live="polite" data-testid="discount-preview">
+        {discount ? `${discount.rate}%OFF（${discount.amount.toLocaleString("ja-JP")}円おトク）` : ""}
+      </p>
+
+      {plan === "standard" && priceSuggestion ? (
+        <div className="rounded-2xl border border-forest/20 bg-leaf-soft px-4 py-3 text-[12.5px] text-forest">
+          <p className="flex items-center gap-1.5 font-bold">
+            <Sparkles className="h-4 w-4" aria-hidden />
+            AI値引き提案：{priceSuggestion.suggestedPrice.toLocaleString("ja-JP")}円
+            {priceSuggestion.direction !== "keep" && (
+              <button type="button" onClick={() => setPrice(String(priceSuggestion.suggestedPrice))} className="ml-auto rounded-full bg-paper px-3 py-1 text-[12px] font-semibold">
+                この価格にする
+              </button>
+            )}
+          </p>
+          <p className="mt-1 leading-relaxed">{priceSuggestion.reason}</p>
+        </div>
+      ) : null}
+
+      {/* 5. 数量 */}
+      <div className="max-w-[160px]">
+        <label htmlFor="quantity" className="label">
+          数量
+        </label>
+        <input
+          id="quantity"
+          name="quantity"
+          type="number"
+          inputMode="numeric"
+          min={1}
+          max={999}
+          required
+          value={quantity}
+          onChange={(e) => setQuantity(e.target.value)}
+          className="field tnum"
+          placeholder="3"
+        />
+        {err("quantity")}
+      </div>
+
+      {/* 6. 受取時間（日付つきで判定。終了が開始以前なら翌日） */}
+      <fieldset>
+        <legend className="label">受取時間</legend>
+        <div className="mb-2 flex gap-4 text-[13px]">
+          <label className="flex items-center gap-1.5">
+            <input type="radio" name="pickupDate" value={today} checked={pickupDate === today} onChange={() => setPickupDate(today)} className="accent-[var(--forest)]" />
+            今日
+          </label>
+          <label className="flex items-center gap-1.5">
+            <input type="radio" name="pickupDate" value={tomorrow} checked={pickupDate === tomorrow} onChange={() => setPickupDate(tomorrow)} className="accent-[var(--forest)]" />
+            明日
+          </label>
+        </div>
+        <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2">
+          <input aria-label="受取開始" name="pickupStart" type="time" required value={pickupStart} onChange={(e) => setPickupStart(e.target.value)} step={900} className="field tnum" />
+          <span className="text-muted">〜</span>
+          <input aria-label="受取終了" name="pickupEnd" type="time" required value={pickupEnd} onChange={(e) => setPickupEnd(e.target.value)} step={900} className="field tnum" />
+        </div>
+        <p className="tnum mt-1.5 text-[12.5px] text-ink-2" aria-live="polite" data-testid="pickup-preview">
+          {slot ? (
+            <>
+              受取：<span className="font-semibold text-ink">{slot.label}</span>
+              {slot.overnight && "（終了は翌日）"}
+            </>
+          ) : (
+            "受取開始と受取終了を入れてください"
+          )}
+        </p>
+        {err("pickupStart") || err("pickupEnd") || err("pickupDate")}
+      </fieldset>
+
+      {/* 7. BOX */}
+      <div>
+        <span className="label">出し方</span>
+        <div className="grid grid-cols-2 gap-2 rounded-full bg-canvas p-1 text-[13px] font-semibold">
+          {[
+            { v: true, label: "食べつなぎBOX" },
+            { v: false, label: "単品" },
+          ].map((o) => (
+            <button
+              key={o.label}
+              type="button"
+              aria-pressed={isBox === o.v}
+              onClick={() => {
+                setIsBox(o.v);
+                if (o.v && !name) setName("本日の食べつなぎBOX");
+              }}
+              className={cn("rounded-full py-2", isBox === o.v ? "bg-paper text-ink shadow-sm" : "text-muted")}
+            >
+              {o.label}
+            </button>
+          ))}
+        </div>
+        {isBox && (
+          <p className="mt-1.5 flex flex-wrap items-center gap-2 text-[12px] text-muted">
+            中身は当日のお楽しみ。毎日続けやすい出し方です。
+            {!description.includes(BOX_NOTE) && (
+              <button
+                type="button"
+                className="rounded-full border border-line px-2.5 py-0.5 font-semibold text-forest"
+                onClick={() => setDescription((d) => (d ? `${d.trim()}\n${BOX_NOTE}` : BOX_NOTE))}
+              >
+                「中身は当日のお楽しみ」を紹介文に入れる
+              </button>
+            )}
+          </p>
+        )}
+      </div>
+
+      {/* 8. 紹介文（AI は任意の補助） */}
       <div>
         <div className="mb-1.5 flex items-center justify-between">
           <label htmlFor="description" className="label mb-0">
-            紹介文
+            紹介文（任意）
           </label>
           <Button type="button" variant="secondary" size="sm" onClick={generate} disabled={generating || !name || !price}>
             <Sparkles className="h-4 w-4 text-forest" aria-hidden />
@@ -301,6 +351,7 @@ export function ProductForm({
           className="field leading-relaxed"
           placeholder="本日限定の食べつなぎBOX。今日店頭に並んだパンを詰め合わせました。"
         />
+        <p className="mt-1 text-[11.5px] text-muted">アレルゲン・原材料・消費期限は AI では作りません。必要な場合はお店で確認して記入してください。</p>
         {aiMessage && <p className="mt-1 text-[12px] text-forest">{aiMessage}</p>}
         {err("description")}
       </div>
@@ -318,12 +369,31 @@ export function ProductForm({
         </select>
       </div>
 
+      {/* 公開前の簡易プレビュー（お客様の商品カードに近い表示） */}
+      <section className="rounded-2xl border border-line bg-canvas p-4" aria-label="お客様に表示される内容" data-testid="product-preview">
+        <p className="flex items-center gap-1 text-[12px] font-bold text-ink-2">
+          <Eye className="h-4 w-4" aria-hidden />
+          お客様にはこのように表示されます
+        </p>
+        <p className="mt-2 text-[15px] font-bold">{name || "商品名"}</p>
+        <p className="tnum mt-0.5 text-[14px]">
+          <span className="text-[18px] font-bold">{price ? `${Number(price).toLocaleString("ja-JP")}円` : "—"}</span>
+          {original && <span className="ml-2 text-ink-2">{Number(original).toLocaleString("ja-JP")}円相当</span>}
+          {discount && <span className="ml-2 font-bold text-forest-2">{discount.rate}%OFF</span>}
+        </p>
+        <p className="tnum mt-0.5 text-[12.5px] text-ink-2">
+          受取 {slot ? slot.label : "—"}・残り {quantity || "—"}
+          {isBox ? "BOX" : "点"}
+        </p>
+      </section>
+
       <label className="flex items-center gap-2 text-[13px]">
         <input type="checkbox" name="saveTemplate" defaultChecked={Boolean(defaults.templateId) || isBox} className="h-4 w-4 accent-[var(--forest)]" />
         「いつもの出品」として保存する（次回からワンタップで出品できます）
       </label>
 
       {state && !state.ok && <Notice tone="error">{state.message}</Notice>}
+      {/* 9. 公開 */}
       <SubmitButton size="lg" className="w-full" pendingLabel="公開しています…">
         確認して公開する
       </SubmitButton>

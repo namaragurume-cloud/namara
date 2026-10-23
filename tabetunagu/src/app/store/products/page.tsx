@@ -7,6 +7,7 @@ import { cn } from "@/components/ui/cn";
 import { EmptyState } from "@/components/ui/Section";
 import { ProductStatusBadge } from "@/components/ui/StatusBadge";
 import { pickupLabel, yen } from "@/lib/format";
+import { features } from "@/lib/features";
 import { requireStoreMember } from "@/server/auth/viewer";
 import { listStoreProducts } from "@/server/services/store";
 
@@ -17,9 +18,10 @@ export default async function StoreProductsPage({ searchParams }: { searchParams
   const scope = raw === "past" ? "past" : "active";
   const { viewer, store } = await requireStoreMember("/store/products");
   const items = await listStoreProducts(viewer.id, store.storeId, scope);
+  const v2 = features.v2Journey;
   return (
     <div>
-      <PageHeader title="出品商品" action={<ButtonLink href="/store/products/new">出品する</ButtonLink>} />
+      <PageHeader title="出品商品" action={<ButtonLink href="/store/products/new">商品を出品する</ButtonLink>} />
       <div className="mb-4 flex gap-1 text-[13px] font-semibold">
         {[
           { id: "active", label: "受付中・これから" },
@@ -31,17 +33,21 @@ export default async function StoreProductsPage({ searchParams }: { searchParams
         ))}
       </div>
       {items.length === 0 ? (
-        <EmptyState title={scope === "active" ? "受付中の出品はありません" : "過去の出品はありません"} />
+        <EmptyState
+          title={scope === "active" ? "受付中の出品はありません" : "過去の出品はありません"}
+          action={scope === "active" ? <ButtonLink href="/store/products/new">商品を出品する</ButtonLink> : undefined}
+        />
       ) : (
         <div className="card overflow-x-auto">
-          <table className="w-full min-w-[760px] text-[13px]">
+          <table className="w-full min-w-[860px] text-[13px]" data-testid="store-products-table">
             <thead className="text-left text-[12px] text-muted">
               <tr className="border-b border-line">
                 <th className="px-4 py-2.5 font-semibold">商品</th>
                 <th className="px-3 py-2.5 font-semibold">受取時間</th>
-                <th className="px-3 py-2.5 text-right font-semibold">価格</th>
-                <th className="px-3 py-2.5 text-right font-semibold">残数 / 数量</th>
-                <th className="px-3 py-2.5 text-right font-semibold">完了</th>
+                <th className="px-3 py-2.5 text-right font-semibold">販売価格</th>
+                <th className="px-3 py-2.5 text-right font-semibold">参考価格</th>
+                <th className="px-3 py-2.5 text-right font-semibold">残り / 数量</th>
+                <th className="px-3 py-2.5 text-right font-semibold">{v2 ? "売れた数" : "完了"}</th>
                 <th className="px-3 py-2.5 font-semibold">状態</th>
                 <th className="px-4 py-2.5 text-right font-semibold">操作</th>
               </tr>
@@ -55,11 +61,12 @@ export default async function StoreProductsPage({ searchParams }: { searchParams
                     </Link>
                   </td>
                   <td className="tnum px-3 py-3">{pickupLabel(p.pickupStartAt, p.pickupEndAt)}</td>
-                  <td className="tnum px-3 py-3 text-right">{yen(p.rescuePrice)}</td>
+                  <td className="tnum px-3 py-3 text-right font-semibold">{yen(p.rescuePrice)}</td>
+                  <td className="tnum px-3 py-3 text-right text-ink-2">{yen(p.originalPrice)}相当</td>
                   <td className="tnum px-3 py-3 text-right">
                     {p.remaining} / {p.quantity}
                   </td>
-                  <td className="tnum px-3 py-3 text-right">{p.completedCount}</td>
+                  <td className="tnum px-3 py-3 text-right">{v2 ? p.quantity - p.remaining : p.completedCount}</td>
                   <td className="px-3 py-3">
                     <ProductStatusBadge status={p.status} pickupEndAt={p.pickupEndAt} />
                   </td>
@@ -81,8 +88,12 @@ export default async function StoreProductsPage({ searchParams }: { searchParams
                           <button className="rounded-full border border-line px-3 py-1 text-[12px] font-semibold hover:bg-canvas">再開</button>
                         </form>
                       )}
-                      <Link href={`/store/products/new?from=${p.id}`} className="rounded-full border border-line px-3 py-1 text-[12px] font-semibold hover:bg-canvas">
-                        再出品
+                      <Link
+                        href={`/store/products/new?from=${p.id}`}
+                        className="rounded-full border border-line px-3 py-1 text-[12px] font-semibold hover:bg-canvas"
+                        data-testid="product-duplicate"
+                      >
+                        複製して出品
                       </Link>
                     </div>
                   </td>

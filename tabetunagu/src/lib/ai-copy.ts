@@ -48,6 +48,9 @@ export function templateDescription(input: DescriptionInput): string {
 }
 
 /** AI 出力の後処理。空・長すぎ・トーン違反なら null を返す（呼び出し側でテンプレートに切り替える）。 */
+/** AI に書かせない情報（アレルゲン・原材料・期限・安全性） */
+export const SAFETY_INFO_RE = /アレルゲン|アレルギー|原材料|消費期限|賞味期限|安全|無添加|健康/;
+
 export function sanitizeAiDescription(text: string | null | undefined): string | null {
   if (!text) return null;
   const cleaned = text
@@ -56,5 +59,7 @@ export function sanitizeAiDescription(text: string | null | undefined): string |
     .trim();
   if (cleaned.length < 10 || cleaned.length > 400) return null;
   if (containsForbiddenWord(cleaned)) return null;
+  // アレルゲン・原材料・期限・安全性は AI に推測させない（お店が確認して書く）。含まれていればテンプレートに切り替える
+  if (SAFETY_INFO_RE.test(cleaned)) return null;
   return cleaned;
 }

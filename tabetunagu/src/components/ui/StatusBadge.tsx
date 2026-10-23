@@ -1,5 +1,6 @@
 import { Badge } from "./Badge";
 import { nowMs } from "@/lib/clock";
+import { productStateLabel, type ProductStateLabel } from "@/lib/store-dashboard";
 
 const RESERVATION: Record<string, { label: string; tone: Parameters<typeof Badge>[0]["tone"] }> = {
   pending: { label: "確定待ち", tone: "sand" },
@@ -18,22 +19,23 @@ export function ReservationStatusBadge({ status, pickupEndAt }: { status: string
   return <Badge tone={s.tone}>{s.label}</Badge>;
 }
 
-const PRODUCT: Record<string, { label: string; tone: Parameters<typeof Badge>[0]["tone"] }> = {
-  draft: { label: "下書き", tone: "sand" },
-  published: { label: "公開中", tone: "green" },
-  sold_out: { label: "売り切れ", tone: "dark" },
-  closed: { label: "受付終了", tone: "outline" },
-  deleted: { label: "削除済み", tone: "outline" },
+const PRODUCT_TONE: Record<ProductStateLabel, Parameters<typeof Badge>[0]["tone"]> = {
+  公開中: "green",
+  売り切れ: "dark",
+  受付終了: "outline",
+  下書き: "sand",
+  非公開: "sand",
 };
 
 /**
- * 店舗の商品管理での状態: 公開中 / 売り切れ / 受付終了 / 非公開（受付停止・下書き）
- * 受取終了時刻を過ぎた商品は、状態の更新前でも「受付終了」と表示する。
+ * 店舗の商品管理での状態: 公開中 / 売り切れ / 受付終了 / 下書き / 非公開（受付停止）
+ * 受取終了時刻を過ぎた商品は、状態の更新前でも「受付終了」と表示する（lib/store-dashboard）。
  */
 export function ProductStatusBadge({ status, pickupEndAt }: { status: string; pickupEndAt?: string }) {
-  const ended = pickupEndAt !== undefined && Date.parse(pickupEndAt) <= nowMs();
-  if (status !== "deleted" && ended) return <Badge tone="outline">受付終了</Badge>;
-  if (status === "closed" || status === "draft") return <Badge tone="sand">非公開</Badge>;
-  const s = PRODUCT[status] ?? { label: status, tone: "neutral" as const };
-  return <Badge tone={s.tone}>{s.label}</Badge>;
+  const label = productStateLabel(status, pickupEndAt, nowMs());
+  return (
+    <Badge tone={PRODUCT_TONE[label]}>
+      <span data-testid="product-state">{label}</span>
+    </Badge>
+  );
 }

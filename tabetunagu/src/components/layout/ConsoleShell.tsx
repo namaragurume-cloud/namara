@@ -23,13 +23,15 @@ export function ConsoleShell({
           <div className="flex min-w-0 items-center gap-3">
             <Link href="/" aria-label="ユーザー画面へ" className="shrink-0">
               <LogoMark className="sm:hidden" />
-              <Logo className="hidden sm:inline-flex" />
+              <span className="hidden sm:inline-flex">
+                <Logo />
+              </span>
             </Link>
             <span className="hidden h-5 w-px bg-line sm:block" />
             <span className="truncate text-[13px] font-bold text-ink-2">{title}</span>
             {badge}
           </div>
-          <div className="flex items-center gap-2">{headerExtra}</div>
+          <div className="flex shrink-0 items-center gap-2 whitespace-nowrap">{headerExtra}</div>
         </div>
       </header>
       <div className="mx-auto max-w-7xl px-4 py-4 lg:grid lg:grid-cols-[200px_1fr] lg:gap-8 lg:py-8">

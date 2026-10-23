@@ -24,6 +24,9 @@ const NAV = [
 /** v2（事前決済）がメインのとき: 旧フローの予約状況はナビに出さない。店頭QRは障害時の切り替え用（POC_GO_LIVE_CHECKLIST.md） */
 const V2_NAV = NAV.filter((n) => n.href !== "/store/reservations").map((n) => (n.href === "/store/qr" ? { ...n, label: "QRコード（障害時用）" } : n));
 
+/** スタッフには出さない（売上の詳細・売上受取設定はオーナーが管理する） */
+const OWNER_ONLY = new Set(["/store/sales", "/store/payouts"]);
+
 export default async function StoreLayout({ children }: { children: React.ReactNode }) {
   const { viewer, store } = await requireStoreMember("/store");
   return (
@@ -35,7 +38,7 @@ export default async function StoreLayout({ children }: { children: React.ReactN
           {store.status !== "active" && <Badge tone="clay">{store.status === "pending" ? "審査中" : "停止中"}</Badge>}
         </>
       }
-      nav={features.v2Journey ? V2_NAV : NAV}
+      nav={(features.v2Journey ? V2_NAV : NAV).filter((n) => store.role === "owner" || !OWNER_ONLY.has(n.href))}
       headerExtra={
         viewer.memberships.length > 1 ? (
           <form action={selectStoreAction} className="flex items-center gap-2">

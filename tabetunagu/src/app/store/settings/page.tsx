@@ -61,17 +61,26 @@ export default async function StoreSettingsPage() {
                     );
                   })}
                 </ul>
-                {owner && current !== code && (
+                {owner && current !== code && !features.v2Journey && (
                   <div className="mt-5">
                     <ChangePlanForm storeId={store.storeId} plan={code} label={`${p.name} に変更する`} />
                   </div>
+                )}
+                {owner && current !== code && features.v2Journey && code === "standard" && (
+                  // 月額の課金（Billing）は未実装のため、ここではプランを変更しない
+                  <p className="mt-5 rounded-xl bg-canvas px-3 py-2.5 text-[12.5px] text-ink-2" data-testid="standard-preparing">
+                    <span className="font-bold text-ink">STANDARD 申込準備中</span>
+                    <br />
+                    STANDARD への切り替えは現在準備中です。ご希望の場合は運営担当にご相談ください（この画面ではプランは変わりません）。
+                  </p>
                 )}
               </div>
             );
           })}
         </div>
         <p className="mt-3 text-[12px] text-muted">
-          月間の成約売上が {yen(BREAK_EVEN_GMV)} を超えると、STANDARD のほうが手数料の合計が安くなります。プラン変更は即時反映され、変更後の成約から新しい手数料率になります。
+          月間の売上が {yen(BREAK_EVEN_GMV)} を超えると、STANDARD のほうが手数料の合計が安くなる計算です（成約手数料・月額はいずれも決済手数料込み）。
+          {features.v2Journey ? " まずは FREE で始められます。" : " プラン変更は即時反映され、変更後の成約から新しい手数料率になります。"}
           {!owner && " プランの変更はオーナーのみ行えます。"}
         </p>
       </section>

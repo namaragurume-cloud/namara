@@ -44,7 +44,7 @@ export default async function StoreProductPage({ params }: { params: Promise<{ i
               </form>
             )}
             <ButtonLink href={`/store/products/new?from=${p.id}`} variant="secondary">
-              この内容で再出品
+              複製して出品
             </ButtonLink>
           </div>
         }
