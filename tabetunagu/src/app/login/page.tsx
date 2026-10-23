@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { demoLoginAction } from "@/app/actions/auth";
+import { LineLoginButton } from "@/components/liff/LineLoginButton";
 import { Logo } from "@/components/ui/Logo";
 import { Notice } from "@/components/ui/Section";
 import { SubmitButton } from "@/components/ui/SubmitButton";
@@ -51,12 +52,12 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
       <div className="mt-8 space-y-3">
         {error && <Notice tone="error">{errorMessage(error)}</Notice>}
         {lineEnabled ? (
-          <a
-            href={`/api/auth/line?next=${encodeURIComponent(next)}`}
+          <LineLoginButton
+            next={next}
             className="flex h-14 w-full items-center justify-center gap-2 rounded-full bg-[#06C755] text-[16px] font-bold text-white hover:brightness-95"
           >
-            LINEでログイン
-          </a>
+            {rawNext ? "LINEでログインして続ける" : "LINEでログイン"}
+          </LineLoginButton>
         ) : (
           <Notice>LINEログインは準備中です（LINE_CHANNEL_ID / LINE_CHANNEL_SECRET が未設定）。</Notice>
         )}

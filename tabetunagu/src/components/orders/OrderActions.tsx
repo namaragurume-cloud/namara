@@ -4,12 +4,15 @@ import { useActionState } from "react";
 import { cancelPendingOrderAction, requestRefundAction, resumeCheckoutAction } from "@/app/actions/payments";
 import { Notice } from "../ui/Section";
 import { SubmitButton } from "../ui/SubmitButton";
+import { OFFLINE_MESSAGE, useOfflineGuard } from "../forms/offline";
 
 export function ResumeCheckoutForm({ orderId, total }: { orderId: string; total: number }) {
   const [state, action] = useActionState(resumeCheckoutAction, null);
+  const { offline, onSubmit } = useOfflineGuard();
   return (
-    <form action={action} className="space-y-3">
+    <form action={action} onSubmit={onSubmit} className="space-y-3">
       <input type="hidden" name="orderId" value={orderId} />
+      {offline && <Notice tone="error">{OFFLINE_MESSAGE}</Notice>}
       {state && !state.ok && <Notice tone="error">{state.message}</Notice>}
       <SubmitButton size="lg" className="w-full" pendingLabel="決済ページへ移動しています…">
         {total.toLocaleString("ja-JP")}円のお支払いへ進む

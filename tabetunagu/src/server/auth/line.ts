@@ -79,8 +79,13 @@ export async function upsertLineUser(profile: LineProfile): Promise<string> {
   });
 }
 
-/** 戻り先は自サイト内のパスのみ許可（オープンリダイレクト対策） */
+/**
+ * 戻り先は自サイト内のパスのみ許可（オープンリダイレクト対策）。
+ * ブラウザは URL 中のタブ・改行を取り除き、「\」を「/」として扱うため、制御文字・バックスラッシュを含むものは拒否する
+ * （例: "/\t/evil.example" は "//evil.example" として解釈される）。
+ */
 export function safeNextPath(next: string | null | undefined, fallback = "/") {
-  if (!next || !next.startsWith("/") || next.startsWith("//") || next.startsWith("/\\")) return fallback;
+  if (!next || next.length > 2048 || !next.startsWith("/") || next.startsWith("//")) return fallback;
+  if (/[\u0000-\u001f\u007f\\]/.test(next)) return fallback;
   return next;
 }

@@ -101,6 +101,15 @@ export function SwipeToConfirm({ orderId }: { orderId: string }) {
     lastClientX.current = null;
     dispatch({ type: "up", maxX });
   };
+  // OS のジェスチャー（iOS の戻るスワイプ・スクロール等）に操作を奪われたときは、確定せずに初期位置へ戻す
+  const onPointerCancel = () => {
+    if (frame.current !== null) {
+      cancelAnimationFrame(frame.current);
+      frame.current = null;
+    }
+    lastClientX.current = null;
+    dispatch({ type: "key", key: "Escape", maxX });
+  };
   const onKeyDown = (e: KeyboardEvent<HTMLButtonElement>) => {
     if (locked) return;
     if (["ArrowRight", "ArrowLeft", "Home", "Escape"].includes(e.key)) {
@@ -158,7 +167,7 @@ export function SwipeToConfirm({ orderId }: { orderId: string }) {
           onPointerDown={onPointerDown}
           onPointerMove={onPointerMove}
           onPointerUp={onPointerUp}
-          onPointerCancel={onPointerUp}
+          onPointerCancel={onPointerCancel}
           onKeyDown={onKeyDown}
           className={cn(
             "absolute top-1 left-1 flex items-center justify-center rounded-full bg-paper text-forest shadow-md outline-offset-4 focus-visible:outline-2 focus-visible:outline-white",

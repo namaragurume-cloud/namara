@@ -210,7 +210,7 @@ DB を初期化したいときは `.data/` を削除してください。
 | `OPENAI_API_KEY` / `OPENAI_MODEL` | 任意 | AI 文章生成（未設定ならテンプレート） |
 | `ENABLE_V2_CHECKOUT` | 任意 | `true` で v2（事前決済）をメインの購入導線にする。未設定は旧導線（§11-4）。production では必要な設定がそろわないと OFF のまま |
 | `STRIPE_SECRET_KEY` / `STRIPE_WEBHOOK_SECRET` | v2 決済 | Stripe（事前決済・Connect）。未設定なら購入・売上受取設定は準備中 |
-| `STRIPE_CHECKOUT_RETURN_URL` | 任意 | Checkout からの戻り先（未設定なら `NEXT_PUBLIC_APP_URL`。LIFF なら `https://liff.line.me/<LIFF ID>`） |
+| `STRIPE_CHECKOUT_RETURN_URL` | 任意 | Checkout からの戻り先（未設定なら `NEXT_PUBLIC_APP_URL`。LINE ミニアプリ内に戻すなら `https://miniapp.line.me/<LIFF ID>`。旧形式の liff.line.me も開ける） |
 | `STRIPE_PAYMENT_METHOD_CONFIGURATION` | 任意 | 決済手段を固定する Payment Method Configuration（`pmc_...`） |
 
 秘密情報は `.env.local` または Vercel の環境変数にのみ保存し、Git にコミットしないでください。

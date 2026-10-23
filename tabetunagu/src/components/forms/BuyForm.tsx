@@ -6,6 +6,7 @@ import { purchaseAction, resumeCheckoutAction } from "@/app/actions/payments";
 import { buyLabel, priceBreakdown } from "@/lib/purchase";
 import { Notice } from "../ui/Section";
 import { SubmitButton } from "../ui/SubmitButton";
+import { OFFLINE_MESSAGE, useOfflineGuard } from "./offline";
 
 /**
  * v2 購入確認（事前決済）のフォーム。
@@ -34,9 +35,15 @@ export function BuyForm({
 }) {
   const [state, action] = useActionState(purchaseAction, null);
   const [qty, setQty] = useState(1);
+  const { offline, onSubmit } = useOfflineGuard();
   const b = priceBreakdown(unitPrice, tsunaguCharge, orderPoints, qty);
   return (
-    <form action={action} className="space-y-4">
+    <form action={action} onSubmit={onSubmit} className="space-y-4">
+      {offline && (
+        <div role="alert" data-testid="buy-offline">
+          <Notice tone="error">{OFFLINE_MESSAGE}</Notice>
+        </div>
+      )}
       <input type="hidden" name="productId" value={productId} />
       <input type="hidden" name="quantity" value={qty} />
       {max > 1 && (
@@ -142,9 +149,15 @@ export function StickyBar({ children }: { children: ReactNode }) {
 /** 決済待ちの注文の決済を再開する（新しい注文は作らない） */
 export function ResumeCheckoutForm({ orderId, total }: { orderId: string; total: number }) {
   const [state, action] = useActionState(resumeCheckoutAction, null);
+  const { offline, onSubmit } = useOfflineGuard();
   return (
-    <form action={action}>
+    <form action={action} onSubmit={onSubmit}>
       <input type="hidden" name="orderId" value={orderId} />
+      {offline && (
+        <div role="alert" className="mb-3" data-testid="buy-offline">
+          <Notice tone="error">{OFFLINE_MESSAGE}</Notice>
+        </div>
+      )}
       {state && !state.ok && (
         <div role="alert" className="mb-3" data-testid="buy-error">
           <Notice tone="error">{state.message}</Notice>

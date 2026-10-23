@@ -111,7 +111,8 @@ export const env = {
     },
     /**
      * Checkout から戻る先のベース URL（success / cancel）。未設定なら NEXT_PUBLIC_APP_URL。
-     * LINE ミニアプリ / LIFF 内に戻す場合は https://liff.line.me/<LIFF ID> などを設定する。
+     * LINE ミニアプリ内に戻す場合は https://miniapp.line.me/<LIFF ID> を設定する（2023/12 以降の LINE ミニアプリの URL。
+     * 旧形式の https://liff.line.me/<LIFF ID> も開けるが新しくは使わない。line://app/... は使わない）。
      */
     get checkoutReturnUrl() {
       return (process.env.STRIPE_CHECKOUT_RETURN_URL || env.appUrl).replace(/\/$/, "");

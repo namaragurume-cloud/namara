@@ -4,11 +4,6 @@ import { SESSION_COOKIE, sessionCookieOptions, signSession } from "@/server/auth
 import { env } from "@/server/env";
 
 export async function GET(req: NextRequest) {
-  const fail = (code = "login_failed") => {
-    const res = NextResponse.redirect(new URL(`/login?error=${code}`, env.appUrl));
-    res.cookies.delete({ name: "tt_line_oauth", path: "/api/auth/line" });
-    return res;
-  };
   const code = req.nextUrl.searchParams.get("code");
   const state = req.nextUrl.searchParams.get("state");
   let saved: { state: string; nonce: string; next: string } | null = null;
@@ -17,6 +12,16 @@ export async function GET(req: NextRequest) {
   } catch {
     saved = null;
   }
+  // 失敗・キャンセル（LINE の同意画面で「キャンセル」）でも、もう一度ログインすれば元の画面へ戻れるよう next を残す
+  const fail = (errorCode = "login_failed") => {
+    const next = safeNextPath(saved?.next, "/");
+    const url = new URL("/login", env.appUrl);
+    url.searchParams.set("error", errorCode);
+    if (next !== "/") url.searchParams.set("next", next);
+    const res = NextResponse.redirect(url);
+    res.cookies.delete({ name: "tt_line_oauth", path: "/api/auth/line" });
+    return res;
+  };
   // state 検証（CSRF 対策）
   if (!code || !state || !saved || saved.state !== state) return fail();
   try {

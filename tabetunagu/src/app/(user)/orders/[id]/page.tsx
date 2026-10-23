@@ -5,6 +5,7 @@ import { notFound } from "next/navigation";
 import { CancelPendingOrderForm, ResumeCheckoutForm, UserRefundForm } from "@/components/orders/OrderActions";
 import { PaymentStatusPoller } from "@/components/orders/PaymentStatusPoller";
 import { PickupTicket } from "@/components/orders/PickupTicket";
+import { RefreshOnVisible } from "@/components/orders/RefreshOnVisible";
 import { SwipeToConfirm } from "@/components/orders/SwipeToConfirm";
 import { ButtonLink } from "@/components/ui/Button";
 import { Notice } from "@/components/ui/Section";
@@ -49,7 +50,17 @@ export default async function OrderPage({
       <div className="space-y-4" data-testid="order-page" data-status={order.status}>
         {/* 受取チケットでは下部ナビを出さない（スワイプの誤操作を防ぎ、チケットに集中する。globals.css） */}
         <span data-hide-bottom-nav hidden />
-        {order.status === "paid" && from === "checkout" && <Notice tone="success">お支払いが完了しました。</Notice>}
+        {/* LINE をバックグラウンドにして戻ったときなどに、最新の状態で描き直す */}
+        {order.status === "paid" && <RefreshOnVisible />}
+        {order.status === "paid" && from === "checkout" && (
+          <div data-testid="payment-done">
+            <Notice tone="success">
+              <span className="font-bold">お支払いが完了しました。</span>
+              <br />
+              受取時間になったら店舗へお越しください。この受取チケットをスタッフにお見せください。
+            </Notice>
+          </div>
+        )}
         {order.status === "picked_up" && (
           <div className="pt-1 text-center" data-testid="pickup-done">
             <CircleCheck className="anim-ring mx-auto h-14 w-14 text-forest" strokeWidth={1.8} aria-hidden />
