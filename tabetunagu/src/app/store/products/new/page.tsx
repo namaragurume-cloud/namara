@@ -73,6 +73,24 @@ export default async function NewProductPage({ searchParams }: { searchParams: P
               : "商品名・価格・数量・受取時間を入れるだけで公開できます。"
         }
       />
+      {!dashboard.lastProduct && !source && (
+        // 初めての出品だけ、入力の例を短く出す
+        <section className="mb-4 rounded-2xl border border-forest/25 bg-leaf-soft px-4 py-3 text-[13px] text-forest-2" data-testid="first-product-guide">
+          <p className="font-bold">最初の商品を出品してみましょう。入力の例：</p>
+          <dl className="tnum mt-1.5 grid grid-cols-[auto_1fr] gap-x-3 gap-y-0.5">
+            <dt>商品名</dt>
+            <dd>本日のパン 食べつなぎBOX</dd>
+            <dt>通常価格（相当）</dt>
+            <dd>1,500円</dd>
+            <dt>販売価格</dt>
+            <dd>750円</dd>
+            <dt>数量</dt>
+            <dd>3</dd>
+            <dt>受取</dt>
+            <dd>20:00〜22:00</dd>
+          </dl>
+        </section>
+      )}
       <div className="card p-5 md:p-6">
         <ProductForm
           storeId={store.storeId}

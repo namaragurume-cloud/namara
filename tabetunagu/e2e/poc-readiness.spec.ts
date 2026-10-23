@@ -33,8 +33,8 @@ test("店舗: 導入準備チェック・使い方・受取モニターの全画
   await page.goto("/store");
   await expect(page.getByTestId("store-readiness")).toContainText("導入準備チェック");
   await page.goto("/store/help");
-  await expect(page.getByText("レジ操作は不要です。")).toBeVisible();
-  await expect(page.getByText("店舗側の受取完了操作は不要です。")).toBeVisible();
+  await expect(page.getByTestId("help-hero")).toContainText("売れたら、渡すだけ。");
+  await expect(page.getByTestId("help-hero")).toContainText("店舗でのお会計や受取完了操作はありません。");
 
   await page.goto("/store/monitor");
   const monitor = page.getByTestId("store-monitor");

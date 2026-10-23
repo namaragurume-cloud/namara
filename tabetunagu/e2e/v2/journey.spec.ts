@@ -191,7 +191,8 @@ test("店舗画面: ダッシュボード・売上・設定・出品に旧フロ
   await page.goto("/store");
   const nav = page.getByRole("navigation").first();
   await expect(page.getByRole("link", { name: "予約状況" })).toHaveCount(0);
-  await expect(page.getByRole("link", { name: "QRコード（障害時用）" })).toBeAttached();
+  // 店頭QRは通常の導線に出さない（使い方の「緊急時の受取対応」から開ける）
+  await expect(page.getByRole("link", { name: /QRコード/ })).toHaveCount(0);
   await expect(nav).toBeAttached();
   expect(await page.locator("main").innerText()).not.toMatch(LEGACY_WORDS);
   await expect(page.getByText("受取モニターを見る")).toBeVisible();

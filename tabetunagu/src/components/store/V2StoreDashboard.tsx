@@ -6,34 +6,34 @@ import { ButtonLink } from "@/components/ui/Button";
 import { cn } from "@/components/ui/cn";
 import { Notice } from "@/components/ui/Section";
 import { hhmm, yen } from "@/lib/format";
-import type { storeReadiness } from "@/lib/readiness";
-import { planView, readinessProgress, standardHint, storeAlerts, storeNetEstimate } from "@/lib/store-dashboard";
+import { planView, standardHint, storeAlerts, storeNetEstimate } from "@/lib/store-dashboard";
 import type { Membership } from "@/server/auth/viewer";
 import type { getStoreDashboard } from "@/server/services/store";
+import type { StoreOnboarding } from "@/server/services/onboarding";
 import type { StoreOps } from "@/server/services/store-ops";
 
 type Dashboard = Awaited<ReturnType<typeof getStoreDashboard>>;
 
 /**
  * v2（事前決済）の店舗ダッシュボード。「次にやること」が分かる順に並べる:
- *   今日の数字 + 出品 → これから受取（モニター）→ 本日の出品 → 今月の売上・プラン（オーナー）→ 導入準備
+ *   （準備が終わっていなければ「始める準備」）→ 今日の数字 + 出品 → これから受取（モニター）→ 本日の出品 → 今月の売上・プラン（オーナー）
  * スタッフには売上金額・プラン・売上受取設定を出さない。
  */
 export function V2StoreDashboard({
   store,
   d,
   ops,
-  readiness,
+  onboarding,
   published,
 }: {
   store: Membership;
   d: Dashboard;
   ops: StoreOps;
-  readiness: ReturnType<typeof storeReadiness> | undefined;
+  onboarding: StoreOnboarding;
   published: boolean;
 }) {
   const owner = store.role === "owner";
-  const stripeReady = readiness?.items.find((i) => i.key === "stripe")?.ok ?? false;
+  const stripeReady = onboarding.steps.find((st) => st.key === "payout")?.done ?? false;
   const alerts = storeAlerts({
     stripeReady,
     upcomingPickups: ops.upcomingPickups,
@@ -44,7 +44,6 @@ export function V2StoreDashboard({
   }).filter((a) => a.key !== "pickups"); // 受取予定は専用のカードで表示する
   const plan = planView(d.store.plan);
   const hint = standardHint(d.store.plan, ops.month.sales);
-  const progress = readiness ? readinessProgress(readiness.items) : null;
 
   return (
     <div className="space-y-6" data-testid="store-dashboard" data-role={store.role}>
@@ -96,6 +95,38 @@ export function V2StoreDashboard({
             </li>
           ))}
         </ul>
+      )}
+
+      {!onboarding.progress.complete && (
+        <section className="card border-2 border-forest p-4" data-testid="store-readiness" data-complete="no" aria-labelledby="onboarding-title">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <h2 id="onboarding-title" className="text-[15px] font-bold">
+              TABETUNAGU を始める準備
+            </h2>
+            <span className="tnum text-[15px] font-bold" data-testid="readiness-progress">
+              {onboarding.progress.label}
+            </span>
+          </div>
+          <ul className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-[12.5px]">
+            {onboarding.steps.map((st) => (
+              <li key={st.key} className="flex items-center gap-1" data-testid={`readiness-item-${st.key}`} data-ok={st.done ? "yes" : "no"}>
+                {st.done ? <CircleCheck className="h-4 w-4 text-forest" aria-hidden /> : <CircleDashed className="h-4 w-4 text-muted" aria-hidden />}
+                <span className="sr-only">{st.done ? "完了" : "未完了"}：</span>
+                {st.title}
+              </li>
+            ))}
+          </ul>
+          {onboarding.progress.next && (
+            <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
+              <p className="text-[13px]">
+                次にやること：<span className="font-bold">{onboarding.progress.next.title}</span>
+              </p>
+              <ButtonLink href="/store/start" size="sm">
+                続きから準備する
+              </ButtonLink>
+            </div>
+          )}
+        </section>
       )}
 
       <section className="grid grid-cols-2 gap-2 lg:grid-cols-4" aria-label="今日の状況">
@@ -230,40 +261,14 @@ export function V2StoreDashboard({
             </section>
           )}
 
-          {readiness && progress && (
-            <section className="card p-5" data-testid="store-readiness" aria-labelledby="readiness-title">
-              <div className="flex items-center justify-between gap-2">
-                <h2 id="readiness-title" className="text-[15px] font-bold">
-                  導入準備
-                </h2>
-                <span className="tnum text-[13px] font-bold" data-testid="readiness-progress">
-                  {progress.done} / {progress.total} 完了
-                </span>
-              </div>
-              <p className="mt-0.5 text-[12.5px] text-ink-2">{progress.text}</p>
-              <ul className="mt-2 space-y-1.5 text-[13px]">
-                {readiness.items.map((item) => (
-                  <li key={item.key} className="flex items-center gap-2" data-testid={`readiness-item-${item.key}`} data-ok={item.ok ? "yes" : "no"}>
-                    {item.ok ? (
-                      <CircleCheck className="h-4 w-4 shrink-0 text-forest" aria-hidden />
-                    ) : (
-                      <CircleDashed className="h-4 w-4 shrink-0 text-muted" aria-hidden />
-                    )}
-                    <span className="sr-only">{item.ok ? "完了" : "未完了"}：</span>
-                    {item.ok || (item.key === "stripe" && !owner) ? (
-                      <span className={item.ok ? "" : "text-ink-2"}>
-                        {item.key === "stripe" ? (item.ok ? "売上受取設定 完了" : "売上受取設定（オーナーが設定します）") : item.label}
-                      </span>
-                    ) : (
-                      <Link href={item.href} className="font-semibold text-forest underline-offset-2 hover:underline">
-                        {item.key === "stripe" ? "売上受取設定を完了してください" : item.label}
-                      </Link>
-                    )}
-                  </li>
-                ))}
-              </ul>
-              <Link href="/store/help" className="mt-3 inline-block text-[12.5px] text-forest underline">
-                TABETUNAGU の使い方
+          {onboarding.progress.complete && (
+            <section className="card flex items-center justify-between gap-3 p-4" data-testid="store-readiness" data-complete="yes">
+              <span className="flex items-center gap-2 text-[13.5px] font-semibold">
+                <CircleCheck className="h-5 w-5 text-forest" aria-hidden />
+                導入準備 <span data-testid="readiness-progress">{onboarding.progress.label}</span>
+              </span>
+              <Link href="/store/start" className="text-[12.5px] font-semibold text-forest underline">
+                再確認する
               </Link>
             </section>
           )}

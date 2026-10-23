@@ -15,6 +15,7 @@ import { getStoreOrderSales } from "@/server/services/v2-metrics";
 import { ReadinessCard } from "@/components/store/ReadinessCard";
 import { V2StoreDashboard } from "@/components/store/V2StoreDashboard";
 import { logEvent } from "@/server/services/events";
+import { getStoreOnboarding } from "@/server/services/onboarding";
 import { getStoreOps } from "@/server/services/store-ops";
 
 export default async function StoreDashboardPage({ searchParams }: { searchParams: Promise<{ published?: string }> }) {
@@ -23,13 +24,13 @@ export default async function StoreDashboardPage({ searchParams }: { searchParam
   const v2 = features.v2Journey;
   if (v2) {
     // v2 の店舗ダッシュボード（商品・注文・売上・導入準備をまとめて取得。店舗ごとの個別クエリはしない）
-    const [d, readinessMap, ops] = await Promise.all([
+    const [d, onboarding, ops] = await Promise.all([
       getStoreDashboard(viewer.id, store.storeId),
-      getStoreReadiness([store.storeId]),
+      getStoreOnboarding(viewer.id, store.storeId, store.role === "owner"),
       getStoreOps(viewer.id, store.storeId),
     ]);
     await logEvent("store_dashboard_viewed", { userId: viewer.id, storeId: store.storeId, properties: { role: store.role } });
-    return <V2StoreDashboard store={store} d={d} ops={ops} readiness={readinessMap.get(store.storeId)} published={Boolean(published)} />;
+    return <V2StoreDashboard store={store} d={d} ops={ops} onboarding={onboarding} published={Boolean(published)} />;
   }
   // v2 がメインのときは、今日・今月の数字を事前決済の注文（paid 基準）で出す。旧フローの予約の数字は「売上・手数料」の「以前の方式の実績」へ
   const [d, readinessMap, orders] = await Promise.all([

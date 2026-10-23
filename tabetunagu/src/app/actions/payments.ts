@@ -98,7 +98,10 @@ export async function startConnectOnboardingAction(_prev: ActionState, formData:
     const { viewer } = await assertStoreMember(storeId, { owner: true });
     url = await startConnectOnboarding(viewer.id, storeId);
   } catch (error) {
-    return toActionError(error);
+    // 権限などの理由が分かるものはその文言、それ以外（Stripe との通信失敗など）は技術的な内容を出さない。詳細はログへ
+    if (error instanceof AppError) return toActionError(error);
+    console.error("[connect] onboarding failed", error);
+    return { ok: false, message: "売上受取設定を開始できませんでした。もう一度お試しください。" };
   }
   redirect(url);
 }

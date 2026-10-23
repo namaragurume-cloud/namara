@@ -134,7 +134,7 @@ export default async function StoreSettingsPage() {
       </section>
 
       <section className="grid gap-6 lg:grid-cols-[1.4fr_1fr]">
-        <div>
+        <div id="store-info" className="scroll-mt-24">
           <h2 className="mb-3 text-[16px] font-bold">店舗情報</h2>
           <div className="card p-5">
             <StoreInfoForm store={settings.store} editable={owner} v2={features.v2Journey} />

@@ -21,8 +21,11 @@ const NAV = [
   { href: "/store/help", label: "使い方" },
 ];
 
-/** v2（事前決済）がメインのとき: 旧フローの予約状況はナビに出さない。店頭QRは障害時の切り替え用（POC_GO_LIVE_CHECKLIST.md） */
-const V2_NAV = NAV.filter((n) => n.href !== "/store/reservations").map((n) => (n.href === "/store/qr" ? { ...n, label: "QRコード（障害時用）" } : n));
+/**
+ * v2（事前決済）がメインのとき: 旧フローの予約状況・店頭QRはナビに出さない（通常の受取方法ではないため）。
+ * 店頭QRは障害時の切り替え用（POC_GO_LIVE_CHECKLIST.md）で、使い方ページの「緊急時の受取対応」（オーナー向け）から開ける。
+ */
+const V2_NAV = [NAV[0], { href: "/store/start", label: "始める準備" }, ...NAV.slice(1).filter((n) => n.href !== "/store/reservations" && n.href !== "/store/qr")];
 
 /** スタッフには出さない（売上の詳細・売上受取設定はオーナーが管理する） */
 const OWNER_ONLY = new Set(["/store/sales", "/store/payouts"]);
