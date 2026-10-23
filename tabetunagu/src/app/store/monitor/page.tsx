@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import { PageHeader } from "@/components/layout/ConsoleShell";
 import { MonitorBoard } from "@/components/monitor/MonitorBoard";
 import { requireStoreMember } from "@/server/auth/viewer";
 import { logEvent } from "@/server/services/events";
@@ -16,10 +15,5 @@ export default async function StoreMonitorPage() {
   await maintainStoreOrders(store.storeId);
   const initial = await getStoreMonitor(viewer.id, store.storeId, new Date());
   await logEvent("monitor_opened", { userId: viewer.id, storeId: store.storeId });
-  return (
-    <div>
-      <PageHeader title="受取モニター" sub="お客様の受取完了は自動で反映されます。画面を確認して商品をお渡しください。" />
-      <MonitorBoard initial={initial} />
-    </div>
-  );
+  return <MonitorBoard initial={initial} />;
 }

@@ -9,6 +9,8 @@ import { detectNewPickups, type MonitorSnapshot } from "./monitor";
  */
 
 export const HIGHLIGHT_MS = 10_000;
+/** 連続してこの回数失敗したら「更新できません」と警告する（1回の失敗では警告しない） */
+export const FAILURES_BEFORE_WARNING = 2;
 
 export type Connection = "ok" | "error" | "reconnecting";
 
@@ -19,6 +21,8 @@ export type MonitorSyncState = {
   /** 強調中の注文（注文ID → 強調の終了時刻） */
   highlights: Readonly<Record<string, number>>;
   connection: Connection;
+  /** 連続した失敗の回数（成功で 0 に戻る） */
+  failures: number;
   /** 最後に正常に同期できた時刻 */
   lastSyncedAt: number;
   /** 鳴らした回数（増えたら1回鳴らす） */
@@ -32,7 +36,7 @@ export type MonitorSyncEvent =
   | { type: "tick"; at: number };
 
 export function initMonitorSync(snapshot: MonitorSnapshot, at: number): MonitorSyncState {
-  return { snapshot, known: detectNewPickups(null, snapshot.orders).known, highlights: {}, connection: "ok", lastSyncedAt: at, chimes: 0 };
+  return { snapshot, known: detectNewPickups(null, snapshot.orders).known, highlights: {}, connection: "ok", failures: 0, lastSyncedAt: at, chimes: 0 };
 }
 
 export function monitorSyncReducer(state: MonitorSyncState, e: MonitorSyncEvent): MonitorSyncState {
@@ -40,13 +44,16 @@ export function monitorSyncReducer(state: MonitorSyncState, e: MonitorSyncEvent)
     case "request":
       // 通信エラーのあとの再試行中は「再接続しています…」
       return state.connection === "error" ? { ...state, connection: "reconnecting" } : state;
-    case "failure":
-      return { ...state, connection: "error" };
+    case "failure": {
+      const failures = state.failures + 1;
+      return { ...state, failures, connection: failures >= FAILURES_BEFORE_WARNING ? "error" : state.connection };
+    }
     case "tick":
       return pruneHighlights(state, e.at);
     case "success": {
-      const recovering = state.connection !== "ok";
-      let next: MonitorSyncState = { ...state, connection: "ok", lastSyncedAt: e.at };
+      // 1回でも失敗したあとの最初の成功は「復旧」として扱う（途絶えている間の受取完了では鳴らさない）
+      const recovering = state.failures > 0 || state.connection !== "ok";
+      let next: MonitorSyncState = { ...state, connection: "ok", failures: 0, lastSyncedAt: e.at };
       if (e.snapshot) {
         // 復旧直後に取得した受取完了は「再接続前から存在していた」ものとして、音・強調なしで既知にする
         const { fresh, known } = detectNewPickups(recovering ? null : state.known, e.snapshot.orders);

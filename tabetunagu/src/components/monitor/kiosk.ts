@@ -44,3 +44,12 @@ export async function releaseWakeLock(sentinel: WakeLockSentinelLike | null | un
     // 何もしない
   }
 }
+
+/** 画面スリープ防止の状態（表示用）。全画面にしていない・解除済みは off、使えない端末は unsupported */
+export type WakeLockStatus = "on" | "off" | "unsupported";
+
+export function wakeLockStatus(nav: WakeLockNavigator, sentinel: WakeLockSentinelLike | null | undefined, requested: boolean): WakeLockStatus {
+  if (!nav?.wakeLock?.request) return "unsupported";
+  if (!requested) return "off";
+  return sentinel && !sentinel.released ? "on" : "unsupported";
+}

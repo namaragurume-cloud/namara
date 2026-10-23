@@ -154,7 +154,7 @@ test("注文 → 受取チケット → スワイプ → 受取完了 → 店舗
   await expect(doneCard.getByTestId("monitor-card-status")).toHaveText("✓ 受取完了");
   await expect(owner.getByTestId("store-monitor")).toHaveAttribute("data-chimes", "1");
   await expect(doneCard).toHaveAttribute("data-highlight", "off", { timeout: 13_000 });
-  await expect(doneCard.getByTestId("monitor-card-status")).toHaveText(/^受取完了 \d{2}:\d{2}$/);
+  await expect(doneCard.getByTestId("monitor-card-status")).toHaveText(/^済 受取完了 \d{2}:\d{2}$/);
   await expect(owner.getByTestId("store-monitor")).toHaveAttribute("data-chimes", "1"); // 同じ注文で二度鳴らさない
   // 再読み込み後は、既にある受取完了を強調・通知しない
   await owner.reload();

@@ -15,7 +15,9 @@ export type EventName =
   | "login"
   | "pickup_ticket_viewed"
   | "pickup_swipe_started"
-  | "monitor_opened";
+  | "monitor_opened"
+  | "monitor_sound_enabled"
+  | "monitor_fullscreen_enabled";
 
 /** 分析イベントを記録する。失敗しても本処理は止めない。 */
 export async function logEvent(

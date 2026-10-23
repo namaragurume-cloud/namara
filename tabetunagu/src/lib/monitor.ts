@@ -94,3 +94,22 @@ export function monitorSections(orders: MonitorOrder[], now: number) {
   out.upcoming.sort((a, b) => Date.parse(a.pickupStartAt) - Date.parse(b.pickupStartAt) || index.get(a.id)! - index.get(b.id)!);
   return out;
 }
+
+/** 「受取完了」の欄に最初から出す件数（新しい順。それより古いものは折りたたむ） */
+export const PICKED_UP_VISIBLE = 8;
+
+/** 受取完了の新しい順（受取時刻の新しい順、同じなら注文の並び順） */
+export function recentPickups(pickedUp: MonitorOrder[]) {
+  const index = new Map(pickedUp.map((o, i) => [o.id, i]));
+  return [...pickedUp].sort((a, b) => Date.parse(b.pickedUpAt ?? "") - Date.parse(a.pickedUpAt ?? "") || index.get(a.id)! - index.get(b.id)!);
+}
+
+/** 受取時間中（今受取できます）の補足。受取終了を過ぎたが遅めの猶予の間は「受取時間を過ぎています」 */
+export function activeNote(o: Pick<MonitorOrder, "pickupEndAt">, now: number): string | null {
+  return now > Date.parse(o.pickupEndAt) ? "受取時間を過ぎています" : null;
+}
+
+/** 次の受取予定（これからの最初の受取開始時刻）。なければ null */
+export function nextPickupStart(upcoming: MonitorOrder[]): string | null {
+  return upcoming.length ? upcoming[0].pickupStartAt : null;
+}

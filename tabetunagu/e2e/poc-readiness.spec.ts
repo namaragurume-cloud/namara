@@ -42,7 +42,7 @@ test("店舗: 導入準備チェック・使い方・受取モニターの全画
   await page.getByTestId("monitor-kiosk").click();
   await expect(monitor).toHaveAttribute("data-kiosk", "on");
   await expect(page.getByTestId("wake-lock-status")).toContainText("画面スリープ防止");
-  await expect(page.getByTestId("monitor-sound")).toContainText("受取通知音 ON");
+  await expect(page.getByTestId("monitor-sound")).toContainText("通知音 ON");
   await page.getByTestId("monitor-kiosk").click();
   await expect(monitor).toHaveAttribute("data-kiosk", "off");
 });

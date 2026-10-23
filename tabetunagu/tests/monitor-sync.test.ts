@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { startUrgency, type MonitorOrder, type MonitorSnapshot } from "@/lib/monitor";
-import { connectionLabel, HIGHLIGHT_MS, initMonitorSync, monitorSyncReducer, type MonitorSyncEvent, type MonitorSyncState } from "@/lib/monitor-sync";
+import { connectionLabel, FAILURES_BEFORE_WARNING, HIGHLIGHT_MS, initMonitorSync, monitorSyncReducer, type MonitorSyncEvent, type MonitorSyncState } from "@/lib/monitor-sync";
 
 const T0 = Date.parse("2026-10-23T22:40:00+09:00");
 
@@ -77,23 +77,47 @@ describe("受取完了の強調（約10秒）", () => {
 });
 
 describe("通信断・再接続・最終更新", () => {
-  it("通信に失敗しても表示中の注文を消さない。接続状態だけ変わり、最終更新は最後に成功した時刻のまま", () => {
+  it("1回だけの失敗では警告しない（小さな通信の揺れで店舗を不安にさせない）", () => {
+    const before = initMonitorSync(snap("1", [order("a", "paid")]), T0);
+    const once = run(before, [
+      { type: "request", at: T0 + 2000 },
+      { type: "failure", at: T0 + 2000 },
+    ]);
+    expect(FAILURES_BEFORE_WARNING).toBe(2);
+    expect(once.connection).toBe("ok");
+    expect(once.failures).toBe(1);
+    expect(run(once, [{ type: "request", at: T0 + 4000 }]).connection).toBe("ok");
+    // 次が成功すれば失敗回数は 0 に戻る（1回 → 成功 → 1回 でも警告しない）
+    const again = run(once, [
+      { type: "success", at: T0 + 4000 },
+      { type: "failure", at: T0 + 6000 },
+    ]);
+    expect(again.connection).toBe("ok");
+  });
+
+  it("連続して失敗しても表示中の注文を消さない。接続状態だけ変わり、最終更新は最後に成功した時刻のまま", () => {
     const before = initMonitorSync(snap("1", [order("a", "paid"), order("b", "picked_up")]), T0);
     const s = run(before, [
       { type: "request", at: T0 + 2000 },
       { type: "failure", at: T0 + 2000 },
+      { type: "request", at: T0 + 4000 },
+      { type: "failure", at: T0 + 4000 },
     ]);
     expect(s.snapshot.orders.map((o) => o.id)).toEqual(["a", "b"]);
     expect(s.connection).toBe("error");
     expect(s.lastSyncedAt).toBe(T0);
     expect(connectionLabel(s.connection)).toBe("更新できません。通信状況をご確認ください。");
-    const retrying = run(s, [{ type: "request", at: T0 + 4000 }]);
+    const retrying = run(s, [{ type: "request", at: T0 + 6000 }]);
     expect(retrying.connection).toBe("reconnecting");
     expect(connectionLabel(retrying.connection)).toBe("再接続しています…");
   });
 
   it("再接続: 変化がなければ（unchanged）一覧はそのまま、変化があれば最新に同期。接続表示と最終更新が戻る", () => {
-    const failed = run(initMonitorSync(snap("1", [order("a", "paid")]), T0), [{ type: "failure", at: T0 + 2000 }]);
+    const failed = run(initMonitorSync(snap("1", [order("a", "paid")]), T0), [
+      { type: "failure", at: T0 + 2000 },
+      { type: "failure", at: T0 + 3000 },
+    ]);
+    expect(failed.connection).toBe("error");
     const unchanged = run(failed, [{ type: "success", at: T0 + 4000 }]);
     expect(unchanged.connection).toBe("ok");
     expect(unchanged.lastSyncedAt).toBe(T0 + 4000);
