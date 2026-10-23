@@ -1,4 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
+import { pickupTimesFromNow } from "../support/time";
 
 /** 商品詳細（購入判断）。機能フラグ ON・幅 375px。Stripe には通信しない */
 async function demoLogin(page: Page, account: "user" | "storeOwner") {
@@ -23,13 +24,6 @@ async function expectStickyAboveNav(page: Page) {
   const nav = (await page.getByRole("navigation", { name: "メインメニュー" }).boundingBox())!;
   expect(cta.y + cta.height).toBeLessThanOrEqual(nav.y + 1);
   expect(cta.y).toBeGreaterThan(0);
-}
-
-function jstClockAfter(minutes: number) {
-  const fmt = new Intl.DateTimeFormat("en-GB", { timeZone: "Asia/Tokyo", hour: "2-digit", minute: "2-digit", hour12: false });
-  const now = fmt.format(new Date());
-  const later = fmt.format(new Date(Date.now() + minutes * 60_000));
-  return later < now ? "23:59" : later;
 }
 
 test("BOX 商品: 画像・価格・○円相当・お得率/お得額・残り・受取時間・支払い合計・チャージ・30pt・固定の購入ボタン", async ({ page }) => {
@@ -113,8 +107,9 @@ test("在庫1は「残り1つ」、受取終了が近いと「受取終了まで
   await owner.getByLabel("通常価格（相当）").fill("500");
   await owner.getByLabel("食べつなぎ価格").fill("300");
   await owner.getByLabel("数量").fill("1");
-  await owner.getByLabel("受取開始").fill("00:00");
-  await owner.getByLabel("受取終了").fill(jstClockAfter(40));
+  const times = pickupTimesFromNow(40);
+  await owner.getByLabel("受取開始").fill(times.start);
+  await owner.getByLabel("受取終了").fill(times.end);
   await owner.getByRole("button", { name: "確認して公開する" }).click();
   await owner.waitForURL(/\/store\?published=/);
   await ownerCtx.close();

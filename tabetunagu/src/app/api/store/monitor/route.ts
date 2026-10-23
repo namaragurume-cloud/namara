@@ -17,7 +17,8 @@ export async function GET(req: Request) {
   }
   try {
     await maintainStoreOrders(storeId);
-    const snapshot = await getStoreMonitor(viewer.id, storeId);
+    // 営業日の範囲と受取の区分は、同じ1つの「現在時刻」で計算する
+    const snapshot = await getStoreMonitor(viewer.id, storeId, new Date());
     const headers = { "Cache-Control": "no-store" };
     if (url.searchParams.get("v") === snapshot.version) {
       return NextResponse.json({ ok: true, unchanged: true, version: snapshot.version }, { headers });

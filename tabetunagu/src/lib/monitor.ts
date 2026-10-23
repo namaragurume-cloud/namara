@@ -69,3 +69,28 @@ export function detectNewPickups(known: ReadonlySet<string> | null, orders: Pick
   }
   return { fresh, known: next };
 }
+
+/**
+ * 受取開始が近い注文の強調（「これから」）。秒は出さない。赤（警告色）は使わない。
+ *   30分超: 通常 / 30分以内: 「まもなく」/ 15分以内: 「もうすぐ受取」
+ */
+export type StartUrgency = { level: "normal" | "soon" | "imminent"; minutes: number; label: string | null };
+
+export function startUrgency(pickupStartAt: string, now: number): StartUrgency {
+  const minutes = Math.max(0, Math.ceil((Date.parse(pickupStartAt) - now) / MIN));
+  if (minutes <= 15) return { level: "imminent", minutes, label: `もうすぐ受取・あと${minutes}分` };
+  if (minutes <= 30) return { level: "soon", minutes, label: `まもなく・あと${minutes}分` };
+  return { level: "normal", minutes, label: null };
+}
+
+/**
+ * 区分ごとの注文。「これから」は受取開始の早い順（同じ時刻はサーバーの並び = 作成順で固定）。
+ * 区分の判定には呼び出し側の1つの現在時刻を使う。
+ */
+export function monitorSections(orders: MonitorOrder[], now: number) {
+  const out: Record<PickupPhase, MonitorOrder[]> = { active: [], upcoming: [], picked_up: [], unclaimed: [] };
+  orders.forEach((o) => out[pickupPhase(o, now)].push(o));
+  const index = new Map(orders.map((o, i) => [o.id, i]));
+  out.upcoming.sort((a, b) => Date.parse(a.pickupStartAt) - Date.parse(b.pickupStartAt) || index.get(a.id)! - index.get(b.id)!);
+  return out;
+}

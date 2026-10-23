@@ -1,4 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
+import { pickupTimesFromNow } from "./support/time";
 
 async function demoLogin(page: Page, account: "user" | "storeOwner") {
   await page.goto("/login");
@@ -17,8 +18,9 @@ test("売上受取設定が未完了の店舗の商品は、購入確認画面�
   await owner.getByLabel("通常価格（相当）").fill("1500");
   await owner.getByLabel("食べつなぎ価格").fill("800");
   await owner.getByLabel("数量").fill("5");
-  await owner.getByLabel("受取開始").fill("00:00");
-  await owner.getByLabel("受取終了").fill("23:45");
+  const times = pickupTimesFromNow(120);
+  await owner.getByLabel("受取開始").fill(times.start);
+  await owner.getByLabel("受取終了").fill(times.end);
   await owner.getByRole("button", { name: "確認して公開する" }).click();
   await owner.waitForURL(/\/store\?published=/);
   await ownerCtx.close();

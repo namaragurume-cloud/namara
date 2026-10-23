@@ -19,6 +19,8 @@ export function PickupTicket({ order, now, children }: { order: MyOrderView; now
     <section
       aria-labelledby="ticket-title"
       data-testid="pickup-ticket"
+      data-pickup-start={order.pickupStartAt}
+      data-pickup-end={order.pickupEndAt}
       className={cn(
         "overflow-hidden rounded-3xl border-2 bg-paper shadow-sm",
         done ? "border-ink-2/40" : missed ? "border-clay/50" : "border-forest",

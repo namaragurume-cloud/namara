@@ -1,4 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
+import { overlapsBusinessDay } from "../src/lib/business-day";
 
 /**
  * v2 の受取（デジタル受取チケット・自己スワイプ・店舗モニター）。
@@ -28,7 +29,7 @@ test("決済済みの注文: 受取チケット → スワイプで受取完了 
   await demoLogin(owner, "storeOwner");
   await owner.goto("/store/monitor");
   const activeSection = owner.getByTestId("monitor-section-active");
-  await expect(activeSection.getByText("受取チケットのデモBOX×1")).toBeVisible();
+  await expect(activeSection.getByText(/受取チケットのデモBOX/)).toBeVisible();
   await expect(owner.getByRole("button", { name: /完了|受取にする|決済済みにする|QR/ })).toHaveCount(0); // 店舗の操作ボタンはない
 
   // ユーザー: 注文履歴 → 受取チケット
@@ -53,8 +54,8 @@ test("決済済みの注文: 受取チケット → スワイプで受取完了 
   await expect(page.getByTestId("pickup-swipe-knob")).toHaveCount(0); // 再スワイプ不可
 
   // 店舗モニター: 再読み込みせずに受取完了へ移る（ポーリング）
-  await expect(owner.getByTestId("monitor-section-picked_up").getByText("受取チケットのデモBOX×1")).toBeVisible({ timeout: 8000 });
-  await expect(activeSection.getByText("受取チケットのデモBOX×1")).toHaveCount(0);
+  await expect(owner.getByTestId("monitor-section-picked_up").getByText(/受取チケットのデモBOX/)).toBeVisible({ timeout: 8000 });
+  await expect(activeSection.getByText(/受取チケットのデモBOX/)).toHaveCount(0);
   await ownerCtx.close();
 });
 
@@ -71,13 +72,24 @@ test("受取時間を過ぎた注文は、ユーザー画面で「受取時間�
   await expect(page.getByRole("heading", { name: "受取時間を過ぎました" })).toBeVisible();
   await expect(page.getByTestId("pickup-status")).toHaveText("未受取");
   await expect(page.getByTestId("pickup-swipe-knob")).toHaveCount(0);
+  const ticket = page.getByTestId("pickup-ticket");
+  const start = (await ticket.getAttribute("data-pickup-start"))!;
+  const end = (await ticket.getAttribute("data-pickup-end"))!;
 
   const ownerCtx = await browser.newContext({ viewport: { width: 1280, height: 900 } });
   const owner = await ownerCtx.newPage();
   await demoLogin(owner, "storeOwner");
   await owner.goto("/store/monitor");
-  await expect(owner.getByTestId("monitor-section-unclaimed").getByText("受取時間を過ぎたデモBOX×1")).toBeVisible();
-  await owner.goto("/store/orders");
-  await expect(owner.getByTestId("store-orders").getByText("未受取").first()).toBeVisible();
+  // 店舗モニター・注文一覧は本日（営業日・JST 03:00 切替）の注文だけ。デモの注文は起動時刻からの相対なので、
+  // 営業日が切り替わった直後（03:00 台）に実行すると前営業日の注文になる。どちらの場合も仕様どおりの表示を確かめる
+  const card = owner.getByTestId("monitor-card").filter({ hasText: "受取時間を過ぎたデモBOX" });
+  if (overlapsBusinessDay(start, end, new Date())) {
+    await expect(owner.getByTestId("monitor-section-unclaimed").getByText(/受取時間を過ぎたデモBOX/)).toBeVisible();
+    await owner.goto("/store/orders");
+    await expect(owner.getByTestId("store-orders").getByText("未受取").first()).toBeVisible();
+  } else {
+    await expect(owner.getByTestId("store-monitor")).toBeVisible();
+    await expect(card).toHaveCount(0);
+  }
   await ownerCtx.close();
 });

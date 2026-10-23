@@ -1,5 +1,6 @@
 import "server-only";
 import { AppError } from "@/lib/errors";
+import { businessDayRange } from "@/lib/business-day";
 import { pickupPhase, type MonitorOrder, type MonitorSnapshot, type PickupPhase } from "@/lib/monitor";
 import type { OrderStatus } from "@/lib/orders";
 import { asService, asUser } from "../db";
@@ -74,12 +75,6 @@ export async function markUnclaimedOrders() {
 // 店舗モニター
 // ---------------------------------------------------------------------------
 
-/** JST の今日 0:00 と翌日 0:00 */
-function jstDayRange(now: Date) {
-  const day = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Tokyo" }).format(now);
-  const start = new Date(`${day}T00:00:00+09:00`);
-  return { start, end: new Date(start.getTime() + 86_400_000) };
-}
 
 type MonitorRow = {
   id: string;
@@ -96,12 +91,13 @@ type MonitorRow = {
 const iso = (v: Date | string) => new Date(v).toISOString();
 
 /**
- * 今日（JST）の受取対象の注文（決済済み・受取済み・未受取）。店舗メンバーのみ（RLS + メンバー確認）。
+ * 本日（営業日。JST 03:00 切替）の受取対象の注文（決済済み・受取済み・未受取）。店舗メンバーのみ（RLS + メンバー確認）。
+ * 現在時刻は呼び出し側から1回だけ渡す（範囲の計算と区分の判定で同じ時刻を使う）。
  * お客様の名前は一部を伏せて表示する。
  */
 export async function getStoreMonitor(userId: string, storeId: string, now = new Date()): Promise<MonitorSnapshot> {
   if (!UUID_RE.test(storeId)) throw new AppError("forbidden");
-  const { start, end } = jstDayRange(now);
+  const { start, end } = businessDayRange(now);
   return asUser(userId, async (q) => {
     const [store] = await q.query<{ name: string; member: boolean }>(
       "select s.name, public.is_store_member(s.id) as member from public.stores s where s.id = $1",
@@ -118,7 +114,7 @@ export async function getStoreMonitor(userId: string, storeId: string, now = new
        where o.store_id = $1
          and o.status in ('paid', 'picked_up', 'unclaimed')
          and o.pickup_start < $3 and o.pickup_end >= $2
-       order by o.pickup_start, o.created_at`,
+       order by o.pickup_start, o.created_at, o.id`,
       [storeId, start.toISOString(), end.toISOString()],
     );
     const t = now.getTime();
@@ -174,7 +170,7 @@ export type StoreOrderRow = {
 
 export async function listStoreOrders(userId: string, storeId: string, now = new Date()): Promise<StoreOrderRow[]> {
   if (!UUID_RE.test(storeId)) throw new AppError("forbidden");
-  const { start, end } = jstDayRange(now);
+  const { start, end } = businessDayRange(now);
   return asUser(userId, async (q) => {
     const [member] = await q.query<{ ok: boolean }>("select public.is_store_member($1::uuid) as ok", [storeId]);
     if (!member?.ok) throw new AppError("forbidden");
@@ -186,7 +182,7 @@ export async function listStoreOrders(userId: string, storeId: string, now = new
        from public.orders o left join public.users u on u.id = o.user_id
        where o.store_id = $1 and o.pickup_start < $3 and o.pickup_end >= $2
          and o.status in ('paid', 'picked_up', 'unclaimed', 'refunded')
-       order by o.pickup_start, o.created_at`,
+       order by o.pickup_start, o.created_at, o.id`,
       [storeId, start.toISOString(), end.toISOString()],
     );
     const t = now.getTime();

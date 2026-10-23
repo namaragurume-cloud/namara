@@ -14,7 +14,7 @@ export const metadata: Metadata = { title: "受取モニター" };
 export default async function StoreMonitorPage() {
   const { viewer, store } = await requireStoreMember("/store/monitor");
   await maintainStoreOrders(store.storeId);
-  const initial = await getStoreMonitor(viewer.id, store.storeId);
+  const initial = await getStoreMonitor(viewer.id, store.storeId, new Date());
   await logEvent("monitor_opened", { userId: viewer.id, storeId: store.storeId });
   return (
     <div>

@@ -1,6 +1,6 @@
 import { afterAll, afterEach, beforeEach, describe, expect, it } from "vitest";
 import { AppError } from "@/lib/errors";
-import { detectNewPickups, pickupPhase } from "@/lib/monitor";
+import { detectNewPickups, monitorSections, pickupPhase } from "@/lib/monitor";
 import { ORDER_POLICY } from "@/lib/orders";
 import { asService, asUser } from "@/server/db";
 import type { Driver } from "@/server/db/types";
@@ -226,48 +226,89 @@ describe("店舗モニター", () => {
   });
 
   /**
-   * 日付の境界（JST の暦日）。以前は「現在時刻 + 60分」に受取開始の注文を作っていたため、
-   * JST 23 時台に実行すると受取開始が翌日になり「今日の注文」から外れてテストが失敗していた。
-   * ここでは受取時間・モニターの時刻とも固定し、境界の前後の表示を確かめる。
+   * 営業日の境界（JST 03:00 切替）。店舗モニター・店舗の注文一覧の「本日」は暦日ではなく営業日。
+   * 受取時間・モニターの時刻とも固定し、実際の時刻に関係なく同じ結果になるようにする。
+   * 以前は暦日で絞り込んでいたため、23:59 に翌 0:14 開始の注文が出ず、0:00 に前日の受取完了・未受取が消えていた。
    */
-  describe("日付の境界（JST の固定時刻）", () => {
+  describe("営業日の境界（JST の固定時刻）", () => {
     const jst = (s: string) => new Date(`${s}+09:00`);
     async function fixtures() {
-      // 夕方に受取が終わった注文（未受取）・日付をまたぐ受取時間の注文・翌日 0:14 から受け取る注文
+      // 10/23 営業日: 夕方に受取完了・夕方に終わった未受取・日付をまたぐ受取時間・翌 0:14 から。10/24 営業日: 3:30 から
+      const done = await paidOrder();
+      await pickupOrder(IDS.userA, done.order.id); // 受取完了は実際の時刻の受取時間内で行い、そのあと受取時間を固定時刻へ移す
       const evening = await paidOrder();
       const crossing = await paidOrder({ userId: IDS.userB });
       const nextDay = await paidOrder({ userId: IDS.ownerA });
+      const newDay = await paidOrder({ userId: IDS.userB });
+      await setOrderWindow(done.order.id, "2026-10-23T20:00:00+09:00", "2026-10-23T21:00:00+09:00");
       await setOrderWindow(evening.order.id, "2026-10-23T21:00:00+09:00", "2026-10-23T22:30:00+09:00");
       await setOrderWindow(crossing.order.id, "2026-10-23T23:30:00+09:00", "2026-10-24T00:30:00+09:00");
       await setOrderWindow(nextDay.order.id, "2026-10-24T00:14:00+09:00", "2026-10-24T01:14:00+09:00");
-      return { evening: evening.order.id, crossing: crossing.order.id, nextDay: nextDay.order.id };
+      await setOrderWindow(newDay.order.id, "2026-10-24T03:30:00+09:00", "2026-10-24T04:30:00+09:00");
+      return { done: done.order.id, evening: evening.order.id, crossing: crossing.order.id, nextDay: nextDay.order.id, newDay: newDay.order.id };
     }
     const phasesAt = async (at: string) =>
       Object.fromEntries((await getStoreMonitor(IDS.staffA, IDS.storeA, jst(at))).orders.map((o) => [o.id, o.phase]));
 
-    it("JST 22:59: 今日の注文（夕方の未受取・日付をまたぐ受取前）。翌日の注文はまだ出さない", async () => {
+    it("22:59: 10/23 営業日。翌 0:14 開始の注文も「これから」に出る", async () => {
       const f = await fixtures();
-      expect(await phasesAt("2026-10-23T22:59:00")).toEqual({ [f.evening]: "unclaimed", [f.crossing]: "upcoming" });
+      expect(await phasesAt("2026-10-23T22:59:00")).toEqual({
+        [f.done]: "picked_up",
+        [f.evening]: "unclaimed",
+        [f.crossing]: "upcoming",
+        [f.nextDay]: "upcoming",
+      });
     });
 
-    it("JST 23:59: 日付をまたぐ注文は受取時間中。翌日 0:14 からの注文は翌日の扱い（以前の失敗の再現条件）", async () => {
+    it("23:59: 翌 0:14 開始の注文が「これから」（以前は暦日の絞り込みで出なかった）", async () => {
       const f = await fixtures();
-      expect(await phasesAt("2026-10-23T23:59:00")).toEqual({ [f.evening]: "unclaimed", [f.crossing]: "active" });
+      expect(await phasesAt("2026-10-23T23:59:00")).toEqual({
+        [f.done]: "picked_up",
+        [f.evening]: "unclaimed",
+        [f.crossing]: "active",
+        [f.nextDay]: "upcoming",
+      });
     });
 
-    it("JST 00:00: 日付が変わると、前日に終わった注文は外れ、日付をまたぐ注文と今日 0:14 からの注文が出る", async () => {
+    it("00:00: 日付が変わっても 10/23 営業日のまま。受取完了・未受取・これから・受取時間中が消えない", async () => {
       const f = await fixtures();
-      expect(await phasesAt("2026-10-24T00:00:00")).toEqual({ [f.crossing]: "active", [f.nextDay]: "upcoming" });
+      expect(await phasesAt("2026-10-24T00:00:00")).toEqual({
+        [f.done]: "picked_up",
+        [f.evening]: "unclaimed",
+        [f.crossing]: "active",
+        [f.nextDay]: "upcoming",
+      });
     });
 
-    it("JST 00:10 / 00:15: 0:14 からの注文は受取開始の10分前から受取時間中", async () => {
+    it("00:14: 0:14 開始の注文は受取時間中", async () => {
       const f = await fixtures();
-      expect(await phasesAt("2026-10-24T00:03:00")).toEqual({ [f.crossing]: "active", [f.nextDay]: "upcoming" });
-      expect(await phasesAt("2026-10-24T00:10:00")).toEqual({ [f.crossing]: "active", [f.nextDay]: "active" });
-      expect(await phasesAt("2026-10-24T00:15:00")).toEqual({ [f.crossing]: "active", [f.nextDay]: "active" });
+      expect((await phasesAt("2026-10-24T00:14:00"))[f.nextDay]).toBe("active");
     });
 
-    it("日付をまたぐ受取時間: 終了 + 15分（00:45）まで受取時間中、その後は未受取。表示は「本日」「明日」が境界で切り替わる", async () => {
+    it("02:59: まだ 10/23 営業日（受取時間が終わった注文は未受取として残る）。3:30 からの注文は翌営業日", async () => {
+      const f = await fixtures();
+      expect(await phasesAt("2026-10-24T02:59:00")).toEqual({
+        [f.done]: "picked_up",
+        [f.evening]: "unclaimed",
+        [f.crossing]: "unclaimed",
+        [f.nextDay]: "unclaimed",
+      });
+    });
+
+    it("03:00 / 03:01: 10/24 営業日に切り替わり、前営業日の受取完了・未受取は外れる", async () => {
+      const f = await fixtures();
+      expect(await phasesAt("2026-10-24T03:00:00")).toEqual({ [f.newDay]: "upcoming" });
+      expect(await phasesAt("2026-10-24T03:01:00")).toEqual({ [f.newDay]: "upcoming" });
+    });
+
+    it("店舗の注文一覧も同じ営業日の範囲（00:00 に前日夕方の未受取が残り、03:00 に外れる）", async () => {
+      const f = await fixtures();
+      const ids = async (at: string) => (await listStoreOrders(IDS.staffA, IDS.storeA, jst(at))).map((o) => o.id);
+      expect(await ids("2026-10-24T00:00:00")).toEqual([f.done, f.evening, f.crossing, f.nextDay]);
+      expect(await ids("2026-10-24T03:00:00")).toEqual([f.newDay]);
+    });
+
+    it("日付をまたぐ受取時間: 終了 + 15分（00:45）まで受取時間中、その後は未受取。ユーザー向けの日付表示は暦日のまま", async () => {
       const f = await fixtures();
       expect((await phasesAt("2026-10-24T00:45:00"))[f.crossing]).toBe("active");
       expect((await phasesAt("2026-10-24T00:46:00"))[f.crossing]).toBe("unclaimed");
@@ -282,6 +323,24 @@ describe("店舗モニター", () => {
       expect(ticketTiming(crossing, jst("2026-10-23T23:59:00"))).toMatchObject({ kind: "active", note: "受取終了まであと31分" });
       expect(ticketTiming(crossing, jst("2026-10-24T00:40:00"))).toMatchObject({ kind: "grace", canSwipe: true });
       expect(ticketTiming(crossing, jst("2026-10-24T00:46:00"))).toMatchObject({ kind: "closed", canSwipe: false });
+    });
+
+    it("「これから」は受取開始の早い順（同じ時刻は作成順で固定）", async () => {
+      const late = await paidOrder();
+      const early = await paidOrder({ userId: IDS.userB });
+      const tieFirst = await paidOrder({ userId: IDS.ownerA });
+      const tieSecond = await paidOrder({ userId: IDS.userB });
+      await setOrderWindow(late.order.id, "2026-10-23T15:00:00+09:00", "2026-10-23T16:00:00+09:00");
+      await setOrderWindow(early.order.id, "2026-10-23T13:00:00+09:00", "2026-10-23T14:00:00+09:00");
+      await setOrderWindow(tieFirst.order.id, "2026-10-23T14:00:00+09:00", "2026-10-23T15:00:00+09:00");
+      await setOrderWindow(tieSecond.order.id, "2026-10-23T14:00:00+09:00", "2026-10-23T15:00:00+09:00");
+      const at = jst("2026-10-23T12:00:00");
+      const snap = await getStoreMonitor(IDS.staffA, IDS.storeA, at);
+      const expected = [early.order.id, tieFirst.order.id, tieSecond.order.id, late.order.id];
+      expect(monitorSections(snap.orders, at.getTime()).upcoming.map((o) => o.id)).toEqual(expected);
+      // 並び順は呼び出すたびに変わらない
+      const again = await getStoreMonitor(IDS.staffA, IDS.storeA, at);
+      expect(monitorSections(again.orders, at.getTime()).upcoming.map((o) => o.id)).toEqual(expected);
     });
   });
 
