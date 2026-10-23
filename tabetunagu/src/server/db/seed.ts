@@ -816,6 +816,8 @@ async function seedDemoOrders(q: Queryable, now: Date) {
     { name: "受取チケットのデモBOX", startIn: -10, endIn: 50 },
     { name: "受取時間を過ぎたデモBOX", startIn: -120, endIn: -30 },
     { name: "返金済みのデモBOX", startIn: 60, endIn: 120, refunded: true },
+    // 決済を完了していない注文（注文履歴の「お支払い待ち」→「決済を続ける」の確認用。期限を過ぎると通常どおり取り消される）
+    { name: "お支払い待ちのデモBOX", startIn: 180, endIn: 240, pending: true },
   ];
   for (const spec of specs) {
     const price = 800;
@@ -831,7 +833,8 @@ async function seedDemoOrders(q: Queryable, now: Date) {
     const [order] = await q.query<{ id: string }>(
       `insert into public.orders (order_number, user_id, store_id, status, subtotal, tsunagu_charge, total, commission_bps,
          commission_amount, platform_fee_total, plan_code, pickup_start, pickup_end, payment_expires_at)
-       values (public.gen_reservation_code(), $1, $2, 'pending_payment', $3, $4, $5, $6, $7, $8, $9, $10, $11, now())
+       values (public.gen_reservation_code(), $1, $2, 'pending_payment', $3, $4, $5, $6, $7, $8, $9, $10, $11,
+               now() + make_interval(mins => $12::int))
        returning id`,
       [
         DEMO_USERS.user.id,
@@ -845,6 +848,7 @@ async function seedDemoOrders(q: Queryable, now: Date) {
         store.plan_code,
         start.toISOString(),
         end.toISOString(),
+        "pending" in spec && spec.pending ? 60 : 0,
       ],
     );
     await q.query(
@@ -852,6 +856,7 @@ async function seedDemoOrders(q: Queryable, now: Date) {
        values ($1, $2, $3, $4, 1, $4)`,
       [order.id, product.id, spec.name, price],
     );
+    if ("pending" in spec && spec.pending) continue;
     await q.query(
       `insert into public.payments (order_id, provider, provider_payment_id, amount, application_fee_amount, status, paid_at)
        select id, 'stripe', 'pi_demo_' || replace(id::text, '-', ''), total, platform_fee_total, 'succeeded', now()
@@ -862,6 +867,13 @@ async function seedDemoOrders(q: Queryable, now: Date) {
     await q.query("select public.grant_order_points($1::uuid)", [order.id]);
     if ("refunded" in spec && spec.refunded) {
       await q.query("update public.payments set status = 'refunded' where order_id = $1", [order.id]);
+      // 返金の記録（注文履歴・注文詳細に返金額・返金日時を表示するため。Stripe の返金 ID は持たない）
+      await q.query(
+        `insert into public.refunds (order_id, payment_id, amount, reason, actor, scope, status, succeeded_at)
+         select order_id, id, amount, 'デモ: 店舗都合のキャンセル', 'store', 'order', 'succeeded', now()
+         from public.payments where order_id = $1`,
+        [order.id],
+      );
       await q.query("update public.orders set status = 'refunded' where id = $1", [order.id]);
       await q.query("select public.revoke_order_points($1::uuid)", [order.id]);
     }

@@ -198,6 +198,20 @@ function StatusHeader({ order, confirming }: { order: MyOrderView; confirming: b
     <div className="space-y-2">
       <h1 className="text-[20px] font-bold">{m.title}</h1>
       {m.body && <Notice>{m.body}</Notice>}
+      {order.status === "refunded" && order.refundAmount !== null && (
+        <dl className="tnum space-y-1 rounded-2xl bg-canvas px-4 py-3 text-[14px]" data-testid="refund-detail">
+          <div className="flex justify-between gap-3">
+            <dt className="text-ink-2">返金額</dt>
+            <dd className="font-bold">{yen(order.refundAmount)}</dd>
+          </div>
+          {order.refundAt && (
+            <div className="flex justify-between gap-3">
+              <dt className="text-ink-2">{order.refundStatus === "succeeded" ? "返金日時" : "受付日時"}</dt>
+              <dd>{dateTime(order.refundAt)}</dd>
+            </div>
+          )}
+        </dl>
+      )}
     </div>
   );
 }

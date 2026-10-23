@@ -11,10 +11,17 @@ import { grams } from "@/lib/format";
 import { features } from "@/lib/features";
 import { requireViewer } from "@/server/auth/viewer";
 import { getMyProfile, getMyStats, listFavoriteStores } from "@/server/services/reservations";
+import { V2MyPage } from "@/components/account/V2MyPage";
 
 export const metadata: Metadata = { title: "マイページ" };
 
 export default async function MyPage() {
+  if (features.v2Journey) return <V2MyPage />;
+  return <LegacyMyPage />;
+}
+
+/** 旧フロー（予約 → 店頭 QR）のマイページ。ENABLE_V2_CHECKOUT が OFF のときはこれまでどおり */
+async function LegacyMyPage() {
   const viewer = await requireViewer("/me");
   const [stats, favorites, profile] = await Promise.all([getMyStats(viewer.id), listFavoriteStores(viewer.id), getMyProfile(viewer.id)]);
   const v2 = features.v2Journey;

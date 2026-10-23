@@ -98,8 +98,8 @@ test("注文 → 受取チケット → スワイプ → 受取完了 → 店舗
   await expect(nav.getByRole("link", { name: "予約" })).toHaveCount(0);
   await nav.getByRole("link", { name: "注文" }).click();
   await page.waitForURL(/\/orders/);
-  // 注文一覧の「受取待ち」→ 受取チケット
-  await expect(page.getByRole("tab", { name: "受取待ち" })).toHaveAttribute("aria-selected", "true");
+  // 注文履歴（新しい順・「すべて」）→ 受取チケット
+  await expect(page.getByRole("tab", { name: "すべて" })).toHaveAttribute("aria-selected", "true");
   await page.getByRole("link", { name: /受取チケットのデモBOX/ }).click();
 
   // チケット: 支払い済み・受取時間・商品・注文番号・スタッフへの案内・スワイプ前の注意
@@ -168,7 +168,7 @@ test("マイページ: ポイント（台帳）と注文履歴への導線", asy
   await demoLogin(page, "user");
   await page.goto("/me");
   await expect(page.getByTestId("my-points")).toBeVisible();
-  await expect(page.getByRole("link", { name: "受取待ちの注文（受取チケット）" })).toBeVisible();
+  await expect(page.getByRole("link", { name: "すべて見る", exact: true })).toHaveAttribute("href", "/orders");
   await expect(page.getByRole("link", { name: "以前の方式でのご利用履歴" })).toBeVisible();
   await expect(page.getByRole("link", { name: /予約/ })).toHaveCount(0);
   await expectNoHorizontalScroll(page);

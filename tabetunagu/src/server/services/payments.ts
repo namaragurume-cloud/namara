@@ -215,6 +215,9 @@ export type MyOrderView = {
   paymentStatus: string | null;
   /** 最新の返金の状態 */
   refundStatus: string | null;
+  /** 最新の返金の金額・日時（成功した日時。未完了なら受付日時）。表示用 */
+  refundAmount: number | null;
+  refundAt: string | null;
   /** まだ支払える（決済待ちで期限内） */
   payable: boolean;
   /** お客様都合で全額返金できる（決済から一定時間内かつ受取開始前） */
@@ -248,8 +251,8 @@ export async function getMyOrder(userId: string, orderId: string, now = new Date
       "select status from public.payments where order_id = $1 order by created_at desc limit 1",
       [orderId],
     );
-    const [refund] = await q.query<{ status: string }>(
-      "select status from public.refunds where order_id = $1 order by created_at desc limit 1",
+    const [refund] = await q.query<{ status: string; amount: number; at: string }>(
+      "select status, amount, coalesce(succeeded_at, created_at) as at from public.refunds where order_id = $1 order by created_at desc limit 1",
       [orderId],
     );
     const status = o.status as OrderStatus;
@@ -283,6 +286,8 @@ export async function getMyOrder(userId: string, orderId: string, now = new Date
       })),
       paymentStatus: payment?.status ?? null,
       refundStatus: refund?.status ?? null,
+      refundAmount: refund ? Number(refund.amount) : null,
+      refundAt: refund ? iso(refund.at) : null,
       payable: status === "pending_payment" && Date.parse(paymentExpiresAt) > t,
       userRefundable:
         status === "paid" &&
