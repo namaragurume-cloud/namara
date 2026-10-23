@@ -1,11 +1,25 @@
 import type { ReactNode } from "react";
 import { cn } from "./cn";
 
-export function SectionTitle({ title, sub, action, className }: { title: string; sub?: string; action?: ReactNode; className?: string }) {
+export function SectionTitle({
+  title,
+  sub,
+  action,
+  className,
+  id,
+}: {
+  title: string;
+  sub?: string;
+  action?: ReactNode;
+  className?: string;
+  id?: string;
+}) {
   return (
     <div className={cn("mb-3 flex items-end justify-between gap-3", className)}>
       <div>
-        <h2 className="text-[17px] font-bold tracking-wide text-ink">{title}</h2>
+        <h2 id={id} className="text-[17px] font-bold tracking-wide text-ink">
+          {title}
+        </h2>
         {sub && <p className="mt-0.5 text-[12px] text-muted">{sub}</p>}
       </div>
       {action}
