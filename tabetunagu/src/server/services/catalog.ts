@@ -88,7 +88,11 @@ export function sortProducts(items: ProductCard[], sort: CatalogSort, area: stri
   return sorted;
 }
 
-export async function getProductDetail(viewerId: string | null, productId: string) {
+/**
+ * 商品詳細のデータを1つのトランザクションでまとめて読む（商品・店舗は1回ずつ）。
+ * related: この店舗のほかの受付中の商品（最大3件。商品詳細の下部用。購入確認では読まない）
+ */
+export async function getProductDetail(viewerId: string | null, productId: string, opts: { related?: boolean } = {}) {
   if (!UUID_RE.test(productId)) return null;
   return asViewer(viewerId, async (q) => {
     const [row] = await q.query(
@@ -99,17 +103,17 @@ export async function getProductDetail(viewerId: string | null, productId: strin
     );
     if (!row) return null;
     const product = toProductCard(row);
-    const [storeRow] = await q.query(`select ${STORE_COLUMNS} from public.stores s where s.id = $1`, [product.storeId]);
+    // v2: 店舗がオンライン決済を受け付けられるか（Connect の登録完了）も同じ行から読む
+    const [storeRow] = await q.query(
+      `select ${STORE_COLUMNS}, (s.status = 'active' and s.stripe_charges_enabled) as payable from public.stores s where s.id = $1`,
+      [product.storeId],
+    );
     if (!storeRow) return null;
     const store = toStoreInfo(storeRow);
+    const storePayable = Boolean(storeRow.payable);
     let myReservationId: string | null = null;
     let myOrderId: string | null = null;
     let isFavorite = false;
-    // v2: 店舗がオンライン決済を受け付けられるか（Connect の登録完了）
-    const [payable] = await q.query<{ ok: boolean }>(
-      "select (status = 'active' and stripe_charges_enabled) as ok from public.stores where id = $1",
-      [store.id],
-    );
     if (viewerId) {
       const [order] = await q.query<{ id: string }>(
         `select o.id from public.orders o join public.order_items i on i.order_id = o.id
@@ -128,7 +132,18 @@ export async function getProductDetail(viewerId: string | null, productId: strin
       const [fav] = await q.query(`select 1 from public.favorites where user_id = $1 and store_id = $2`, [viewerId, store.id]);
       isFavorite = Boolean(fav);
     }
-    return { product, store, myReservationId, myOrderId, isFavorite, storePayable: Boolean(payable?.ok) };
+    const related = opts.related
+      ? (
+          await q.query(
+            `select ${PRODUCT_CARD_COLUMNS} from public.products p join public.stores s on s.id = p.store_id
+             where p.store_id = $1 and p.id <> $2 and p.deleted_at is null and p.status = 'published'
+               and p.remaining_quantity > 0 and p.pickup_end_at > now()
+             order by p.pickup_end_at limit 3`,
+            [store.id, productId],
+          )
+        ).map(toProductCard)
+      : [];
+    return { product, store, myReservationId, myOrderId, isFavorite, storePayable, related };
   });
 }
 

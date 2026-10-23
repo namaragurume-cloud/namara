@@ -1,4 +1,4 @@
-import { PRICING } from "./fees";
+import { calcOrderAmounts, PRICING } from "./fees";
 
 /**
  * v2（事前決済）の商品詳細の CTA。
@@ -38,9 +38,32 @@ export const chargeNote = {
   points: `つなぐチャージ${PRICING.tsunaguCharge}円につき、${PRICING.orderPoints}ptを付与します。`,
 };
 
-/** v2 の受け取り方の案内（商品詳細）。店頭でのお会計・QR はない */
-export const pickupGuide =
-  "受取時間内にご来店いただき、スタッフへ受取チケットをご提示ください。商品を受け取ったら、ご自身で画面をスワイプして受取完了です。店頭でのお会計はありません。";
+/** v2 の受け取り方（商品詳細）。店頭でのお会計・QR はない */
+export const PICKUP_STEPS = [
+  "オンラインで事前決済",
+  "受取時間に店舗へ",
+  "スタッフへ受取チケットをご提示ください",
+  "商品を受け取ったら、ご自身でスワイプして受取完了",
+] as const;
+
+/**
+ * 商品詳細の支払いの内訳（数量1）。金額は注文の計算（calcOrderAmounts）と同じ関数で出す。
+ * つなぐチャージ・付与ポイントは platform_settings の値を渡す。
+ */
+export function priceBreakdown(unitPrice: number, tsunaguCharge: number, orderPoints: number) {
+  const a = calcOrderAmounts([{ unitPrice, quantity: 1 }], 0, tsunaguCharge);
+  return { subtotal: a.subtotal, tsunaguCharge: a.tsunaguCharge, total: a.total, points: orderPoints };
+}
+
+/** ポイントの説明（「実質無料」「得する」などの表現はしない） */
+export function pointsNote(tsunaguCharge: number, orderPoints: number) {
+  return `つなぐチャージ${tsunaguCharge}円につき、${orderPoints}ptを付与します。`;
+}
+
+/** 購入ボタンの文言（支払総額を出す） */
+export function buyLabel(total: number) {
+  return `${total.toLocaleString("ja-JP")}円で食べつなぐ`;
+}
 
 /**
  * 店舗の「受け取り時のご案内」が旧フロー（予約 → 店頭 QR → レジ）向けの文言か。

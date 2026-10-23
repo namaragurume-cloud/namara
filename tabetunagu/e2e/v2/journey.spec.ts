@@ -37,13 +37,13 @@ test("商品詳細 →「食べつなぐ」→ ログイン → 購入確認（�
   // 商品詳細（v2）
   await expect(page.getByText("2,400円相当 → 1,200円")).toBeVisible();
   await expect(page.getByTestId("charge-note")).toContainText("つなぐチャージ30円につき、30ptを付与します。");
-  await expect(page.getByText("お支払いは事前にオンラインで。")).toBeVisible();
+  await expect(page.getByTestId("pickup-guide")).toContainText("オンラインで事前決済");
   // 受け取り方の案内は v2 の文言だけ（旧フローの「レジ」「QR」「お会計になります」は出さない）
   await expect(page.getByTestId("pickup-guide")).toContainText("スタッフへ受取チケットをご提示ください");
   await expect(page.getByTestId("pickup-guide")).toContainText("店頭でのお会計はありません。");
   await expect(page.getByText(/TABETUNAGUの予約です|店頭のQRを読み取って|お会計になります/)).toHaveCount(0);
   const cta = page.getByTestId("product-cta");
-  await expect(cta).toHaveText("食べつなぐ");
+  await expect(cta).toHaveText("1,230円で食べつなぐ");
   await expectInViewport(page, "product-cta");
   await expectNoHorizontalScroll(page);
   const productUrl = page.url();

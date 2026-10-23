@@ -1,6 +1,8 @@
 import { afterAll, afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { features } from "@/lib/features";
-import { chargeNote, isLegacyPickupNote, pickupGuide, v2ProductCta } from "@/lib/purchase";
+import { PRICING } from "@/lib/fees";
+import { buyLabel, chargeNote, isLegacyPickupNote, PICKUP_STEPS, pointsNote, priceBreakdown, v2ProductCta } from "@/lib/purchase";
+import { getPolicySettings } from "@/server/services/settings";
 import { asService } from "@/server/db";
 import type { Driver } from "@/server/db/types";
 import { getProductDetail } from "@/server/services/catalog";
@@ -130,14 +132,46 @@ describe("商品詳細の CTA（v2）", () => {
     expect(`${chargeNote.short}${chargeNote.points}`).not.toMatch(/実質無料|必ず|得する/);
   });
 
-  it("受け取り方の案内: 受取チケットの提示・自分でスワイプ・店頭でのお会計なし。旧フローの店舗の案内は v2 で出さない", () => {
-    expect(pickupGuide).toContain("スタッフへ受取チケットをご提示ください");
-    expect(pickupGuide).toContain("ご自身で画面をスワイプして受取完了");
-    expect(pickupGuide).toContain("店頭でのお会計はありません");
-    expect(pickupGuide).not.toMatch(/予約|QR|レジ/);
+  it("受け取り方: 事前決済 → 店舗へ → 受取チケットを提示 → 自分でスワイプ。旧フローの店舗の案内は v2 で出さない", () => {
+    expect(PICKUP_STEPS).toEqual([
+      "オンラインで事前決済",
+      "受取時間に店舗へ",
+      "スタッフへ受取チケットをご提示ください",
+      "商品を受け取ったら、ご自身でスワイプして受取完了",
+    ]);
+    expect(PICKUP_STEPS.join("")).not.toMatch(/予約|QR|レジ|チェックイン|お会計/);
     expect(isLegacyPickupNote("レジで「TABETUNAGUの予約です」とお伝えください。店頭のQRを読み取ってからお会計になります。")).toBe(true);
     expect(isLegacyPickupNote("店頭のＱＲを読み取ってください")).toBe(true);
     expect(isLegacyPickupNote("入口すぐのカウンターで、スタッフに受取チケットをお見せください。")).toBe(false);
+  });
+
+  it("商品詳細の支払い合計: 商品価格 + つなぐチャージ30円（platform_settings の値・注文と同じ計算）。30pt。購入ボタンは合計入り", async () => {
+    const policy = await getPolicySettings();
+    expect(policy.tsunaguChargeYen).toBe(PRICING.tsunaguCharge);
+    const b = priceBreakdown(1200, policy.tsunaguChargeYen, policy.orderPoints);
+    expect(b).toEqual({ subtotal: 1200, tsunaguCharge: 30, total: 1230, points: 30 });
+    expect(pointsNote(b.tsunaguCharge, b.points)).toBe("つなぐチャージ30円につき、30ptを付与します。");
+    expect(pointsNote(b.tsunaguCharge, b.points)).not.toMatch(/実質無料|得する|お得/);
+    expect(buyLabel(b.total)).toBe("1,230円で食べつなぐ");
+    expect(buyLabel(priceBreakdown(10000, 30, 30).total)).toBe("10,030円で食べつなぐ");
+  });
+
+  it("商品詳細の CTA の状態: 注文済み・受付終了・売り切れ（在庫0）・購入準備中（Connect 未完了）・通常", () => {
+    const base = {
+      productId: "p1",
+      status: "published",
+      remaining: 1,
+      pickupEndAt: new Date(Date.now() + 3_600_000).toISOString(),
+      storeActive: true,
+      storePayable: true,
+      myOrderId: null,
+      now: Date.now(),
+    };
+    expect(v2ProductCta(base)).toMatchObject({ kind: "buy", href: "/products/p1/buy" }); // 在庫1でも購入できる
+    expect(v2ProductCta({ ...base, myOrderId: "o1" })).toMatchObject({ kind: "order", label: "注文を確認する" });
+    expect(v2ProductCta({ ...base, pickupEndAt: new Date(base.now - 1).toISOString() })).toMatchObject({ kind: "ended", label: "受付終了" });
+    expect(v2ProductCta({ ...base, remaining: 0 })).toMatchObject({ kind: "sold_out", label: "売り切れ" });
+    expect(v2ProductCta({ ...base, storePayable: false })).toMatchObject({ kind: "not_ready", label: "購入準備中" });
   });
 
   it("商品詳細のデータ: 店舗の決済可否と、自分の有効な注文", async () => {
