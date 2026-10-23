@@ -208,6 +208,9 @@ DB を初期化したいときは `.data/` を削除してください。
 | `LINE_CHANNEL_ACCESS_TOKEN` | 任意 | まとめ通知の送信（未設定なら dry run） |
 | `NEXT_PUBLIC_SUPABASE_URL` / `SUPABASE_SERVICE_ROLE_KEY` | 任意 | 商品写真の保存（未設定だと本番では写真なしで出品） |
 | `OPENAI_API_KEY` / `OPENAI_MODEL` | 任意 | AI 文章生成（未設定ならテンプレート） |
+| `STRIPE_SECRET_KEY` / `STRIPE_WEBHOOK_SECRET` | v2 決済 | Stripe（事前決済・Connect）。未設定なら購入・売上受取設定は準備中 |
+| `STRIPE_CHECKOUT_RETURN_URL` | 任意 | Checkout からの戻り先（未設定なら `NEXT_PUBLIC_APP_URL`。LIFF なら `https://liff.line.me/<LIFF ID>`） |
+| `STRIPE_PAYMENT_METHOD_CONFIGURATION` | 任意 | 決済手段を固定する Payment Method Configuration（`pmc_...`） |
 
 秘密情報は `.env.local` または Vercel の環境変数にのみ保存し、Git にコミットしないでください。
 
@@ -231,7 +234,7 @@ DATABASE_URL=... npm run db:migrate -- --bootstrap
 
 ## 8. Supabase 設定
 
-> **いちばん簡単な方法（Node.js 不要）**：Supabase の **SQL Editor** に [`supabase/setup/01_schema.sql`](./supabase/setup/01_schema.sql)（テーブル）→ [`supabase/setup/02_demo_data.sql`](./supabase/setup/02_demo_data.sql)（デモデータ・プレビュー用）→ [`supabase/setup/03_v2_foundation.sql`](./supabase/setup/03_v2_foundation.sql)（v2 の注文・ポイント台帳）の順に中身を貼り付けて Run するだけで準備できます。本番の DB には 01 と 03 だけを使ってください（02 を入れる場合は 03 より前に）。01・03 は `supabase/migrations/` から作ったもので、適用済みとして記録されるため、あとから `npm run db:migrate` を実行しても二重には適用されません。
+> **いちばん簡単な方法（Node.js 不要）**：Supabase の **SQL Editor** に [`supabase/setup/01_schema.sql`](./supabase/setup/01_schema.sql)（テーブル）→ [`supabase/setup/02_demo_data.sql`](./supabase/setup/02_demo_data.sql)（デモデータ・プレビュー用）→ [`supabase/setup/03_v2_foundation.sql`](./supabase/setup/03_v2_foundation.sql)（v2 の注文・ポイント台帳）→ [`supabase/setup/04_v2_stripe.sql`](./supabase/setup/04_v2_stripe.sql)（v2 の決済・返金・Connect）の順に中身を貼り付けて Run するだけで準備できます。本番の DB には 01・03・04 だけを使ってください（02 を入れる場合は 03 より前に）。01・03・04 は `supabase/migrations/` から作ったもので、適用済みとして記録されるため、あとから `npm run db:migrate` を実行しても二重には適用されません。
 
 1. プロジェクトを作成（リージョン：Tokyo `ap-northeast-1`）
 2. **Database → Connection string → Transaction pooler（:6543）** を `DATABASE_URL` に設定し、`npm run db:migrate`
@@ -285,6 +288,45 @@ DATABASE_URL=... npm run db:migrate -- --bootstrap
 
 ---
 
+## 11-2. Stripe（v2 事前決済）
+
+> STEP 2 の時点では、v2 の購入画面（`/products/[id]/buy`）は既存の画面からリンクしていません（旧フローの予約・店頭 QR はそのまま）。
+
+### 方式
+- **Stripe Checkout + Connect（Express）の destination charge**。1注文 = 1店舗 = 1 Checkout Session。
+- ユーザーの支払額 = `orders.total`（商品小計 + つなぐチャージ）。`application_fee_amount` = `orders.platform_fee_total`（成約手数料 + つなぐチャージ）。店舗に残るのは「小計 − 成約手数料」。
+- 金額は DB の注文から読み直す（リクエストや Stripe の metadata は金額計算に使わない）。
+- **注文を paid にするのは Webhook の `payment_intent.succeeded` だけ**。success URL に戻っただけでは paid にせず、「お支払いを確認しています」を表示して注文の状態を再取得する。
+- Checkout Session の有効期間は Stripe の下限の 31 分、注文の決済待ちは 15 分。期限切れで取り消された注文に決済が届いたら、paid にせず自動で全額返金する。
+- 決済手段は Stripe ダッシュボードの設定に従う（SDK v23 で `payment_method_types` は指定できない）。非同期決済（コンビニ等）は決済待ち 15 分に収まらないため、カード（とウォレット）のみを有効にした Payment Method Configuration を `STRIPE_PAYMENT_METHOD_CONFIGURATION` に設定することを推奨。
+
+### Webhook
+- エンドポイント：`https://<ドメイン>/api/stripe/webhook`（生のリクエストボディで署名を検証）
+- 受け取るイベント：`payment_intent.succeeded` / `payment_intent.payment_failed` / `checkout.session.completed` / `checkout.session.async_payment_succeeded` / `checkout.session.async_payment_failed` / `checkout.session.expired` / `charge.refunded` / `account.updated`
+- **Connect のイベント（`account.updated`）も受け取る**ため、Webhook は「連結アカウントのイベント」も対象にする（または Connect 用のエンドポイントを別に作り、同じ URL を指定）。
+- 同じイベントは `payment_events`（`provider + provider_event_id` で一意）で1回だけ処理。処理に失敗したら 500 を返し、Stripe の再送で再処理される。
+
+### 決済待ちの注文の掃除
+`/api/cron/orders`（`CRON_SECRET` で認証）が、決済期限切れの注文を取り消して在庫を戻し、開いたままの Checkout Session を期限切れにします。
+**数分ごとの実行が必要**です（Vercel Hobby の Cron は1日1回までのため `vercel.json` には入れていません。Vercel Pro の Cron か外部のスケジューラーで `Authorization: Bearer <CRON_SECRET>` を付けて呼び出してください）。
+
+### Stripe CLI での手動の統合確認（テストモード）
+自動テスト（`npm test` / `npm run test:e2e`）は Stripe に通信しません。実際の Stripe との疎通はテストモードで次のように確認します。
+
+```bash
+# 1. テストモードの秘密鍵を .env.local に設定（STRIPE_SECRET_KEY=sk_test_...）
+# 2. Webhook をローカルに転送（表示される whsec_... を STRIPE_WEBHOOK_SECRET に設定して npm run dev を再起動）
+stripe listen --forward-to localhost:3000/api/stripe/webhook --forward-connect-to localhost:3000/api/stripe/webhook
+# 3. 店舗オーナーでログイン →「売上受取設定」→ Stripe のテスト用の情報で登録を完了
+#    （戻ると状態が「完了」になる。account.updated も届く）
+# 4. ユーザーでログイン → /products/<商品ID>/buy →「◯◯円で食べつなぐ」→ テストカード 4242 4242 4242 4242
+# 5. 戻った画面が「お支払いを確認しています」→「お支払い完了」になり、マイページのポイントが +30
+# 6. 決済から5分以内・受取開始前なら注文画面の「キャンセルして返金する」で全額返金（ポイント -30）
+# 7. 期限切れとの競合: 決済画面を開いたまま注文の payment_expires_at を過去にして /api/cron/orders を実行
+#    → そのまま決済すると、注文は取り消しのまま自動で全額返金される
+stripe trigger payment_intent.succeeded   # この注文システム以外の決済は無視される（200）ことの確認
+```
+
 ## 12. ローカル開発
 
 - DB：未設定なら PGlite（`.data/pglite`）。本物の PostgreSQL で確認する場合は `DATABASE_URL` を設定して `npm run db:migrate -- --bootstrap && npm run db:seed`
@@ -332,6 +374,12 @@ E2E_BASE_URL=http://localhost:3000 npm run test:e2e
 | v2 注文（仮押さえ・同時注文・期限切れ・状態遷移） | `tests/orders.test.ts` |
 | ポイント台帳（付与・二重付与・取り消し・残高ビュー・移行） | `tests/points.test.ts` |
 | v2 の RLS（他人・他店舗の注文、payments / payment_events の保護） | `tests/orders-authorization.test.ts` |
+| Stripe Checkout の作成（金額・手数料・送金先・本人・Connect 未完了） | `tests/checkout.test.ts` |
+| Stripe Webhook（署名・paid・冪等・不一致・期限切れとの競合・返金・Connect） | `tests/stripe-webhook.test.ts` |
+| 返金ポリシー（本人5分・受取開始前・店舗都合・システム都合・二重返金・在庫・ポイント） | `tests/refunds.test.ts` |
+| 売上受取設定（Connect）と Connect 情報の保護 | `tests/connect.test.ts` |
+| 返金・決済関数の権限 | `tests/payments-authorization.test.ts` |
+| 購入確認・売上受取設定の画面 | `e2e/prepaid.spec.ts` |
 | AI 文章（テンプレート・禁止語）・値引き提案 | `tests/ai-copy.test.ts` |
 | UI に「レスキュー」「救う」「半額」を使っていない | `tests/copy-guard.test.ts` |
 | 出品 → 予約 → 店舗 QR → 完了、権限、改ざん QR | `e2e/core-flow.spec.ts` |

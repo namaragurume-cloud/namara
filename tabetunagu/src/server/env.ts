@@ -26,6 +26,17 @@ function secret(name: "AUTH_SECRET" | "QR_SIGNING_SECRET"): string {
   return `${DEV_FALLBACK_SECRET}:${name}`;
 }
 
+/** Stripe の鍵。形式が正しくない値は本番では起動時エラー、それ以外では未設定として扱う */
+function stripeKey(name: "STRIPE_SECRET_KEY" | "STRIPE_WEBHOOK_SECRET", pattern: RegExp): string {
+  const value = (process.env[name] || "").trim();
+  if (!value) return "";
+  if (pattern.test(value)) return value;
+  if (appEnv() === "production") {
+    throw new Error(`${name} has an invalid format`);
+  }
+  return "";
+}
+
 export const env = {
   get appEnv() {
     return appEnv();
@@ -82,6 +93,32 @@ export const env = {
     },
     get model() {
       return process.env.OPENAI_MODEL || "gpt-5-mini";
+    },
+  },
+  /**
+   * Stripe（事前決済・Connect）。秘密鍵・Webhook 署名鍵はサーバー専用。
+   * Checkout（Stripe のホストする決済ページ）を使うため、公開可能キーは使わない。
+   */
+  stripe: {
+    get secretKey() {
+      return stripeKey("STRIPE_SECRET_KEY", /^(sk|rk)_(test|live)_[A-Za-z0-9]+$/);
+    },
+    get webhookSecret() {
+      return stripeKey("STRIPE_WEBHOOK_SECRET", /^whsec_[A-Za-z0-9]+$/);
+    },
+    get enabled() {
+      return Boolean(this.secretKey);
+    },
+    /**
+     * Checkout から戻る先のベース URL（success / cancel）。未設定なら NEXT_PUBLIC_APP_URL。
+     * LINE ミニアプリ / LIFF 内に戻す場合は https://liff.line.me/<LIFF ID> などを設定する。
+     */
+    get checkoutReturnUrl() {
+      return (process.env.STRIPE_CHECKOUT_RETURN_URL || env.appUrl).replace(/\/$/, "");
+    },
+    /** 使う決済手段を固定する Payment Method Configuration（例: カードのみ）。未設定なら Stripe の既定 */
+    get paymentMethodConfiguration() {
+      return process.env.STRIPE_PAYMENT_METHOD_CONFIGURATION || "";
     },
   },
   storage: {

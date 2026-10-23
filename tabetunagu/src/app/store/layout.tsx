@@ -13,6 +13,7 @@ const NAV = [
   { href: "/store/reservations", label: "予約状況" },
   { href: "/store/sales", label: "売上・手数料" },
   { href: "/store/qr", label: "QRコード" },
+  { href: "/store/payouts", label: "売上受取設定" },
   { href: "/store/settings", label: "店舗設定・プラン" },
 ];
 
