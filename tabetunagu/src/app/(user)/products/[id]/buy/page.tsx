@@ -6,6 +6,8 @@ import { ProductVisual } from "@/components/product/ProductVisual";
 import { ButtonLink } from "@/components/ui/Button";
 import { Notice } from "@/components/ui/Section";
 import { nowMs } from "@/lib/clock";
+import { features } from "@/lib/features";
+import { chargeNote } from "@/lib/purchase";
 import { PRICING } from "@/lib/fees";
 import { pickupLabel } from "@/lib/format";
 import { requireViewer } from "@/server/auth/viewer";
@@ -23,7 +25,8 @@ export default async function BuyPage({ params }: { params: Promise<{ id: string
   const { product, store } = data;
   const available =
     store.status === "active" && product.status === "published" && product.remaining > 0 && Date.parse(product.pickupEndAt) > nowMs();
-  const purchasable = available && (await isProductPurchasable(viewer.id, product.id));
+  const open = features.v2CheckoutOpen;
+  const purchasable = open && available && (await isProductPurchasable(viewer.id, product.id));
   const max = Math.min(product.maxPerReservation, product.remaining);
 
   return (
@@ -63,7 +66,7 @@ export default async function BuyPage({ params }: { params: Promise<{ id: string
         <h2 className="mb-2 text-[13px] font-bold">ご確認ください</h2>
         <ul className="space-y-1.5 text-[12.5px] leading-relaxed text-ink-2">
           <li>・お支払いはオンライン（事前決済）です。お店でのお会計はありません。</li>
-          <li>・つなぐチャージ（{PRICING.tsunaguCharge}円）は、1回のご注文ごとにかかるシステム利用料です。</li>
+          <li>・つなぐチャージ（{PRICING.tsunaguCharge}円）は、1回のご注文ごとにかかるシステム利用料です。{chargeNote.points}</li>
           <li>・お支払い後のお客様都合のキャンセル・返金は、お支払いから一定時間内かつ受取開始前のみ受け付けています。</li>
           {product.isBox && <li>・食べつなぎBOXの中身は当日のお楽しみです。アレルギーなどはお店に直接ご確認ください。</li>}
         </ul>
@@ -74,12 +77,19 @@ export default async function BuyPage({ params }: { params: Promise<{ id: string
           productId={product.id}
           unitPrice={product.rescuePrice}
           tsunaguCharge={PRICING.tsunaguCharge}
+          pointsNote={chargeNote.points}
           max={max}
           unit={product.isBox ? "BOX" : "点"}
         />
       ) : (
         <div className="space-y-3">
-          <Notice tone="error">{available ? "現在この店舗の商品は購入できません。" : "この商品は現在、購入を受け付けていません。"}</Notice>
+          <Notice tone="error">
+            {!open
+              ? "現在オンラインでの購入は準備中です。"
+              : available
+                ? "現在この店舗の商品は購入できません。"
+                : "この商品は現在、購入を受け付けていません。"}
+          </Notice>
           <ButtonLink href="/products" variant="secondary" size="lg" className="w-full">
             ほかの商品をさがす
           </ButtonLink>

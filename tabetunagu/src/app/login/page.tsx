@@ -10,6 +10,7 @@ import { errorMessage } from "@/lib/errors";
 import { safeNextPath } from "@/server/auth/line";
 import { getViewer } from "@/server/auth/viewer";
 import { env } from "@/server/env";
+import { features } from "@/lib/features";
 
 export const metadata: Metadata = { title: "ログイン", robots: { index: false } };
 
@@ -34,7 +35,9 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
       </Link>
       <div className="mt-12">
         <h1 className="whitespace-pre-line text-[24px] font-bold leading-snug">{brand.copy}</h1>
-        <p className="mt-3 text-[13px] leading-relaxed text-muted">予約とQRチェックインのために、ログインしてください。取得するのはLINEの表示名とユーザーIDのみです。</p>
+        <p className="mt-3 text-[13px] leading-relaxed text-muted">
+          {features.v2Journey ? "ご注文と受け取りのために" : "予約とQRチェックインのために"}、ログインしてください。取得するのはLINEの表示名とユーザーIDのみです。
+        </p>
       </div>
 
       <div className="mt-8 space-y-3">

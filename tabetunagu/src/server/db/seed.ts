@@ -576,6 +576,17 @@ export async function seedDemo(q: Queryable, now = new Date()) {
     [storeIds.get("odori-bakery"), DEMO_USERS.storeOwner.id, storeIds.get("susukino-deli"), DEMO_USERS.storeStaff.id],
   );
 
+  // v2 の購入導線の確認用に、1店舗（札幌スイーツラボ）だけ「売上受取設定済み」にする。
+  // Stripe の鍵が設定されている環境では行わない（実際の Stripe の登録手順で確認するため）。
+  if (!process.env.STRIPE_SECRET_KEY) {
+    await q.query(
+      `update public.stores set stripe_account_id = 'acct_demoSweetsLab', stripe_charges_enabled = true,
+         stripe_payouts_enabled = true, stripe_details_submitted = true, stripe_onboarding_completed_at = now()
+       where id = $1`,
+      [storeIds.get("sapporo-sweets-lab")],
+    );
+  }
+
   // ---- テンプレート（いつものBOX） ----
   await q.query(
     `insert into public.product_templates (store_id, name, description, category, is_box, original_price, rescue_price,

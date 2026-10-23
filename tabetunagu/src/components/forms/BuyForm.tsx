@@ -16,10 +16,12 @@ export function BuyForm({
   tsunaguCharge,
   max,
   unit,
+  pointsNote,
 }: {
   productId: string;
   unitPrice: number;
   tsunaguCharge: number;
+  pointsNote?: string;
   max: number;
   unit: string;
 }) {
@@ -77,6 +79,11 @@ export function BuyForm({
           </dd>
         </div>
       </dl>
+      {pointsNote && (
+        <p className="px-1 text-[12px] text-forest" data-testid="points-note">
+          {pointsNote}
+        </p>
+      )}
       {state && !state.ok && <Notice tone="error">{state.message}</Notice>}
       <SubmitButton size="lg" className="w-full" pendingLabel="決済ページへ移動しています…">
         {total.toLocaleString("ja-JP")}円で食べつなぐ

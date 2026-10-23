@@ -61,7 +61,7 @@ export default async function StoreProductsPage({ searchParams }: { searchParams
                   </td>
                   <td className="tnum px-3 py-3 text-right">{p.completedCount}</td>
                   <td className="px-3 py-3">
-                    <ProductStatusBadge status={p.status} />
+                    <ProductStatusBadge status={p.status} pickupEndAt={p.pickupEndAt} />
                   </td>
                   <td className="px-4 py-3">
                     <div className="flex justify-end gap-1.5">

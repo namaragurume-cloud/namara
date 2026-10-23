@@ -9,6 +9,7 @@ import { percent, yen } from "@/lib/format";
 import { jstMonthRange } from "@/lib/time";
 import { requireStoreMember } from "@/server/auth/viewer";
 import { getStoreSales } from "@/server/services/store";
+import { getStoreOrderSales } from "@/server/services/v2-metrics";
 
 export const metadata: Metadata = { title: "売上・手数料" };
 
@@ -22,7 +23,7 @@ export default async function StoreSalesPage({ searchParams }: { searchParams: P
   const { month: raw } = await searchParams;
   const { viewer, store } = await requireStoreMember("/store/sales");
   const month = jstMonthRange(raw).month;
-  const s = await getStoreSales(viewer.id, store.storeId, month);
+  const [s, v2] = await Promise.all([getStoreSales(viewer.id, store.storeId, month), getStoreOrderSales(viewer.id, store.storeId, month)]);
   const plan = PLANS[s.store.plan];
   const standard = s.store.plan === "standard";
 
@@ -37,7 +38,7 @@ export default async function StoreSalesPage({ searchParams }: { searchParams: P
     <div className="space-y-6">
       <PageHeader
         title="売上・手数料"
-        sub="TABETUNAGU では商品代金を預かりません。表示は、お店のレジで受け取った成約売上の記録と、TABETUNAGU への手数料です。"
+        sub="事前決済（オンライン）の売上と、店頭払い（旧フロー）の成約売上を分けて表示します。同じ取引が両方に入ることはありません。"
         action={
           <div className="flex items-center gap-1 text-[13px] font-semibold">
             <Link href={`/store/sales?month=${shiftMonth(month, -1)}`} className="rounded-full border border-line bg-paper px-3 py-1.5">
@@ -51,6 +52,26 @@ export default async function StoreSalesPage({ searchParams }: { searchParams: P
         }
       />
 
+      <section className="space-y-3" data-testid="v2-sales">
+        <div>
+          <h2 className="text-[15px] font-bold">事前決済の売上</h2>
+          <p className="text-[12px] text-muted">
+            お支払いが完了した注文を売上として計上します（受取完了・未受取を含み、返金済みは含みません）。成約手数料は決済時に差し引かれ、残りが店舗受取額です。
+          </p>
+        </div>
+        <div className="grid grid-cols-2 gap-2 md:grid-cols-4">
+          <Stat label="本日の売上" value={yen(v2.today.sales)} sub={`${v2.today.orders}件`} />
+          <Stat label="月間売上" value={yen(v2.month.sales)} sub={`注文 ${v2.month.orders}件`} />
+          <Stat label="成約手数料" value={yen(v2.month.commission)} sub="決済手数料込み" />
+          <Stat label="店舗受取額" value={yen(v2.month.storeNet)} sub="売上 − 成約手数料" />
+          <Stat label="受取完了" value={`${v2.month.pickedUp}件`} />
+          <Stat label="未受取" value={`${v2.month.unclaimed}件`} sub="売上には含みます" />
+          <Stat label="受取待ち" value={`${v2.month.awaitingPickup}件`} />
+          <Stat label="返金" value={`${v2.month.refunded}件`} sub={v2.month.refunded ? `${yen(v2.month.refundedAmount)}（売上に含めません）` : undefined} />
+        </div>
+      </section>
+
+      <h2 className="text-[15px] font-bold">店頭払い（旧フロー）の成約</h2>
       <section className="grid gap-3 md:grid-cols-[1fr_1.2fr]">
         <div className="card p-5">
           <p className="text-[12px] font-semibold text-muted">TABETUNAGU 手数料（{plan.name}）</p>

@@ -9,6 +9,7 @@ import { ProductVisual } from "@/components/product/ProductVisual";
 import { Badge } from "@/components/ui/Badge";
 import { ButtonLink } from "@/components/ui/Button";
 import { Price } from "@/components/ui/Price";
+import { Notice } from "@/components/ui/Section";
 import { brand } from "@/lib/brand";
 import { areaLabel, categoryLabel } from "@/lib/categories";
 import { hhmm, pickupLabel } from "@/lib/format";
@@ -16,6 +17,8 @@ import { getViewer } from "@/server/auth/viewer";
 import { getProductDetail } from "@/server/services/catalog";
 import { logEvent } from "@/server/services/events";
 import { nowMs } from "@/lib/clock";
+import { features } from "@/lib/features";
+import { chargeNote, v2ProductCta } from "@/lib/purchase";
 
 type Props = { params: Promise<{ id: string }> };
 
@@ -30,8 +33,21 @@ export default async function ProductPage({ params }: Props) {
   const viewer = await getViewer();
   const data = await getProductDetail(viewer?.id ?? null, id);
   if (!data) notFound();
-  const { product, store, myReservationId, isFavorite } = data;
+  const { product, store, myReservationId, myOrderId, isFavorite, storePayable } = data;
   const now = nowMs();
+  const v2 = features.v2Journey;
+  const cta = v2
+    ? v2ProductCta({
+        productId: product.id,
+        status: product.status,
+        remaining: product.remaining,
+        pickupEndAt: product.pickupEndAt,
+        storeActive: store.status === "active",
+        storePayable,
+        myOrderId,
+        now,
+      })
+    : null;
   const ended = Date.parse(product.pickupEndAt) <= now || product.status === "closed";
   const soldOut = product.status === "sold_out" || product.remaining <= 0;
   const storeActive = store.status === "active";
@@ -73,13 +89,31 @@ export default async function ProductPage({ params }: Props) {
           <div>
             <p className="text-[12px] font-semibold text-muted">受取時間</p>
             <p className="tnum text-[17px] font-bold">{pickupLabel(product.pickupStartAt, product.pickupEndAt)}</p>
-            <p className="mt-0.5 text-[12px] text-muted">受取時間内にお店へ。店頭のQRを読み取ってから、お会計です。</p>
+            <p className="mt-0.5 text-[12px] text-muted">
+              {v2
+                ? "お支払いは事前にオンラインで。受取時間内にお店で受取チケットを見せて、受け取りを完了してください。"
+                : "受取時間内にお店へ。店頭のQRを読み取ってから、お会計です。"}
+            </p>
           </div>
         </div>
+
+        {cta?.kind === "not_ready" && <Notice>{cta.note}</Notice>}
+        {v2 && (
+          <p className="rounded-xl border border-line px-4 py-3 text-[12.5px] leading-relaxed text-ink-2" data-testid="charge-note">
+            {chargeNote.short}
+            <br />
+            {chargeNote.points}
+          </p>
+        )}
 
         {product.description && <p className="whitespace-pre-line text-[14.5px] leading-[1.9] text-ink-2">{product.description}</p>}
         {product.isBox && (
           <p className="rounded-xl bg-sand/60 px-4 py-3 text-[12.5px] leading-relaxed text-ink-2">
+            {v2 && product.originalPrice > product.rescuePrice && (
+              <span className="tnum mb-1 block font-bold text-ink">
+                {product.originalPrice.toLocaleString("ja-JP")}円相当 → {product.rescuePrice.toLocaleString("ja-JP")}円
+              </span>
+            )}
             食べつなぎBOXの中身は当日のお楽しみです。アレルギーなどが気になる方は、お店に直接ご確認ください。
           </p>
         )}
@@ -130,7 +164,21 @@ export default async function ProductPage({ params }: Props) {
               受取 {hhmm(product.pickupStartAt)}〜{hhmm(product.pickupEndAt)}
             </p>
           </div>
-          {myReservationId ? (
+          {cta ? (
+            cta.kind === "order" || cta.kind === "buy" ? (
+              <ButtonLink href={cta.href} variant={cta.kind === "order" ? "dark" : "primary"} size="lg" className="min-w-[56%]" data-testid="product-cta">
+                {cta.label}
+              </ButtonLink>
+            ) : (
+              <span
+                data-testid="product-cta"
+                aria-disabled
+                className="inline-flex h-14 min-w-[56%] items-center justify-center rounded-full bg-canvas px-6 text-[14px] font-semibold text-muted"
+              >
+                {cta.label}
+              </span>
+            )
+          ) : myReservationId ? (
             <ButtonLink href={`/reservations/${myReservationId}`} variant="dark" size="lg" className="min-w-[56%]">
               予約を確認する
             </ButtonLink>

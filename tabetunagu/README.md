@@ -208,6 +208,7 @@ DB を初期化したいときは `.data/` を削除してください。
 | `LINE_CHANNEL_ACCESS_TOKEN` | 任意 | まとめ通知の送信（未設定なら dry run） |
 | `NEXT_PUBLIC_SUPABASE_URL` / `SUPABASE_SERVICE_ROLE_KEY` | 任意 | 商品写真の保存（未設定だと本番では写真なしで出品） |
 | `OPENAI_API_KEY` / `OPENAI_MODEL` | 任意 | AI 文章生成（未設定ならテンプレート） |
+| `ENABLE_V2_CHECKOUT` | 任意 | `true` で v2（事前決済）をメインの購入導線にする。未設定は旧導線（§11-4） |
 | `STRIPE_SECRET_KEY` / `STRIPE_WEBHOOK_SECRET` | v2 決済 | Stripe（事前決済・Connect）。未設定なら購入・売上受取設定は準備中 |
 | `STRIPE_CHECKOUT_RETURN_URL` | 任意 | Checkout からの戻り先（未設定なら `NEXT_PUBLIC_APP_URL`。LIFF なら `https://liff.line.me/<LIFF ID>`） |
 | `STRIPE_PAYMENT_METHOD_CONFIGURATION` | 任意 | 決済手段を固定する Payment Method Configuration（`pmc_...`） |
@@ -344,6 +345,28 @@ stripe trigger payment_intent.succeeded   # この注文システム以外の決
 2. **`/api/cron/orders` を 5 分ごとに呼ぶ（推奨）**：全店舗の決済期限切れ・Checkout Session の期限切れ・未受取をまとめて処理する。`Authorization: Bearer <CRON_SECRET>` が必要。Vercel Hobby の Cron は1日1回までなので、Vercel Pro の Cron か、すでに使っている無料のスケジューラー（例：GitHub Actions の schedule など）から呼ぶ。新しい有料サービスは不要。
 3. 既存の `vercel.json` の日次 Cron（旧フロー）はそのまま。
 
+## 11-4. v2 の購入導線（機能フラグ `ENABLE_V2_CHECKOUT`）
+
+判定は `src/lib/features.ts` の1か所だけです。
+
+| 状態 | 商品詳細の「食べつなぐ」 | ナビ | v2 の購入（Checkout 開始） |
+|---|---|---|---|
+| OFF（未設定・既定） | 予約確認（旧導線: 予約 → 店頭 QR → お店で支払い） | ホーム・さがす・QR・予約・マイページ | production では受け付けない。開発・プレビューでは `/products/[id]/buy` を直接開けば確認できる |
+| ON（`true`） | 購入確認 → Stripe Checkout → 受取チケット → スワイプで受取完了 | ホーム・探す・注文・お気に入り・マイページ | 受け付ける |
+
+- OFF に戻すと即時に旧導線へ戻ります（旧フローの画面・QR・関数は削除していません）。決済済みの v2 注文の受取・返金・Webhook はフラグに関係なく動きます。
+- ON のときの商品詳細の CTA: 注文済み →「注文を確認する」/ 受付終了 →「受付終了」/ 在庫なし →「売り切れ」/ 店舗の売上受取設定が未完了 →「購入準備中」（商品は掲載したまま）/ それ以外 →「食べつなぐ」。受取終了を過ぎた商品は一覧に出さず（既存の仕様）、URL で開いた場合は「受付終了」。
+- 売上の基準（v2）: 決済済み（paid / picked_up / unclaimed）を決済日時で計上。返金済み・決済待ちは含めない。旧フローの成約とは別のテーブルなので二重計上しない（`src/server/services/v2-metrics.ts`）。
+- PoC 指標（自己スワイプ完了率・食べつなぎ率・30日リピート率・店舗 WAU・STANDARD 移行対象）の定義は `getV2Kpis` のコメントにあります。
+
+### v2 本番導線 ON の条件（production で `ENABLE_V2_CHECKOUT=true` にする前に）
+- [ ] **Stripe test mode E2E completed（STEP 2.5）**: テストモードで Connect 登録・1,030円の決済・application fee 230円・店舗 800円・Webhook（paid・30pt・再送で二重にならない）・ユーザー返金（transfer と application fee の巻き戻し）・期限切れとの競合の自動返金を確認した
+- [ ] Stripe の本番キー・Webhook（連結アカウントのイベントを含む）・カードのみの Payment Method Configuration を設定した
+- [ ] `/api/cron/orders` を 5 分ごとに呼ぶスケジューラーを設定した（未設定だと管理画面 KPI に「定期処理の遅れ」の警告が出る）
+- [ ] 店舗の売上受取設定（Connect）が完了した店舗がある
+- [ ] LINE 内ブラウザ（実機）で 購入確認 → Checkout → 戻り → 受取チケット → スワイプ を確認した
+- [ ] 利用規約・特定商取引法の表記・キャンセルポリシー（決済後5分以内・受取開始前）を公開した
+
 ## 12. ローカル開発
 
 - DB：未設定なら PGlite（`.data/pglite`）。本物の PostgreSQL で確認する場合は `DATABASE_URL` を設定して `npm run db:migrate -- --bootstrap && npm run db:seed`
@@ -370,10 +393,10 @@ stripe trigger payment_intent.succeeded   # この注文システム以外の決
 ## 14. テスト
 
 ```bash
-npm test             # ユニット（56 件）
-npm run test:e2e     # E2E（4 件）
+npm test             # ユニット（Vitest・PGlite。Stripe には通信しない）
+npm run test:e2e     # E2E（機能フラグ OFF / ON の2つの開発サーバーを自動で起動）
 # 起動済みのサーバー（例: next start + DATABASE_URL）に対して E2E
-E2E_BASE_URL=http://localhost:3000 npm run test:e2e
+E2E_BASE_URL=http://localhost:3000 npm run test:e2e -- --project mobile
 ```
 
 | 観点 | テスト |
@@ -400,6 +423,9 @@ E2E_BASE_URL=http://localhost:3000 npm run test:e2e
 | 受取（スワイプ・時間・猶予・冪等・未受取）・店舗モニター・注文履歴・受取イベントの RLS | `tests/pickup.test.ts` |
 | 受取の Server Action・店舗都合返金 UI・モニター API | `tests/pickup-routes.test.ts` |
 | 受取チケット → スワイプ → 店舗モニター反映、未受取の表示 | `e2e/pickup.spec.ts` |
+| 機能フラグ・商品詳細の CTA（在庫・売り切れ・受付終了・決済準備中）・v2 売上・管理 KPI・購入の受付制御 | `tests/v2-journey.test.ts` |
+| フラグ ON・375px: 商品 → 食べつなぐ → ログイン → 購入確認 → 受取チケット → スワイプ → 店舗モニター | `e2e/v2/journey.spec.ts`（project `v2-375`） |
+| フラグ OFF: 旧ナビ・旧導線（予約確認へ） | `e2e/legacy-journey.spec.ts` |
 | AI 文章（テンプレート・禁止語）・値引き提案 | `tests/ai-copy.test.ts` |
 | UI に「レスキュー」「救う」「半額」を使っていない | `tests/copy-guard.test.ts` |
 | 出品 → 予約 → 店舗 QR → 完了、権限、改ざん QR | `e2e/core-flow.spec.ts` |

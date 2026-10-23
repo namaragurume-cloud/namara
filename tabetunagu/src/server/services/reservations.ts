@@ -79,6 +79,9 @@ export type MyStats = {
   trustScore: number;
   foodSavedG: number;
   completedQuantity: number;
+  /** v2（事前決済）の受取完了の件数・推定削減量（旧フローの値とは別に数える） */
+  v2PickedUpCount: number;
+  v2FoodSavedG: number;
 };
 
 export async function getMyStats(userId: string): Promise<MyStats> {
@@ -96,6 +99,12 @@ export async function getMyStats(userId: string): Promise<MyStats> {
        where r.user_id = $1 and r.status = 'completed'`,
       [userId],
     );
+    const [v2] = await q.query<{ count: number; grams: number }>(
+      `select count(distinct o.id)::int as count, coalesce(sum(i.quantity * p.estimated_weight_g), 0)::int as grams
+       from public.orders o join public.order_items i on i.order_id = o.id join public.products p on p.id = i.product_id
+       where o.user_id = $1 and o.status = 'picked_up'`,
+      [userId],
+    );
     // ポイント残高は台帳（points_transactions）の合計が正。user_stats.points_balance は旧フローの互換用
     const [points] = await q.query<{ balance: number }>("select public.points_balance($1::uuid) as balance", [userId]);
     return {
@@ -107,6 +116,8 @@ export async function getMyStats(userId: string): Promise<MyStats> {
       trustScore: stats?.trust_score ?? 100,
       foodSavedG: saved?.grams ?? 0,
       completedQuantity: saved?.qty ?? 0,
+      v2PickedUpCount: v2?.count ?? 0,
+      v2FoodSavedG: v2?.grams ?? 0,
     };
   });
 }

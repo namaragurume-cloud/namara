@@ -1,4 +1,4 @@
-import { ArrowRight, QrCode, Store, Ticket } from "lucide-react";
+import { ArrowRight, CreditCard, Hand, QrCode, Store, Ticket } from "lucide-react";
 import Link from "next/link";
 import { ProductCard, ProductRow } from "@/components/product/ProductCard";
 import { ButtonLink } from "@/components/ui/Button";
@@ -6,11 +6,26 @@ import { ChipLink, ChipRow } from "@/components/ui/Chip";
 import { EmptyState, SectionTitle } from "@/components/ui/Section";
 import { brand } from "@/lib/brand";
 import { AREAS, CATEGORIES } from "@/lib/categories";
+import { features } from "@/lib/features";
 import { getViewer } from "@/server/auth/viewer";
 import { countByArea, listAvailableProducts, sortProducts } from "@/server/services/catalog";
 
+const LEGACY_STEPS = [
+  { Icon: Ticket, title: "予約する", body: "気になる商品を選んで「食べつなぐ」。受取時間を確認して予約します。" },
+  { Icon: QrCode, title: "お店でQRを読み取る", body: "受取時間内にお店へ。店頭のQRコードを読み取ると「食べつなぎ完了」。" },
+  { Icon: Store, title: "いつものレジで支払う", body: "お支払いはお店で。現金・カード・QR決済など、お店の方法でどうぞ。" },
+];
+
+/** v2（事前決済）の流れ */
+const V2_STEPS = [
+  { Icon: CreditCard, title: "食べつなぐ", body: "気になる商品を選んで、オンラインで先にお支払い。受取チケットが届きます。" },
+  { Icon: Ticket, title: "お店で受取チケットを見せる", body: "受取時間内にお店へ。スタッフに受取チケットの画面を見せて、商品を受け取ります。" },
+  { Icon: Hand, title: "スワイプして受取完了", body: "受け取ったら、ご自身で「受取完了」をスワイプ。お会計はありません。" },
+];
+
 export default async function HomePage() {
   const viewer = await getViewer();
+  const v2 = features.v2Journey;
   const now = new Date();
   const all = await listAvailableProducts(viewer?.id ?? null, {}, now);
   const available = all.filter((p) => p.status === "published" && p.remaining > 0);
@@ -23,7 +38,7 @@ export default async function HomePage() {
   return (
     <div className="space-y-8">
       <section className="pt-2">
-        <p className="text-[12px] font-semibold tracking-[0.2em] text-forest">{brand.tagline}</p>
+        <p className="text-[12px] font-semibold tracking-[0.2em] text-forest">{v2 ? "近くのおいしいを、おトクに。" : brand.tagline}</p>
         <h1 className="mt-2 text-[26px] font-bold leading-snug tracking-wide text-ink">
           {available.length > 0 ? (
             <>
@@ -39,7 +54,11 @@ export default async function HomePage() {
             </>
           )}
         </h1>
-        <p className="mt-2 text-[13px] leading-relaxed text-muted">近くのお店の今日のおいしさを、食べつなぎ価格で。予約して、お店で受け取るだけ。</p>
+        <p className="mt-2 text-[13px] leading-relaxed text-muted">
+          {v2
+            ? "近くのお店の今日のおいしさを、食べつなぎ価格で。先にお支払いして、お店で受け取るだけ。食べつなぐことが、食品ロスを減らすことにもつながります。"
+            : "近くのお店の今日のおいしさを、食べつなぎ価格で。予約して、お店で受け取るだけ。"}
+        </p>
       </section>
 
       <section aria-label="エリア">
@@ -105,11 +124,7 @@ export default async function HomePage() {
         <p className="text-[12px] font-semibold tracking-[0.2em] text-forest">HOW IT WORKS</p>
         <h2 className="mt-1 text-[17px] font-bold">{brand.philosophy}</h2>
         <ol className="mt-4 space-y-3.5">
-          {[
-            { Icon: Ticket, title: "予約する", body: "気になる商品を選んで「食べつなぐ」。受取時間を確認して予約します。" },
-            { Icon: QrCode, title: "お店でQRを読み取る", body: "受取時間内にお店へ。店頭のQRコードを読み取ると「食べつなぎ完了」。" },
-            { Icon: Store, title: "いつものレジで支払う", body: "お支払いはお店で。現金・カード・QR決済など、お店の方法でどうぞ。" },
-          ].map(({ Icon, title, body }, i) => (
+          {(v2 ? V2_STEPS : LEGACY_STEPS).map(({ Icon, title, body }, i) => (
             <li key={title} className="flex gap-3">
               <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-paper text-forest">
                 <Icon className="h-[18px] w-[18px]" aria-hidden />

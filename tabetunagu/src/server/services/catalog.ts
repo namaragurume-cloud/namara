@@ -103,8 +103,22 @@ export async function getProductDetail(viewerId: string | null, productId: strin
     if (!storeRow) return null;
     const store = toStoreInfo(storeRow);
     let myReservationId: string | null = null;
+    let myOrderId: string | null = null;
     let isFavorite = false;
+    // v2: 店舗がオンライン決済を受け付けられるか（Connect の登録完了）
+    const [payable] = await q.query<{ ok: boolean }>(
+      "select (status = 'active' and stripe_charges_enabled) as ok from public.stores where id = $1",
+      [store.id],
+    );
     if (viewerId) {
+      const [order] = await q.query<{ id: string }>(
+        `select o.id from public.orders o join public.order_items i on i.order_id = o.id
+         where i.product_id = $1 and o.user_id = $2
+           and (o.status = 'pending_payment' and o.payment_expires_at > now() or o.status = 'paid')
+         order by o.created_at desc limit 1`,
+        [productId, viewerId],
+      );
+      myOrderId = order?.id ?? null;
       const [res] = await q.query<{ id: string }>(
         `select id from public.reservations
          where product_id = $1 and user_id = $2 and status in ('pending', 'confirmed') limit 1`,
@@ -114,7 +128,7 @@ export async function getProductDetail(viewerId: string | null, productId: strin
       const [fav] = await q.query(`select 1 from public.favorites where user_id = $1 and store_id = $2`, [viewerId, store.id]);
       isFavorite = Boolean(fav);
     }
-    return { product, store, myReservationId, isFavorite };
+    return { product, store, myReservationId, myOrderId, isFavorite, storePayable: Boolean(payable?.ok) };
   });
 }
 

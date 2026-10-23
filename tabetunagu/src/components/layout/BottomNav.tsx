@@ -1,11 +1,14 @@
 "use client";
 
-import { Home, QrCode, Search, Ticket, User } from "lucide-react";
+import { Heart, Home, QrCode, ReceiptText, Search, Ticket, User } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "../ui/cn";
 
-const ITEMS = [
+type Item = { href: string; label: string; Icon: typeof Home; match: (p: string) => boolean; primary?: boolean };
+
+/** 旧フロー（予約 → 店頭 QR） */
+const LEGACY_ITEMS: Item[] = [
   { href: "/", label: "ホーム", Icon: Home, match: (p: string) => p === "/" },
   { href: "/products", label: "さがす", Icon: Search, match: (p: string) => p.startsWith("/products") || p.startsWith("/stores") },
   { href: "/checkin", label: "QR", Icon: QrCode, match: (p: string) => p.startsWith("/checkin") || p.startsWith("/c/"), primary: true },
@@ -13,8 +16,18 @@ const ITEMS = [
   { href: "/me", label: "マイページ", Icon: User, match: (p: string) => p.startsWith("/me") },
 ];
 
-export function BottomNav() {
+/** v2（事前決済）: ホーム・探す・注文・お気に入り・マイページ */
+const V2_ITEMS: Item[] = [
+  { href: "/", label: "ホーム", Icon: Home, match: (p: string) => p === "/" },
+  { href: "/products", label: "探す", Icon: Search, match: (p: string) => p.startsWith("/products") || p.startsWith("/stores") },
+  { href: "/orders", label: "注文", Icon: ReceiptText, match: (p: string) => p.startsWith("/orders") },
+  { href: "/favorites", label: "お気に入り", Icon: Heart, match: (p: string) => p.startsWith("/favorites") },
+  { href: "/me", label: "マイページ", Icon: User, match: (p: string) => p.startsWith("/me") },
+];
+
+export function BottomNav({ v2 = false }: { v2?: boolean }) {
   const pathname = usePathname();
+  const ITEMS = v2 ? V2_ITEMS : LEGACY_ITEMS;
   return (
     <nav
       aria-label="メインメニュー"

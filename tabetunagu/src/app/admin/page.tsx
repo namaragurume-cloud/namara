@@ -6,19 +6,68 @@ import { parsePeriod, PeriodTabs } from "@/components/admin/PeriodTabs";
 import { Bars } from "@/components/charts/Bars";
 import { PageHeader } from "@/components/layout/ConsoleShell";
 import { Stat } from "@/components/ui/Section";
-import { PLANS } from "@/lib/fees";
+import { BREAK_EVEN_GMV, PLANS } from "@/lib/fees";
 import { grams, num, percent, yen } from "@/lib/format";
 import { env } from "@/server/env";
-import { getKpis, listStoresWithMetrics, MIN_RESOLVED_FOR_FLAG, SUSPICIOUS_QR_RATE } from "@/server/services/admin";
+import { features } from "@/lib/features";
+import { ORDER_POLICY } from "@/lib/orders";
+import { Notice } from "@/components/ui/Section";
+import { getKpis, listStoresWithMetrics, MIN_RESOLVED_FOR_FLAG, periodRange, SUSPICIOUS_QR_RATE } from "@/server/services/admin";
+import { getV2Kpis } from "@/server/services/v2-metrics";
 
 export default async function AdminKpiPage({ searchParams }: { searchParams: Promise<{ period?: string }> }) {
   const period = parsePeriod((await searchParams).period);
-  const [k, stores] = await Promise.all([getKpis(period), listStoresWithMetrics(period)]);
+  const range = periodRange(period);
+  const [k, stores, v2] = await Promise.all([
+    getKpis(period),
+    listStoresWithMetrics(period),
+    getV2Kpis(range.from, range.to, ORDER_POLICY.pickupLateGraceMinutes),
+  ]);
   const flagged = stores.filter((s) => s.flag === "suspicious" || s.flag === "warning");
 
   return (
     <div className="space-y-8">
       <PageHeader title="KPI" sub={k.label} action={<PeriodTabs base="/admin" period={period} />} />
+
+      {v2.maintenanceBacklog > 0 && (
+        <Notice tone="error">
+          決済期限切れ・受取期限切れのまま30分以上処理されていない注文が {num(v2.maintenanceBacklog)} 件あります。定期処理（/api/cron/orders を5分ごと）が動いているか確認してください。
+          {features.v2Journey ? "" : "（v2 の購入導線は OFF です）"}
+        </Notice>
+      )}
+      {v2.requiresReview > 0 && (
+        <Notice tone="error">金額・店舗などが注文と一致しない決済（requires_review）が {num(v2.requiresReview)} 件あります。</Notice>
+      )}
+
+      <section data-testid="admin-v2-kpis">
+        <h2 className="mb-3 text-[14px] font-bold text-ink-2">事前決済（v2）{features.v2Journey ? "" : "・購入導線 OFF"}</h2>
+        <div className="grid grid-cols-2 gap-2 md:grid-cols-3 xl:grid-cols-6">
+          <Stat label="GMV（商品の売上）" value={yen(v2.gmv)} sub={`決済総額 ${yen(v2.charged)}`} />
+          <Stat label="決済済み注文" value={num(v2.paidOrders)} sub="返金済みを除く" />
+          <Stat label="受取完了" value={num(v2.pickedUp)} />
+          <Stat label="未受取" value={num(v2.unclaimed)} sub="売上には含む" />
+          <Stat label="返金" value={num(v2.refunded)} />
+          <Stat label="プラットフォーム売上" value={yen(v2.platformRevenue)} sub={`手数料 ${yen(v2.commission)}・チャージ ${yen(v2.tsunaguCharge)}`} />
+          <Stat label="発行ポイント" value={`${num(v2.points.issued)}pt`} sub={`取り消し ${num(v2.points.revoked)}pt・残高 ${num(v2.points.outstanding)}pt`} />
+          <Stat label="合計 GMV（旧＋v2）" value={yen(k.gmv + v2.gmv)} sub="別々の取引の合計" />
+        </div>
+      </section>
+
+      <section data-testid="admin-poc-kpis">
+        <h2 className="mb-1 text-[14px] font-bold text-ink-2">PoC 指標</h2>
+        <p className="mb-3 text-[12px] text-muted">定義は src/server/services/v2-metrics.ts（getV2Kpis）に記載しています。</p>
+        <div className="grid grid-cols-2 gap-2 md:grid-cols-3 xl:grid-cols-5">
+          <Stat label="自己スワイプ完了率" value={percent(v2.poc.swipeRate)} sub={`受取期限が来た注文 ${num(v2.poc.swipeDue)}件のうち`} />
+          <Stat label="食べつなぎ率" value={percent(v2.poc.tsunagiRate)} sub="売れた数量 ÷ 出品数量（旧＋v2）" />
+          <Stat label="30日リピート率（v2）" value={percent(v2.poc.repeatRate)} sub={`対象 ${v2.poc.repeatCohort}人`} />
+          <Stat label="店舗 WAU" value={num(v2.poc.storeWau)} sub="直近7日に出品した店舗" />
+          <Stat
+            label="STANDARD 移行対象"
+            value={num(v2.poc.upgradeCandidates.length)}
+            sub={v2.poc.upgradeCandidates.slice(0, 3).map((s) => s.name).join("・") || `直近30日 ${yen(BREAK_EVEN_GMV)} 以上の FREE 店舗`}
+          />
+        </div>
+      </section>
 
       <section>
         <h2 className="mb-3 text-[14px] font-bold text-ink-2">店舗</h2>
@@ -45,7 +94,7 @@ export default async function AdminKpiPage({ searchParams }: { searchParams: Pro
       </section>
 
       <section>
-        <h2 className="mb-3 text-[14px] font-bold text-ink-2">成約の質・売上</h2>
+        <h2 className="mb-3 text-[14px] font-bold text-ink-2">店頭払い（旧フロー）の成約の質・売上</h2>
         <div className="grid grid-cols-2 gap-2 md:grid-cols-3 xl:grid-cols-6">
           <Stat label="食べつなぎ率" value={percent(k.tsunagiRate)} sub="成約数量 ÷ 出品数量" />
           <Stat label="QR完了率" value={percent(k.qrRate)} sub="受取時間を過ぎた予約のうち" />

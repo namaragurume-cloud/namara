@@ -26,7 +26,7 @@ export default async function StoreProductPage({ params }: { params: Promise<{ i
         title={p.name}
         sub={
           <span className="flex items-center gap-2">
-            <ProductStatusBadge status={p.status} />
+            <ProductStatusBadge status={p.status} pickupEndAt={p.pickupEndAt} />
             <span className="tnum">{pickupLabel(p.pickupStartAt, p.pickupEndAt)}</span>
           </span>
         }

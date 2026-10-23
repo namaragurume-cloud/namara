@@ -2,6 +2,7 @@
 
 import { refresh } from "next/cache";
 import { redirect } from "next/navigation";
+import { features } from "@/lib/features";
 import { assertStoreMember, getViewer } from "@/server/auth/viewer";
 import { startConnectOnboarding } from "@/server/services/connect";
 import { cancelPendingOrder } from "@/server/services/orders";
@@ -13,6 +14,7 @@ export async function purchaseAction(_prev: ActionState, formData: FormData): Pr
   const productId = String(formData.get("productId") ?? "");
   const viewer = await getViewer();
   if (!viewer) redirect(`/login?next=${encodeURIComponent(`/products/${productId}/buy`)}`);
+  if (!features.v2CheckoutOpen) return { ok: false, message: "現在オンラインでの購入は準備中です。", code: "v2_checkout_closed" };
   const quantity = Number(formData.get("quantity") ?? 1);
   let url: string;
   try {
@@ -28,6 +30,7 @@ export async function resumeCheckoutAction(_prev: ActionState, formData: FormDat
   const orderId = String(formData.get("orderId") ?? "");
   const viewer = await getViewer();
   if (!viewer) redirect(`/login?next=${encodeURIComponent(`/orders/${orderId}`)}`);
+  if (!features.v2CheckoutOpen) return { ok: false, message: "現在オンラインでの購入は準備中です。", code: "v2_checkout_closed" };
   let url: string;
   try {
     url = await startCheckout(viewer.id, orderId);

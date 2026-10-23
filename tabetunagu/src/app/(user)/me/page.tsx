@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/Badge";
 import { SectionTitle } from "@/components/ui/Section";
 import { areaLabel } from "@/lib/categories";
 import { grams } from "@/lib/format";
+import { features } from "@/lib/features";
 import { requireViewer } from "@/server/auth/viewer";
 import { getMyProfile, getMyStats, listFavoriteStores } from "@/server/services/reservations";
 
@@ -16,6 +17,10 @@ export const metadata: Metadata = { title: "マイページ" };
 export default async function MyPage() {
   const viewer = await requireViewer("/me");
   const [stats, favorites, profile] = await Promise.all([getMyStats(viewer.id), listFavoriteStores(viewer.id), getMyProfile(viewer.id)]);
+  const v2 = features.v2Journey;
+  // v2 では、旧フローの完了と v2 の受取完了を合わせて表示する（それぞれ別のテーブルなので二重には数えない）
+  const completed = v2 ? stats.completedCount + stats.v2PickedUpCount : stats.completedCount;
+  const saved = v2 ? stats.foodSavedG + stats.v2FoodSavedG : stats.foodSavedG;
 
   return (
     <div className="space-y-7">
@@ -40,27 +45,36 @@ export default async function MyPage() {
         <div className="rounded-2xl bg-canvas px-3 py-3.5">
           <p className="text-[11px] text-muted">食べつなぎ回数</p>
           <p className="tnum mt-1 text-[22px] font-semibold">
-            {stats.completedCount}
+            {completed}
             <span className="text-[11px]">回</span>
           </p>
         </div>
         <div className="rounded-2xl bg-canvas px-3 py-3.5">
           <p className="text-[11px] text-muted">ポイント</p>
-          <p className="tnum mt-1 text-[22px] font-semibold text-forest">
+          <p className="tnum mt-1 text-[22px] font-semibold text-forest" data-testid="my-points">
             {stats.points}
             <span className="text-[11px]">pt</span>
           </p>
         </div>
         <div className="rounded-2xl bg-canvas px-3 py-3.5">
           <p className="text-[11px] text-muted">推定削減量</p>
-          <p className="tnum mt-1 text-[22px] font-semibold">{grams(stats.foodSavedG)}</p>
+          <p className="tnum mt-1 text-[22px] font-semibold">{grams(saved)}</p>
         </div>
       </section>
 
       <nav className="card divide-y divide-line">
         {[
-          { href: "/reservations", label: "今後の予約" },
-          { href: "/reservations?tab=past", label: "予約履歴（過去の食べつなぎ）" },
+          ...(v2
+            ? [
+                { href: "/orders?tab=ready", label: "受取待ちの注文（受取チケット）" },
+                { href: "/orders?tab=picked_up", label: "注文履歴" },
+                { href: "/favorites", label: "お気に入り店舗" },
+                { href: "/reservations?tab=past", label: "過去の予約" },
+              ]
+            : [
+                { href: "/reservations", label: "今後の予約" },
+                { href: "/reservations?tab=past", label: "予約履歴（過去の食べつなぎ）" },
+              ]),
           ...(viewer.memberships.length ? [{ href: "/store", label: "店舗管理画面" }] : []),
           ...(viewer.isAdmin ? [{ href: "/admin", label: "運営管理画面" }] : []),
         ].map((item) => (

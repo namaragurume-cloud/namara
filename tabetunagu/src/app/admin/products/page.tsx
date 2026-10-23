@@ -63,7 +63,7 @@ export default async function AdminProductsPage({ searchParams }: { searchParams
                 </td>
                 <td className="tnum px-3 py-2.5 text-right">{String(p.reserved)}</td>
                 <td className="px-4 py-2.5">
-                  <ProductStatusBadge status={String(p.status)} />
+                  <ProductStatusBadge status={String(p.status)} pickupEndAt={String(p.pickup_end_at)} />
                 </td>
               </tr>
             ))}

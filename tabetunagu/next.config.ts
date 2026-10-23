@@ -20,6 +20,8 @@ if (process.env.NEXT_PUBLIC_SUPABASE_URL) {
 
 const nextConfig: NextConfig = {
   poweredByHeader: false,
+  // E2E で機能フラグ ON / OFF の開発サーバーを同時に動かすため、出力先を分けられるようにする（通常は既定の .next）
+  ...(process.env.NEXT_DIST_DIR ? { distDir: process.env.NEXT_DIST_DIR } : {}),
   // リポジトリ直下にも別の Next.js アプリ（MIRATSUMU サイト）があるため、ルートを明示する
   turbopack: { root: path.resolve(__dirname) },
   // PGlite（ローカル用の組み込み PostgreSQL）は WASM を読み込むためバンドルしない

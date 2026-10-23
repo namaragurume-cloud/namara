@@ -144,7 +144,7 @@ export default async function StoreDashboardPage({ searchParams }: { searchParam
                     <td className="tnum px-3 py-3 text-right">{p.activeCount}</td>
                     <td className="tnum px-3 py-3 text-right">{p.completedCount}</td>
                     <td className="px-4 py-3">
-                      <ProductStatusBadge status={p.status} />
+                      <ProductStatusBadge status={p.status} pickupEndAt={p.pickupEndAt} />
                     </td>
                   </tr>
                 ))}

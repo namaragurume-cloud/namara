@@ -31,6 +31,7 @@ export const ERROR_MESSAGES = {
   already_paid: "この注文はお支払い済みです。",
   not_payable: "この注文はお支払いできません。",
   payment_expired: "お支払いの有効期限が切れました。もう一度ご注文ください。",
+  v2_checkout_closed: "現在オンラインでの購入は準備中です。",
   store_payment_unavailable: "現在この店舗の商品は購入できません。",
   payment_unavailable: "現在オンライン決済を利用できません。時間をおいてお試しください。",
   too_many_attempts: "お支払いの試行回数が多すぎます。もう一度ご注文ください。",
