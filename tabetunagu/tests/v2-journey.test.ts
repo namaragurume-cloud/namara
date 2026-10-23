@@ -1,11 +1,12 @@
 import { afterAll, afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { features } from "@/lib/features";
 import { PRICING } from "@/lib/fees";
-import { buyLabel, chargeNote, isLegacyPickupNote, PICKUP_STEPS, pointsNote, priceBreakdown, v2ProductCta } from "@/lib/purchase";
+import { AFTER_PAYMENT_STEPS, buyLabel, buyPageState, chargeNote, isLegacyPickupNote, PICKUP_STEPS, pointsNote, priceBreakdown, v2ProductCta } from "@/lib/purchase";
 import { getPolicySettings } from "@/server/services/settings";
 import { asService } from "@/server/db";
 import type { Driver } from "@/server/db/types";
 import { getProductDetail } from "@/server/services/catalog";
+import { errorMessage } from "@/lib/errors";
 import { createOrder } from "@/server/services/orders";
 import { pickupOrder } from "@/server/services/pickup";
 import { requestUserRefund } from "@/server/services/payments";
@@ -256,5 +257,98 @@ describe("管理 KPI（v2）", () => {
     );
     const k = await getV2Kpis(new Date(Date.now() - 86_400_000), new Date(Date.now() + 86_400_000), 15);
     expect(k.maintenanceBacklog).toBe(1);
+  });
+});
+
+describe("購入確認（v2）", () => {
+  const base = {
+    open: true,
+    status: "published",
+    remaining: 3,
+    pickupEndAt: new Date(Date.now() + 3_600_000).toISOString(),
+    storeActive: true,
+    storePayable: true,
+    myOrder: null,
+    now: Date.now(),
+  };
+
+  it("状態: 注文済み → 決済待ち（再開）→ 受付停止 → 受付終了 → 売り切れ → 購入準備中 → 購入できる", () => {
+    expect(buyPageState(base)).toEqual({ kind: "buy" });
+    expect(buyPageState({ ...base, myOrder: { id: "o1", status: "paid", total: 1230 } })).toEqual({ kind: "ordered", orderId: "o1" });
+    expect(buyPageState({ ...base, myOrder: { id: "o2", status: "pending_payment", total: 1230 } })).toEqual({ kind: "resume", orderId: "o2", total: 1230 });
+    expect(buyPageState({ ...base, open: false })).toMatchObject({ kind: "closed", label: "購入準備中" });
+    expect(buyPageState({ ...base, pickupEndAt: new Date(base.now - 1).toISOString() })).toEqual({
+      kind: "ended",
+      label: "受付終了",
+      message: "受付時間が終了しました。",
+    });
+    expect(buyPageState({ ...base, remaining: 0 })).toEqual({ kind: "sold_out", label: "売り切れ", message: "申し訳ありません。この商品は売り切れました。" });
+    expect(buyPageState({ ...base, storePayable: false })).toEqual({
+      kind: "not_ready",
+      label: "購入準備中",
+      message: "現在この店舗の商品は購入準備中です。",
+    });
+  });
+
+  it("支払い内訳: 数量を変えても、つなぐチャージは1注文ごとに30円・30pt。ボタンは合計入り", () => {
+    expect(priceBreakdown(1200, 30, 30, 2)).toEqual({ subtotal: 2400, tsunaguCharge: 30, total: 2430, points: 30 });
+    expect(buyLabel(priceBreakdown(1200, 30, 30, 2).total)).toBe("2,430円で食べつなぐ");
+    expect(AFTER_PAYMENT_STEPS.join("")).toContain("受取チケット");
+    expect(AFTER_PAYMENT_STEPS.join("")).not.toMatch(/レジ|QR|店頭会計|予約/);
+  });
+
+  it("ユーザー向けの文言（技術的なコードは出さない）", () => {
+    expect(errorMessage("sold_out")).toBe("申し訳ありません。この商品は売り切れました。");
+    expect(errorMessage("pickup_ended")).toBe("受付時間が終了しました。");
+    expect(errorMessage("checkout_failed")).toBe("決済画面を開けませんでした。もう一度お試しください。");
+    expect(errorMessage("payment_session_creation_failed")).toBe("エラーが発生しました。時間をおいてもう一度お試しください。");
+  });
+
+  it("二重送信: 同じ商品をもう一度購入しても、注文と Checkout Session を新しく作らず同じ決済画面へ", async () => {
+    const productId = await createProduct(IDS.storeA, { quantity: 3 });
+    session.userId = IDS.userA;
+    // 成功すると Checkout へ redirect する（テストでは url を持つ例外になる）
+    const redirectedTo = async () => {
+      try {
+        await purchaseAction(null, form({ productId, quantity: "1" }));
+      } catch (e) {
+        return (e as { url: string }).url;
+      }
+      throw new Error("redirect されなかった");
+    };
+    const first = await redirectedTo();
+    const second = await redirectedTo();
+    expect(first).toContain("checkout.stripe.com");
+    expect(second).toBe(first);
+    expect(fake.sessions).toHaveLength(1);
+    const [{ count }] = await asService((q) =>
+      q.query<{ count: number }>(
+        "select count(*)::int as count from public.orders o join public.order_items i on i.order_id = o.id where i.product_id = $1",
+        [productId],
+      ),
+    );
+    expect(count).toBe(1);
+    // 購入確認の画面: 決済待ちの注文は「再開」になる
+    const detail = await getProductDetail(IDS.userA, productId, { purchase: true });
+    expect(detail?.myOrder).toMatchObject({ status: "pending_payment", total: 830 });
+  });
+
+  it("在庫切れ・受付終了は決済画面に進まず、自然な文言を返す（サーバーで再確認）", async () => {
+    const last = await createProduct(IDS.storeA, { quantity: 1 });
+    session.userId = IDS.userB;
+    await purchaseAction(null, form({ productId: last, quantity: "1" })).catch(() => null); // 別のユーザーが最後の1つを押さえる
+    session.userId = IDS.userA;
+    expect(await purchaseAction(null, form({ productId: last, quantity: "1" }))).toMatchObject({
+      ok: false,
+      message: "申し訳ありません。この商品は売り切れました。",
+    });
+
+    const ended = await createProduct(IDS.storeA, { startIn: -120, endIn: -1 });
+    expect(await purchaseAction(null, form({ productId: ended, quantity: "1" }))).toEqual({
+      ok: false,
+      message: "受付時間が終了しました。",
+      code: "pickup_ended",
+    });
+    expect(fake.sessions).toHaveLength(1); // userB の1件だけ
   });
 });

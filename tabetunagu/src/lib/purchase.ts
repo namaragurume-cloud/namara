@@ -47,11 +47,11 @@ export const PICKUP_STEPS = [
 ] as const;
 
 /**
- * 商品詳細の支払いの内訳（数量1）。金額は注文の計算（calcOrderAmounts）と同じ関数で出す。
+ * 商品詳細・購入確認の支払いの内訳（表示用）。注文の金額はサーバーの注文作成で確定する。金額は注文の計算（calcOrderAmounts）と同じ関数で出す。
  * つなぐチャージ・付与ポイントは platform_settings の値を渡す。
  */
-export function priceBreakdown(unitPrice: number, tsunaguCharge: number, orderPoints: number) {
-  const a = calcOrderAmounts([{ unitPrice, quantity: 1 }], 0, tsunaguCharge);
+export function priceBreakdown(unitPrice: number, tsunaguCharge: number, orderPoints: number, quantity = 1) {
+  const a = calcOrderAmounts([{ unitPrice, quantity }], 0, tsunaguCharge);
   return { subtotal: a.subtotal, tsunaguCharge: a.tsunaguCharge, total: a.total, points: orderPoints };
 }
 
@@ -72,3 +72,41 @@ export function buyLabel(total: number) {
 export function isLegacyPickupNote(note: string): boolean {
   return /予約|QR|ＱＲ|レジ|お会計|チェックイン/i.test(note);
 }
+
+/**
+ * v2 購入確認の状態。CTA を出すか、どの理由で購入できないかを決める（サーバーでも注文作成時に再確認する）。
+ * 優先順: 注文済み → 決済待ちの注文あり（再開）→ 購入受付の停止 → 受付終了 → 売り切れ → 決済準備中 → 購入できる
+ */
+export type BuyState =
+  | { kind: "buy" }
+  | { kind: "resume"; orderId: string; total: number }
+  | { kind: "ordered"; orderId: string }
+  | { kind: "closed" | "ended" | "sold_out" | "not_ready"; label: string; message: string };
+
+export function buyPageState(input: {
+  open: boolean;
+  status: string;
+  remaining: number;
+  pickupEndAt: string;
+  storeActive: boolean;
+  storePayable: boolean;
+  myOrder: { id: string; status: "pending_payment" | "paid"; total: number } | null;
+  now: number;
+}): BuyState {
+  if (input.myOrder?.status === "paid") return { kind: "ordered", orderId: input.myOrder.id };
+  if (input.myOrder?.status === "pending_payment") return { kind: "resume", orderId: input.myOrder.id, total: input.myOrder.total };
+  if (!input.open) return { kind: "closed", label: "購入準備中", message: "現在オンラインでの購入は準備中です。" };
+  if (!input.storeActive || input.status === "closed" || Date.parse(input.pickupEndAt) <= input.now) {
+    return { kind: "ended", label: "受付終了", message: "受付時間が終了しました。" };
+  }
+  if (input.status === "sold_out" || input.remaining <= 0) {
+    return { kind: "sold_out", label: "売り切れ", message: "申し訳ありません。この商品は売り切れました。" };
+  }
+  if (!input.storePayable || input.status !== "published") {
+    return { kind: "not_ready", label: "購入準備中", message: "現在この店舗の商品は購入準備中です。" };
+  }
+  return { kind: "buy" };
+}
+
+/** 購入確認の「決済後の流れ」 */
+export const AFTER_PAYMENT_STEPS = ["オンラインで決済", "受取チケットが発行されます", "お店で受け取り、ご自身でスワイプして完了"] as const;

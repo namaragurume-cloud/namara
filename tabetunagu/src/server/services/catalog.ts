@@ -91,8 +91,9 @@ export function sortProducts(items: ProductCard[], sort: CatalogSort, area: stri
 /**
  * 商品詳細のデータを1つのトランザクションでまとめて読む（商品・店舗は1回ずつ）。
  * related: この店舗のほかの受付中の商品（最大3件。商品詳細の下部用。購入確認では読まない）
+ * purchase: 購入確認用（旧フローの予約・お気に入りは読まない）
  */
-export async function getProductDetail(viewerId: string | null, productId: string, opts: { related?: boolean } = {}) {
+export async function getProductDetail(viewerId: string | null, productId: string, opts: { related?: boolean; purchase?: boolean } = {}) {
   if (!UUID_RE.test(productId)) return null;
   return asViewer(viewerId, async (q) => {
     const [row] = await q.query(
@@ -112,17 +113,19 @@ export async function getProductDetail(viewerId: string | null, productId: strin
     const store = toStoreInfo(storeRow);
     const storePayable = Boolean(storeRow.payable);
     let myReservationId: string | null = null;
-    let myOrderId: string | null = null;
+    let myOrder: { id: string; status: "pending_payment" | "paid"; total: number } | null = null;
     let isFavorite = false;
     if (viewerId) {
-      const [order] = await q.query<{ id: string }>(
-        `select o.id from public.orders o join public.order_items i on i.order_id = o.id
+      const [order] = await q.query<{ id: string; status: "pending_payment" | "paid"; total: number }>(
+        `select o.id, o.status::text as status, o.total from public.orders o join public.order_items i on i.order_id = o.id
          where i.product_id = $1 and o.user_id = $2
            and (o.status = 'pending_payment' and o.payment_expires_at > now() or o.status = 'paid')
          order by o.created_at desc limit 1`,
         [productId, viewerId],
       );
-      myOrderId = order?.id ?? null;
+      myOrder = order ? { id: order.id, status: order.status, total: Number(order.total) } : null;
+    }
+    if (viewerId && !opts.purchase) {
       const [res] = await q.query<{ id: string }>(
         `select id from public.reservations
          where product_id = $1 and user_id = $2 and status in ('pending', 'confirmed') limit 1`,
@@ -143,7 +146,7 @@ export async function getProductDetail(viewerId: string | null, productId: strin
           )
         ).map(toProductCard)
       : [];
-    return { product, store, myReservationId, myOrderId, isFavorite, storePayable, related };
+    return { product, store, myReservationId, myOrderId: myOrder?.id ?? null, myOrder, isFavorite, storePayable, related };
   });
 }
 

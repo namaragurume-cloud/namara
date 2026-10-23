@@ -12,4 +12,13 @@ test("フラグ OFF: 商品詳細に v2 の支払い合計・受け取り方を�
   await expect(page.getByText(/円で食べつなぐ/)).toHaveCount(0);
   await expect(page.getByText("店頭のQRを読み取ってから、お会計です。")).toBeVisible();
   await expect(page.getByRole("link", { name: "食べつなぐ" })).toHaveAttribute("href", /\/reserve$/);
+
+  // 旧フローの予約確認に、つなぐチャージ・Stripe・事前決済を混ぜない
+  await page.getByRole("link", { name: "食べつなぐ" }).click();
+  await page.waitForURL(/\/login/);
+  await page.locator('form:has(input[value="user"]) button').click();
+  await page.waitForURL(/\/reserve$/);
+  await expect(page.getByRole("button", { name: "予約を確定する" })).toBeVisible();
+  await expect(page.locator("main")).not.toContainText(/つなぐチャージ|Stripe|事前決済/);
+  await expect(page.getByRole("navigation", { name: "メインメニュー" })).toBeVisible();
 });

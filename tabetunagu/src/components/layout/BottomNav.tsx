@@ -25,9 +25,13 @@ const V2_ITEMS: Item[] = [
   { href: "/me", label: "マイページ", Icon: User, match: (p: string) => p.startsWith("/me") },
 ];
 
+/** 決済直前の購入確認では、支払いに集中できるよう下部ナビを出さない（購入ボタンを画面下に固定する） */
+const HIDDEN_ON = [/^\/products\/[^/]+\/buy$/];
+
 export function BottomNav({ v2 = false }: { v2?: boolean }) {
   const pathname = usePathname();
   const ITEMS = v2 ? V2_ITEMS : LEGACY_ITEMS;
+  if (HIDDEN_ON.some((re) => re.test(pathname))) return null;
   return (
     <nav
       aria-label="メインメニュー"

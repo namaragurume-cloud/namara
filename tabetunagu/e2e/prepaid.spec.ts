@@ -28,9 +28,11 @@ test("売上受取設定が未完了の店舗の商品は、購入確認画面�
   expect(href).toBeTruthy();
   await demoLogin(page, "user");
   await page.goto(`${href}/buy`);
-  await expect(page.getByRole("heading", { name: "購入の確認" })).toBeVisible();
-  await expect(page.getByText("つなぐチャージ（30円）")).toBeVisible();
-  await expect(page.getByText("現在この店舗の商品は購入できません。")).toBeVisible();
+  await expect(page.getByRole("heading", { name: "注文内容の確認" })).toBeVisible();
+  await expect(page.getByTestId("buy-summary")).toContainText("つなぐチャージ30円");
+  await expect(page.getByText("現在この店舗の商品は購入準備中です。")).toBeVisible();
+  await expect(page.getByTestId("buy-disabled")).toHaveText("購入準備中");
+  await expect(page.getByTestId("buy-disabled")).toBeDisabled();
   await expect(page.getByRole("button", { name: /円で食べつなぐ/ })).toHaveCount(0);
 });
 
