@@ -55,7 +55,7 @@ PoC 想定：札幌市中心部（札幌駅・大通・すすきの）、30 店�
 - **QR チェックイン**：HMAC 署名トークン（`store_id` + `qr_version`）、ログイン・有効な予約・受取時間（開始 30 分前〜終了 30 分後）・完了済み・キャンセル済み・停止店舗を検証。失敗も記録
 - **No Show 管理**：受取終了 + 30 分を過ぎた `confirmed` → `no_show`、`pending` → `expired`（Cron / 管理画面から実行）
 - **信頼スコア**（DB のみ）：100 点スタート、No Show −20、受取開始後のキャンセル −5、完了 +2
-- **手数料**：FREE = 成約売上 × 15%、STANDARD = 4,980 円 + 成約売上 × 5%。成約時点のプランと手数料率を予約に記録（月の途中のプラン変更にも対応）
+- **手数料**：FREE = 成約売上 × 20%、STANDARD = 4,980 円 + 成約売上 × 8%（いずれも決済手数料込み。損益分岐は月 41,500 円）。成約時点のプランと手数料率を予約に記録（月の途中のプラン変更にも対応。v2 移行前の成約は当時の 15% / 5% のまま）。料金・つなぐチャージ・ポイント・決済原価の想定値は `src/lib/fees.ts` で一元管理
 - **AI 販売文章生成**：OpenAI（未設定・エラー・上限超過時はテンプレート）。禁止語（レスキュー・救う・半額 など）を含む出力は破棄
 - **AI 値引き提案**：直近の販売履歴によるルールベース（STANDARD）
 - **自動再出品**：STANDARD のテンプレートを曜日指定で毎朝出品
@@ -130,20 +130,34 @@ tabetunagu/
 | `stores` | 店舗（エリア・カテゴリー・状態 `pending/active/suspended`・プラン・`qr_version`） |
 | `store_members` | 店舗とユーザーの紐付け（`owner` / `staff`） |
 | `store_plan_changes` | プラン変更履歴 |
-| `plans` | FREE / STANDARD（月額・手数料率・機能） |
+| `plans` | FREE / STANDARD（月額・手数料率 `commission_rate` / `commission_bps`・機能） |
 | `areas` | 札幌駅 / 大通 / すすきの / その他 |
 | `product_templates` | いつもの出品・自動再出品（曜日） |
 | `products` | 出品（`original_price`・`rescue_price`＝食べつなぎ価格・`quantity`・`remaining_quantity`・受取時間・状態・推定重量） |
 | `reservations` | 予約（予約番号・数量・価格スナップショット・受取時間スナップショット・状態・各時刻・成約時のプランと手数料率） |
 | `checkins` | QR チェックインの試行ログ（成功・失敗の理由） |
 | `favorites` | お気に入り店舗 |
-| `points_transactions` | ポイント（予約ごとに 1 回だけ付与） |
+| `points_transactions` | ポイント台帳（`type` = earned / used / expired / adjusted / revoked。追記のみ。残高は `user_points_balances` ビュー） |
 | `notifications` / `notification_deliveries` | まとめ通知と配信結果 |
 | `ai_generations` | AI 生成ログ（入力・出力・プロバイダー・所要時間） |
 | `billing_records` | 月次請求（月額・成約額・手数料・請求額） |
 | `events` | 分析イベント |
 | `product_sales_history` | 出品ごとの販売結果（将来の需要予測・値引き提案・仕込み量提案用） |
 | `external_daily_features` | エリア × 日付の外部特徴量（天気など） |
+
+### v2（事前決済）の基盤 — STEP 1（画面・決済とは未接続）
+
+| テーブル / ビュー | 内容 |
+|---|---|
+| `platform_settings` | つなぐチャージ 30 円・ポイント 30pt・決済待ち 15 分・ユーザー返金可能時間 5 分 など（`src/lib/fees.ts` / `src/lib/orders.ts` と同じ値。`tests/pricing-sync.test.ts` で一致を確認） |
+| `orders` | 注文（`pending_payment` / `paid` / `picked_up` / `unclaimed` / `cancelled` / `refunded`）。小計・つなぐチャージ・合計・手数料率と手数料・プラットフォーム売上（手数料 + チャージ）・プランと受取時間のスナップショット |
+| `order_items` | 注文明細（商品名・単価のスナップショット。追記のみ） |
+| `payments` / `payment_events` | 決済と Webhook イベントの受け皿（`provider + provider_event_id` で一意。STEP 2 で Stripe と接続） |
+| `pickup_events` | 受取イベント（swipe / auto_unclaimed / admin_override。追記のみ） |
+| `user_points_balances` | ポイント残高 = 台帳の合計（`user_stats.points_balance` は旧フローの互換用で、正ではない） |
+
+注文の状態遷移は `pending_payment → paid → picked_up / unclaimed / refunded`、`pending_payment → cancelled` のみ（DB トリガーで強制）。
+DB 関数：`create_order`（在庫の仮押さえ）/ `cancel_pending_order` / `sweep_orders`（決済期限切れ → cancelled・在庫を戻す。service のみ）/ `grant_order_points` / `revoke_order_points`（service のみ）
 
 予約ステータス：`pending`（確定待ち。現状は即時確定のため将来の店舗承認制用）/ `confirmed` / `completed` / `cancelled` / `no_show` / `expired`
 
@@ -217,7 +231,7 @@ DATABASE_URL=... npm run db:migrate -- --bootstrap
 
 ## 8. Supabase 設定
 
-> **いちばん簡単な方法（Node.js 不要）**：Supabase の **SQL Editor** に [`supabase/setup/01_schema.sql`](./supabase/setup/01_schema.sql)（テーブル）→ [`supabase/setup/02_demo_data.sql`](./supabase/setup/02_demo_data.sql)（デモデータ・プレビュー用）の順に中身を貼り付けて Run するだけで準備できます。本番の DB には 01 だけを使ってください。01 は `supabase/migrations/` から作ったもので、適用済みとして記録されるため、あとから `npm run db:migrate` を実行しても二重には適用されません。
+> **いちばん簡単な方法（Node.js 不要）**：Supabase の **SQL Editor** に [`supabase/setup/01_schema.sql`](./supabase/setup/01_schema.sql)（テーブル）→ [`supabase/setup/02_demo_data.sql`](./supabase/setup/02_demo_data.sql)（デモデータ・プレビュー用）→ [`supabase/setup/03_v2_foundation.sql`](./supabase/setup/03_v2_foundation.sql)（v2 の注文・ポイント台帳）の順に中身を貼り付けて Run するだけで準備できます。本番の DB には 01 と 03 だけを使ってください（02 を入れる場合は 03 より前に）。01・03 は `supabase/migrations/` から作ったもので、適用済みとして記録されるため、あとから `npm run db:migrate` を実行しても二重には適用されません。
 
 1. プロジェクトを作成（リージョン：Tokyo `ap-northeast-1`）
 2. **Database → Connection string → Transaction pooler（:6543）** を `DATABASE_URL` に設定し、`npm run db:migrate`
@@ -313,7 +327,11 @@ E2E_BASE_URL=http://localhost:3000 npm run test:e2e
 | QR チェックイン・二重チェックイン・同時チェックイン | `tests/checkin.test.ts` |
 | 他店舗の QR・改ざん QR・再発行後の古い QR・受取時間外・キャンセル後・停止店舗 | 同上 |
 | 権限（店舗 A のスタッフが店舗 B にアクセス・列権限・anon・管理者テーブル） | `tests/authorization.test.ts` |
-| FREE / STANDARD 手数料・プラン変更月・端数 | `tests/fees.test.ts` |
+| FREE / STANDARD 手数料・プラン変更月・端数・注文の金額内訳・損益分岐 | `tests/fees.test.ts` |
+| 料金・運用設定値のアプリと DB の一致 | `tests/pricing-sync.test.ts` |
+| v2 注文（仮押さえ・同時注文・期限切れ・状態遷移） | `tests/orders.test.ts` |
+| ポイント台帳（付与・二重付与・取り消し・残高ビュー・移行） | `tests/points.test.ts` |
+| v2 の RLS（他人・他店舗の注文、payments / payment_events の保護） | `tests/orders-authorization.test.ts` |
 | AI 文章（テンプレート・禁止語）・値引き提案 | `tests/ai-copy.test.ts` |
 | UI に「レスキュー」「救う」「半額」を使っていない | `tests/copy-guard.test.ts` |
 | 出品 → 予約 → 店舗 QR → 完了、権限、改ざん QR | `e2e/core-flow.spec.ts` |

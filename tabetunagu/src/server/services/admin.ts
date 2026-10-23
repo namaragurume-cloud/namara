@@ -295,11 +295,12 @@ export async function listUsers(search: string | undefined, limit = 200) {
       `select u.id, u.display_name, (u.line_user_id is not null) as line_linked, u.is_demo, u.created_at, u.last_seen_at,
               coalesce(st.reservation_count, 0)::int as reservations, coalesce(st.completed_count, 0)::int as completed,
               coalesce(st.cancelled_count, 0)::int as cancelled, coalesce(st.no_show_count, 0)::int as no_show,
-              coalesce(st.points_balance, 0)::int as points, coalesce(st.trust_score, 100)::int as trust_score,
+              coalesce(pb.balance, 0)::int as points, coalesce(st.trust_score, 100)::int as trust_score,
               exists (select 1 from public.admin_users a where a.user_id = u.id) as is_admin,
               (select string_agg(s.name || '（' || m.role || '）', '、') from public.store_members m
                  join public.stores s on s.id = m.store_id where m.user_id = u.id) as stores
        from public.users u left join public.user_stats st on st.user_id = u.id
+         left join public.user_points_balances pb on pb.user_id = u.id
        where ($1::text is null or u.display_name ilike '%' || $1 || '%' or u.id::text = $1)
        order by u.last_seen_at desc nulls last, u.created_at desc
        limit $2`,

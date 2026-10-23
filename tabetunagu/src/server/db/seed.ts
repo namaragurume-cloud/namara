@@ -3,6 +3,7 @@
  * 実在の店舗名は使用していません。本番 DB には投入しないでください（scripts/seed.ts が拒否します）。
  */
 import { estimatedWeightG } from "@/lib/categories";
+import { PLANS } from "@/lib/fees";
 import type { Queryable } from "./types";
 
 export const DEMO_USERS = {
@@ -590,7 +591,7 @@ export async function seedDemo(q: Queryable, now = new Date()) {
   await q.query("alter table public.reservations disable trigger reservations_sales_history");
   await q.query("alter table public.products disable trigger products_sales_history");
 
-  const planRate: Record<string, number> = { free: 0.15, standard: 0.05 };
+  const planRate: Record<string, number> = { free: PLANS.free.commissionBps / 10000, standard: PLANS.standard.commissionBps / 10000 };
   const productRows: unknown[][] = [];
   const reservationRows: unknown[][] = [];
   const todayJst = new Date(`${new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Tokyo" }).format(now)}T00:00:00+09:00`);

@@ -6,6 +6,7 @@ import { parsePeriod, PeriodTabs } from "@/components/admin/PeriodTabs";
 import { Bars } from "@/components/charts/Bars";
 import { PageHeader } from "@/components/layout/ConsoleShell";
 import { Stat } from "@/components/ui/Section";
+import { PLANS } from "@/lib/fees";
 import { grams, num, percent, yen } from "@/lib/format";
 import { env } from "@/server/env";
 import { getKpis, listStoresWithMetrics, MIN_RESOLVED_FOR_FLAG, SUSPICIOUS_QR_RATE } from "@/server/services/admin";
@@ -51,7 +52,7 @@ export default async function AdminKpiPage({ searchParams }: { searchParams: Pro
           <Stat label="No Show率" value={percent(k.noShowRate)} sub={`${num(k.noShow)}件`} />
           <Stat label="GMV（成約額）" value={yen(k.gmv)} sub="店舗で支払われた額" />
           <Stat label="成約手数料売上" value={yen(k.commission)} />
-          <Stat label="月額売上" value={k.monthlyFees == null ? "—" : yen(k.monthlyFees)} sub="STANDARD × 4,980円" />
+          <Stat label="月額売上" value={k.monthlyFees == null ? "—" : yen(k.monthlyFees)} sub={`STANDARD × ${yen(PLANS.standard.monthlyFee)}`} />
         </div>
       </section>
 

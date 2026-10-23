@@ -88,7 +88,6 @@ export async function getMyStats(userId: string): Promise<MyStats> {
       completed_count: number;
       cancelled_count: number;
       no_show_count: number;
-      points_balance: number;
       trust_score: number;
     }>("select * from public.user_stats where user_id = $1", [userId]);
     const [saved] = await q.query<{ grams: number; qty: number }>(
@@ -97,12 +96,14 @@ export async function getMyStats(userId: string): Promise<MyStats> {
        where r.user_id = $1 and r.status = 'completed'`,
       [userId],
     );
+    // ポイント残高は台帳（points_transactions）の合計が正。user_stats.points_balance は旧フローの互換用
+    const [points] = await q.query<{ balance: number }>("select public.points_balance($1::uuid) as balance", [userId]);
     return {
       reservationCount: stats?.reservation_count ?? 0,
       completedCount: stats?.completed_count ?? 0,
       cancelledCount: stats?.cancelled_count ?? 0,
       noShowCount: stats?.no_show_count ?? 0,
-      points: stats?.points_balance ?? 0,
+      points: Number(points?.balance ?? 0),
       trustScore: stats?.trust_score ?? 100,
       foodSavedG: saved?.grams ?? 0,
       completedQuantity: saved?.qty ?? 0,

@@ -103,3 +103,37 @@ export async function shiftReservationWindow(id: string, startIn: number, endIn:
     ]),
   );
 }
+
+export async function getOrder(id: string) {
+  const [row] = await asService((q) =>
+    q.query<{
+      status: string;
+      subtotal: number;
+      plan_code: string;
+      cancelled_by: string | null;
+      cancelled_at: Date | null;
+      paid_at: Date | null;
+      picked_up_at: Date | null;
+      payment_expires_at: Date;
+      pickup_end: Date;
+    }>(
+      `select status::text, subtotal, plan_code, cancelled_by::text, cancelled_at, paid_at, picked_up_at,
+              payment_expires_at, pickup_end
+       from public.orders where id = $1`,
+      [id],
+    ),
+  );
+  return row;
+}
+
+/** 注文の状態を service で変更する（STEP 1 では決済・受取の処理がまだないため、テストで直接遷移させる） */
+export async function setOrderStatus(id: string, status: string) {
+  await asService((q) => q.query("update public.orders set status = $2::public.order_status where id = $1", [id, status]));
+}
+
+/** 決済待ちの期限を過去にする */
+export async function expireOrderPayment(id: string) {
+  await asService((q) =>
+    q.query("update public.orders set payment_expires_at = now() - interval '1 minute' where id = $1", [id]),
+  );
+}

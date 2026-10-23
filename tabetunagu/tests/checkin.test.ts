@@ -54,7 +54,7 @@ describe("QR チェックイン", () => {
     expect(r.status).toBe("completed");
     expect(r.completed_at).not.toBeNull();
     expect(r.plan_code).toBe("free");
-    expect(r.commission_rate).toBeCloseTo(0.15);
+    expect(r.commission_rate).toBeCloseTo(0.2);
 
     const stats = await getMyStats(IDS.userA);
     expect(stats.completedCount).toBe(1);
@@ -155,11 +155,11 @@ describe("QR チェックイン", () => {
     expect((await getMyStats(IDS.userA)).points).toBe(20);
   });
 
-  it("STANDARD 店舗の成約は手数料率 5% で記録される", async () => {
+  it("STANDARD 店舗の成約は手数料率 8% で記録される", async () => {
     const res = await createReservation(IDS.userA, await createProduct(IDS.storeB), 1);
     expect((await checkinWithToken(IDS.userA, tokenB())).result).toBe("success");
     const r = await getReservation(res.id);
     expect(r.plan_code).toBe("standard");
-    expect(r.commission_rate).toBeCloseTo(0.05);
+    expect(r.commission_rate).toBeCloseTo(0.08);
   });
 });
