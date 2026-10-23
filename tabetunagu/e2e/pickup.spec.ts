@@ -48,7 +48,7 @@ test("決済済みの注文: 受取チケット → スワイプで受取完了 
 
   await swipe(page);
   await expect(page.getByTestId("pickup-done")).toBeVisible();
-  await expect(page.getByText("この食事が、次の食につながりました。")).toBeVisible();
+  await expect(page.getByText("このおいしさが、次の食につながりました。")).toBeVisible();
   await expect(page.getByTestId("pickup-status")).toHaveText("受取完了");
   await expect(page.getByTestId("pickup-swipe-knob")).toHaveCount(0); // 再スワイプ不可
 

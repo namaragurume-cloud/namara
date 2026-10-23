@@ -142,6 +142,19 @@ export async function expireOrderPayment(id: string) {
  * テスト専用: 注文の受取時間を現在時刻からの分でずらす（受取時間は通常変更できないため、同じトランザクション内でガードを外す）。
  * 受取時間を過ぎた注文は create_order で作れないため、作成後にずらして再現する。
  */
+/** 受取時間を絶対時刻で設定する（固定時刻のテスト用。注文のガードを外して直接更新する） */
+export async function setOrderWindow(id: string, start: string, end: string) {
+  await asService(async (q) => {
+    await q.query("alter table public.orders disable trigger orders_guard");
+    await q.query("update public.orders set pickup_start = $2, pickup_end = $3 where id = $1", [
+      id,
+      new Date(start).toISOString(),
+      new Date(end).toISOString(),
+    ]);
+    await q.query("alter table public.orders enable trigger orders_guard");
+  });
+}
+
 export async function shiftOrderWindow(id: string, startIn: number, endIn: number) {
   const now = Date.now();
   await asService(async (q) => {

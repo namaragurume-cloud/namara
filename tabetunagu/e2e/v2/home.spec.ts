@@ -108,10 +108,16 @@ test("商品カード → 商品詳細（ホームから直接決済に進まな
   await expect(page.getByTestId("product-cta")).toBeVisible();
 
   // ホームの最後の要素までスクロールしても、下部ナビの上に表示される
-  await page.goto("/");
+  // 画像の読み込みで高さが変わってから測る（スクロール直後の位置で判定しない）
+  await page.goto("/", { waitUntil: "networkidle" });
   const note = page.getByTestId("food-loss-note");
-  await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight));
-  const navTop = (await page.getByRole("navigation", { name: "メインメニュー" }).boundingBox())!.y;
-  const noteBox = (await note.boundingBox())!;
-  expect(noteBox.y + noteBox.height).toBeLessThanOrEqual(navTop);
+  const nav = page.getByRole("navigation", { name: "メインメニュー" });
+  await expect
+    .poll(async () => {
+      await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight));
+      const navTop = (await nav.boundingBox())!.y;
+      const noteBox = (await note.boundingBox())!;
+      return noteBox.y + noteBox.height <= navTop;
+    })
+    .toBe(true);
 });

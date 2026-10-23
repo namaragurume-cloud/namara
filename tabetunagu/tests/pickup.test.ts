@@ -7,7 +7,9 @@ import type { Driver } from "@/server/db/types";
 import { createOrder, getPointsBalance, grantOrderPoints } from "@/server/services/orders";
 import { requestUserRefund } from "@/server/services/payments";
 import { getStoreMonitor, listMyOrders, listStoreOrders, maintainStoreOrders, markUnclaimedOrders, pickupOrder } from "@/server/services/pickup";
-import { createProduct, createTestDb, getOrder, getProduct, IDS, setOrderStatus, shiftOrderWindow } from "./support/db";
+import { pickupLabel } from "@/lib/format";
+import { ticketTiming } from "@/lib/ticket";
+import { createProduct, createTestDb, getOrder, getProduct, IDS, setOrderStatus, setOrderWindow, shiftOrderWindow } from "./support/db";
 import { connectStore, createPaidOrder, installFakeStripe, uninstallFakeStripe, type FakeStripe } from "./support/stripe";
 
 let driver: Driver | undefined;
@@ -113,6 +115,13 @@ describe("受取完了（本人のスワイプ）", () => {
     await expectAppError(pickupOrder(IDS.userA, order.id), "pickup_too_early");
   });
 
+  it("受取完了の分析イベント（pickup_completed）は、再実行・同時実行でも1回だけ", async () => {
+    const { order } = await paidOrder();
+    await Promise.all([pickupOrder(IDS.userA, order.id), pickupOrder(IDS.userA, order.id)]);
+    expect((await pickupOrder(IDS.userA, order.id)).result).toBe("already_picked_up");
+    expect(await eventCount("pickup_completed")).toBe(1);
+  });
+
   it("二重にスワイプしても処理は1回だけ（状態・受取イベント・在庫・ポイントが変わらない）", async () => {
     const { order, productId } = await paidOrder();
     await grantOrderPoints(order.id);
@@ -186,14 +195,21 @@ describe("未受取（unclaimed）", () => {
 
 describe("店舗モニター", () => {
   it("自店舗の今日の注文だけを、受取の区分つきで返す（お客様名は伏せる）", async () => {
+    // 「今日」は JST の暦日。実際の時刻に依存しないよう、受取時間とモニターの時刻を固定する（JST 12:00）
+    const now = new Date("2026-10-23T12:00:00+09:00");
     const active = await paidOrder();
-    const upcoming = await paidOrder({ startIn: 60, endIn: 120, userId: IDS.userB });
+    const upcoming = await paidOrder({ userId: IDS.userB });
     const picked = await paidOrder();
-    await pickupOrder(IDS.userA, picked.order.id);
-    await paidOrder({ storeId: IDS.storeB, userId: IDS.userB });
+    await pickupOrder(IDS.userA, picked.order.id); // 受取完了は実際の時刻の受取時間内で行い、そのあと受取時間を固定時刻へ移す
+    const other = await paidOrder({ storeId: IDS.storeB, userId: IDS.userB });
     const pending = await createOrder(IDS.ownerA, await createProduct(IDS.storeA), 1); // 決済前は出さない
+    await setOrderWindow(active.order.id, "2026-10-23T11:50:00+09:00", "2026-10-23T13:00:00+09:00");
+    await setOrderWindow(upcoming.order.id, "2026-10-23T13:00:00+09:00", "2026-10-23T14:00:00+09:00");
+    await setOrderWindow(picked.order.id, "2026-10-23T11:50:00+09:00", "2026-10-23T13:00:00+09:00");
+    await setOrderWindow(other.order.id, "2026-10-23T11:50:00+09:00", "2026-10-23T13:00:00+09:00");
+    await setOrderWindow(pending.id, "2026-10-23T11:50:00+09:00", "2026-10-23T13:00:00+09:00");
 
-    const snap = await getStoreMonitor(IDS.staffA, IDS.storeA);
+    const snap = await getStoreMonitor(IDS.staffA, IDS.storeA, now);
     expect(snap.orders.map((o) => o.id).sort()).toEqual([active.order.id, upcoming.order.id, picked.order.id].sort());
     expect(snap.orders.some((o) => o.id === pending.id)).toBe(false);
     const phase = Object.fromEntries(snap.orders.map((o) => [o.id, o.phase]));
@@ -207,6 +223,66 @@ describe("店舗モニター", () => {
     await expectAppError(getStoreMonitor(IDS.staffB, IDS.storeA), "forbidden");
     await expectAppError(getStoreMonitor(IDS.userA, IDS.storeA), "forbidden");
     await expectAppError(listStoreOrders(IDS.staffB, IDS.storeA), "forbidden");
+  });
+
+  /**
+   * 日付の境界（JST の暦日）。以前は「現在時刻 + 60分」に受取開始の注文を作っていたため、
+   * JST 23 時台に実行すると受取開始が翌日になり「今日の注文」から外れてテストが失敗していた。
+   * ここでは受取時間・モニターの時刻とも固定し、境界の前後の表示を確かめる。
+   */
+  describe("日付の境界（JST の固定時刻）", () => {
+    const jst = (s: string) => new Date(`${s}+09:00`);
+    async function fixtures() {
+      // 夕方に受取が終わった注文（未受取）・日付をまたぐ受取時間の注文・翌日 0:14 から受け取る注文
+      const evening = await paidOrder();
+      const crossing = await paidOrder({ userId: IDS.userB });
+      const nextDay = await paidOrder({ userId: IDS.ownerA });
+      await setOrderWindow(evening.order.id, "2026-10-23T21:00:00+09:00", "2026-10-23T22:30:00+09:00");
+      await setOrderWindow(crossing.order.id, "2026-10-23T23:30:00+09:00", "2026-10-24T00:30:00+09:00");
+      await setOrderWindow(nextDay.order.id, "2026-10-24T00:14:00+09:00", "2026-10-24T01:14:00+09:00");
+      return { evening: evening.order.id, crossing: crossing.order.id, nextDay: nextDay.order.id };
+    }
+    const phasesAt = async (at: string) =>
+      Object.fromEntries((await getStoreMonitor(IDS.staffA, IDS.storeA, jst(at))).orders.map((o) => [o.id, o.phase]));
+
+    it("JST 22:59: 今日の注文（夕方の未受取・日付をまたぐ受取前）。翌日の注文はまだ出さない", async () => {
+      const f = await fixtures();
+      expect(await phasesAt("2026-10-23T22:59:00")).toEqual({ [f.evening]: "unclaimed", [f.crossing]: "upcoming" });
+    });
+
+    it("JST 23:59: 日付をまたぐ注文は受取時間中。翌日 0:14 からの注文は翌日の扱い（以前の失敗の再現条件）", async () => {
+      const f = await fixtures();
+      expect(await phasesAt("2026-10-23T23:59:00")).toEqual({ [f.evening]: "unclaimed", [f.crossing]: "active" });
+    });
+
+    it("JST 00:00: 日付が変わると、前日に終わった注文は外れ、日付をまたぐ注文と今日 0:14 からの注文が出る", async () => {
+      const f = await fixtures();
+      expect(await phasesAt("2026-10-24T00:00:00")).toEqual({ [f.crossing]: "active", [f.nextDay]: "upcoming" });
+    });
+
+    it("JST 00:10 / 00:15: 0:14 からの注文は受取開始の10分前から受取時間中", async () => {
+      const f = await fixtures();
+      expect(await phasesAt("2026-10-24T00:03:00")).toEqual({ [f.crossing]: "active", [f.nextDay]: "upcoming" });
+      expect(await phasesAt("2026-10-24T00:10:00")).toEqual({ [f.crossing]: "active", [f.nextDay]: "active" });
+      expect(await phasesAt("2026-10-24T00:15:00")).toEqual({ [f.crossing]: "active", [f.nextDay]: "active" });
+    });
+
+    it("日付をまたぐ受取時間: 終了 + 15分（00:45）まで受取時間中、その後は未受取。表示は「本日」「明日」が境界で切り替わる", async () => {
+      const f = await fixtures();
+      expect((await phasesAt("2026-10-24T00:45:00"))[f.crossing]).toBe("active");
+      expect((await phasesAt("2026-10-24T00:46:00"))[f.crossing]).toBe("unclaimed");
+      expect(pickupLabel("2026-10-24T00:14:00+09:00", "2026-10-24T01:14:00+09:00", jst("2026-10-23T23:59:00"))).toBe("明日 00:14〜01:14");
+      expect(pickupLabel("2026-10-24T00:14:00+09:00", "2026-10-24T01:14:00+09:00", jst("2026-10-24T00:00:00"))).toBe("本日 00:14〜01:14");
+      const crossing = {
+        pickupStartAt: "2026-10-23T23:30:00+09:00",
+        pickupEndAt: "2026-10-24T00:30:00+09:00",
+        pickupOpensAt: "2026-10-23T23:20:00+09:00",
+        pickupClosesAt: "2026-10-24T00:45:00+09:00",
+      };
+      expect(ticketTiming(crossing, jst("2026-10-23T23:59:00"))).toMatchObject({ kind: "active", note: "受取終了まであと31分" });
+      expect(ticketTiming(crossing, jst("2026-10-24T00:40:00"))).toMatchObject({ kind: "grace", canSwipe: true });
+      expect(ticketTiming(crossing, jst("2026-10-24T00:46:00"))).toMatchObject({ kind: "closed", canSwipe: false });
+    });
   });
 
   it("受取完了で version が変わる（ポーリングの差分検知）", async () => {

@@ -153,3 +153,8 @@
     background: #fff;
   }
 }
+
+/* 受取チケットなど、下部ナビを出さない画面（data-hide-bottom-nav を置いたページ） */
+body:has([data-hide-bottom-nav]) nav[aria-label="メインメニュー"] {
+  display: none;
+}

@@ -98,24 +98,56 @@ test("注文 → 受取チケット → スワイプ → 受取完了 → 店舗
   await expect(nav.getByRole("link", { name: "予約" })).toHaveCount(0);
   await nav.getByRole("link", { name: "注文" }).click();
   await page.waitForURL(/\/orders/);
+  // 注文一覧の「受取待ち」→ 受取チケット
+  await expect(page.getByRole("tab", { name: "受取待ち" })).toHaveAttribute("aria-selected", "true");
   await page.getByRole("link", { name: /受取チケットのデモBOX/ }).click();
 
-  await expect(page.getByTestId("pickup-ticket")).toBeVisible();
-  await expectInViewport(page, "pickup-ticket");
-  await expectInViewport(page, "pickup-swipe-track");
+  // チケット: 支払い済み・受取時間・商品・注文番号・スタッフへの案内・スワイプ前の注意
+  const ticket = page.getByTestId("pickup-ticket");
+  await expect(ticket.getByRole("heading", { name: "受取チケット" })).toBeVisible();
+  await expect(page.getByTestId("ticket-paid")).toHaveText("支払い済み");
+  await expect(page.getByTestId("ticket-time")).toContainText(/\d{2}:\d{2}〜\d{2}:\d{2}/);
+  await expect(page.getByTestId("ticket-items")).toHaveText("受取チケットのデモBOX ×1");
+  await expect(page.getByTestId("ticket-order-number")).toHaveText(/^#[0-9A-Z]{6}$/);
+  await expect(ticket).toContainText("店舗スタッフへこの画面をお見せください。");
+  await expect(ticket).toContainText("商品を受け取ったら、ご自身で下のスライダーを操作してください。");
+  await expect(page.getByTestId("ticket-swipe-caution")).toHaveText("商品を受け取ってから操作してください。");
+  await expect(page.getByTestId("pickup-swipe-label")).toHaveText("右へスワイプして受取完了");
   await expectNoHorizontalScroll(page);
-  // スワイプ操作が下部メニューに隠れない
+  // チケットでは下部ナビを出さない。スワイプはスクロールせずに見える（375 × 740）
+  await expect(nav).toBeHidden();
+  await expectInViewport(page, "pickup-swipe-track");
   const track = (await page.getByTestId("pickup-swipe-track").boundingBox())!;
-  const navBox = (await nav.boundingBox())!;
-  expect(track.y + track.height).toBeLessThanOrEqual(navBox.y);
+  expect(track.y + track.height).toBeLessThanOrEqual(740);
 
-  const knob = (await page.getByTestId("pickup-swipe-knob").boundingBox())!;
+  // タップだけ・途中まででは受取完了にならない
+  await page.getByTestId("pickup-swipe-knob").click();
+  await page.waitForTimeout(400);
+  await expect(page.getByTestId("pickup-status")).toHaveText("受取待ち");
+  let knob = (await page.getByTestId("pickup-swipe-knob").boundingBox())!;
+  await page.mouse.move(knob.x + knob.width / 2, knob.y + knob.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(track.x + track.width * 0.6, knob.y + knob.height / 2, { steps: 8 });
+  await page.mouse.up();
+  await page.waitForTimeout(500);
+  await expect(page.getByTestId("pickup-status")).toHaveText("受取待ち");
+  await expect(page.getByTestId("pickup-swipe")).toHaveAttribute("data-phase", "idle");
+
+  // 右端までスワイプ → picked_up → 完了表示（スワイプは消え、再操作できない）
+  knob = (await page.getByTestId("pickup-swipe-knob").boundingBox())!;
   await page.mouse.move(knob.x + knob.width / 2, knob.y + knob.height / 2);
   await page.mouse.down();
   await page.mouse.move(track.x + track.width - 4, knob.y + knob.height / 2, { steps: 12 });
   await page.mouse.up();
   await expect(page.getByTestId("pickup-done")).toBeVisible();
+  await expect(page.getByTestId("pickup-done")).toContainText("食べつなぎました！");
+  await expect(page.getByTestId("pickup-done")).toContainText("このおいしさが、次の食につながりました。");
+  await expect(page.getByTestId("pickup-status")).toHaveText("受取完了");
+  await expect(page.getByTestId("ticket-picked-up-at")).toContainText("受取完了：");
+  await expect(page.getByTestId("pickup-swipe-knob")).toHaveCount(0);
+  await expect(page.getByTestId("ticket-guide")).toHaveCount(0);
 
+  // 店舗モニターに自動で反映（再読み込みしない）
   await expect(owner.getByTestId("monitor-section-picked_up").getByText("受取チケットのデモBOX×1")).toBeVisible({ timeout: 8000 });
   await ownerCtx.close();
 });

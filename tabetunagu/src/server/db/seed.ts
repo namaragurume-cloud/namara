@@ -803,6 +803,7 @@ export async function seedDemo(q: Queryable, now = new Date()) {
  * v2（事前決済）のデモ注文。決済済み（paid）の状態を Stripe を使わずに作る（ローカル・E2E 用）。
  * - 受取時間中の注文（受取チケット・スワイプの確認用）
  * - 受取時間を過ぎた注文（画面を開くと未受取になる）
+ * - 返金済みの注文（受取チケットとして操作できない表示の確認用。ポイントは付与 → 取り消し）
  * 商品は一覧に出さない（closed）。
  */
 async function seedDemoOrders(q: Queryable, now: Date) {
@@ -814,6 +815,7 @@ async function seedDemoOrders(q: Queryable, now: Date) {
   const specs = [
     { name: "受取チケットのデモBOX", startIn: -10, endIn: 50 },
     { name: "受取時間を過ぎたデモBOX", startIn: -120, endIn: -30 },
+    { name: "返金済みのデモBOX", startIn: 60, endIn: 120, refunded: true },
   ];
   for (const spec of specs) {
     const price = 800;
@@ -858,6 +860,11 @@ async function seedDemoOrders(q: Queryable, now: Date) {
     );
     await q.query("update public.orders set status = 'paid' where id = $1", [order.id]);
     await q.query("select public.grant_order_points($1::uuid)", [order.id]);
+    if ("refunded" in spec && spec.refunded) {
+      await q.query("update public.payments set status = 'refunded' where order_id = $1", [order.id]);
+      await q.query("update public.orders set status = 'refunded' where id = $1", [order.id]);
+      await q.query("select public.revoke_order_points($1::uuid)", [order.id]);
+    }
   }
 }
 

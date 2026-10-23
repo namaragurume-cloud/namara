@@ -1,5 +1,6 @@
 import { CircleCheck, Clock, Hourglass, MapPin } from "lucide-react";
 import type { Metadata } from "next";
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { CancelPendingOrderForm, ResumeCheckoutForm, UserRefundForm } from "@/components/orders/OrderActions";
 import { PaymentStatusPoller } from "@/components/orders/PaymentStatusPoller";
@@ -38,6 +39,7 @@ export default async function OrderPage({
     if (await maintainStoreOrders(order.storeId)) order = (await getMyOrder(viewer.id, id)) ?? order;
   }
   const ticket = order.status === "paid" || order.status === "picked_up" || order.status === "unclaimed";
+  const now = new Date();
   if (order.status === "paid") {
     await logEvent("pickup_ticket_viewed", { userId: viewer.id, properties: { order_id: order.id } });
   }
@@ -45,42 +47,43 @@ export default async function OrderPage({
   if (ticket) {
     return (
       <div className="space-y-4" data-testid="order-page" data-status={order.status}>
+        {/* 受取チケットでは下部ナビを出さない（スワイプの誤操作を防ぎ、チケットに集中する。globals.css） */}
+        <span data-hide-bottom-nav hidden />
         {order.status === "paid" && from === "checkout" && <Notice tone="success">お支払いが完了しました。</Notice>}
         {order.status === "picked_up" && (
           <div className="pt-1 text-center" data-testid="pickup-done">
-            <CircleCheck className="anim-ring mx-auto h-12 w-12 text-forest" strokeWidth={1.6} aria-hidden />
-            <h1 className="mt-2 text-[22px] font-bold">✓ 受取完了</h1>
-            <p className="mt-1 text-[13px] leading-relaxed text-muted">
+            <CircleCheck className="anim-ring mx-auto h-14 w-14 text-forest" strokeWidth={1.8} aria-hidden />
+            <h2 className="mt-2 text-[24px] font-bold text-forest-2">✓ 食べつなぎました！</h2>
+            <p className="mt-1 text-[13px] leading-relaxed text-ink-2">
               ありがとうございました。
               <br />
-              この食事が、次の食につながりました。
+              このおいしさが、次の食につながりました。
             </p>
           </div>
         )}
         {order.phase === "unclaimed" && (
-          <div className="space-y-2">
-            <h1 className="text-[20px] font-bold">受取時間を過ぎました</h1>
-            <Notice>受取時間内に受取完了が確認できませんでした。お支払い済みの代金の返金はありません。</Notice>
+          <div className="space-y-2" data-testid="pickup-missed">
+            <h2 className="text-[22px] font-bold">受取時間を過ぎました</h2>
+            <Notice>
+              この注文は受取時間を過ぎています。詳しくは
+              <Link href="/cancellation-policy" className="mx-0.5 font-semibold underline">
+                キャンセルポリシー
+              </Link>
+              をご確認ください。
+            </Notice>
           </div>
         )}
-        {order.status === "paid" && order.phase !== "unclaimed" && <h1 className="sr-only">受取チケット</h1>}
 
-        <PickupTicket order={order}>
+        <PickupTicket order={order} now={now}>
           {order.status === "paid" && order.phase === "active" && <SwipeToConfirm orderId={order.id} />}
           {order.status === "paid" && order.phase === "upcoming" && (
-            <Notice>
-              受取時間になったら、お店でスタッフに画面を見せてからスワイプしてください（{hhmm(order.pickupOpensAt)}からスワイプできます）。
-            </Notice>
+            <p className="rounded-xl bg-canvas px-3 py-2.5 text-[13px] text-ink-2" data-testid="ticket-upcoming">
+              受取時間になると、ここに受取完了のスライダーが表示されます（{hhmm(order.pickupOpensAt)}から）。
+            </p>
           )}
         </PickupTicket>
 
         {order.userRefundable && <UserRefundForm orderId={order.id} windowMinutes={ORDER_POLICY.userRefundWindowMinutes} />}
-        {order.storeAddress && (
-          <p className="flex items-start gap-1.5 px-1 text-[12.5px] text-muted">
-            <MapPin className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />
-            {order.storeName}（{order.storeAddress}）
-          </p>
-        )}
         <ButtonLink href="/orders" variant="ghost" className="w-full">
           注文履歴を見る
         </ButtonLink>
@@ -185,10 +188,10 @@ function StatusHeader({ order, confirming }: { order: MyOrderView; confirming: b
     cancelled:
       order.paymentStatus === "requires_refund" || order.paymentStatus === "refunded"
         ? {
-            title: "注文は取り消されました",
+            title: "キャンセル済み",
             body: "お支払いの確認前に注文の有効期限が切れたため、お支払いいただいた金額は全額返金します。",
           }
-        : { title: "注文は取り消されました", body: "お支払いは発生していません。" },
+        : { title: "キャンセル済み", body: "この注文は取り消されました。お支払いは発生していません。" },
   };
   const m = messages[order.status] ?? { title: "ご注文", body: "" };
   return (
