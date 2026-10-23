@@ -424,6 +424,11 @@ async function handleStripeEvent(event: Stripe.Event): Promise<Record<string, un
       return onChargeRefunded(event.data.object);
     case "account.updated":
       return onAccountUpdated(event.data.object);
+    // 処理中（pending）の返金の確定・失敗
+    case "refund.updated":
+    case "refund.failed":
+    case "charge.refund.updated":
+      return onRefundUpdated(event.data.object);
     default:
       return { ignored: true };
   }
@@ -523,4 +528,15 @@ async function onAccountUpdated(account: Stripe.Account) {
     ]),
   );
   return { store_id };
+}
+
+async function onRefundUpdated(refund: Stripe.Refund) {
+  const [{ data }] = await asService((q) =>
+    q.query<{ data: Record<string, unknown> }>("select public.sync_refund_status($1, $2, $3) as data", [
+      refund.id,
+      refund.status ?? "pending",
+      refund.failure_reason ?? null,
+    ]),
+  );
+  return data;
 }

@@ -9,11 +9,14 @@ import { BREAK_EVEN_GMV, PLANS } from "@/lib/fees";
 import { hhmm, percent, yen } from "@/lib/format";
 import { requireStoreMember } from "@/server/auth/viewer";
 import { getStoreDashboard } from "@/server/services/store";
+import { getStoreReadiness } from "@/server/services/readiness";
+import { ReadinessCard } from "@/components/store/ReadinessCard";
 
 export default async function StoreDashboardPage({ searchParams }: { searchParams: Promise<{ published?: string }> }) {
   const { published } = await searchParams;
   const { viewer, store } = await requireStoreMember("/store");
-  const d = await getStoreDashboard(viewer.id, store.storeId);
+  const [d, readinessMap] = await Promise.all([getStoreDashboard(viewer.id, store.storeId), getStoreReadiness([store.storeId])]);
+  const readiness = readinessMap.get(store.storeId);
   const fee = d.month.fee;
   const plan = PLANS[d.store.plan];
 
@@ -29,6 +32,8 @@ export default async function StoreDashboardPage({ searchParams }: { searchParam
             : "店舗は停止中です。商品はユーザーに表示されません。"}
         </Notice>
       )}
+
+      {readiness && <ReadinessCard readiness={readiness} />}
 
       <section className="grid gap-3 md:grid-cols-[1.2fr_1fr]">
         <div className="card p-5">

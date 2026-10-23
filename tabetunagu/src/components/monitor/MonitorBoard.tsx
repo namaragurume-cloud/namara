@@ -1,10 +1,11 @@
 "use client";
 
-import { Bell, BellOff } from "lucide-react";
+import { Bell, BellOff, Maximize2, Minimize2, Sun } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { detectNewPickups, pickupPhase, type MonitorOrder, type MonitorSnapshot, type PickupPhase } from "@/lib/monitor";
 import { cn } from "../ui/cn";
 import { audioReady, playChime, unlockAudio } from "./chime";
+import { enterFullscreen, leaveFullscreen, releaseWakeLock, requestWakeLock, type WakeLockSentinelLike } from "./kiosk";
 
 /** 更新間隔。受取完了から店舗モニターへの反映を 1〜3 秒以内にする */
 const POLL_MS = 2000;
@@ -29,6 +30,11 @@ export function MonitorBoard({ initial }: { initial: MonitorSnapshot }) {
   const [flash, setFlash] = useState<Set<string>>(new Set());
   const [soundOn, setSoundOn] = useState(false);
   const [offline, setOffline] = useState(false);
+  // 全画面モード（店頭タブレット用）: ナビを隠して大きく表示し、可能なら画面スリープを止める
+  const [kiosk, setKiosk] = useState(false);
+  const [wakeLockOn, setWakeLockOn] = useState<boolean | null>(null);
+  const rootRef = useRef<HTMLDivElement>(null);
+  const wakeLock = useRef<WakeLockSentinelLike | null>(null);
   // 初回表示の受取完了は「既知」として記録するだけ（過去分では鳴らさない）
   const known = useRef<ReadonlySet<string>>(detectNewPickups(null, initial.orders).known);
   const version = useRef(initial.version);
@@ -72,6 +78,34 @@ export function MonitorBoard({ initial }: { initial: MonitorSnapshot }) {
     };
   }, [initial.storeId, apply]);
 
+  // 画面が隠れると Wake Lock は自動で解除されるため、全画面モード中に表示が戻ったら取り直す
+  useEffect(() => {
+    if (!kiosk) return;
+    const onVisible = async () => {
+      if (document.visibilityState !== "visible") return;
+      wakeLock.current = await requestWakeLock(navigator);
+      setWakeLockOn(Boolean(wakeLock.current));
+    };
+    document.addEventListener("visibilitychange", onVisible);
+    return () => document.removeEventListener("visibilitychange", onVisible);
+  }, [kiosk]);
+
+  const toggleKiosk = async () => {
+    if (kiosk) {
+      setKiosk(false);
+      await releaseWakeLock(wakeLock.current);
+      wakeLock.current = null;
+      setWakeLockOn(null);
+      await leaveFullscreen(document);
+      return;
+    }
+    setKiosk(true);
+    if (!soundOn && unlockAudio()) setSoundOn(true);
+    await enterFullscreen(rootRef.current);
+    wakeLock.current = await requestWakeLock(navigator);
+    setWakeLockOn(Boolean(wakeLock.current));
+  };
+
   const enableSound = () => {
     if (unlockAudio()) {
       setSoundOn(true);
@@ -82,11 +116,35 @@ export function MonitorBoard({ initial }: { initial: MonitorSnapshot }) {
   const byPhase = (phase: PickupPhase) => snapshot.orders.filter((o) => pickupPhase(o, now) === phase);
 
   return (
-    <div className="space-y-4" data-testid="store-monitor">
+    <div
+      ref={rootRef}
+      className={cn("space-y-4", kiosk && "fixed inset-0 z-[60] overflow-y-auto bg-paper p-5 text-[1.15em] sm:p-8")}
+      data-testid="store-monitor"
+      data-kiosk={kiosk ? "on" : "off"}
+    >
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <p className="text-[13px] text-muted" aria-live="polite">
-          {offline ? "接続を確認しています…" : `最終更新 ${hm(new Date(now).toISOString())}`}
-        </p>
+        <div>
+          {kiosk && <p className="text-[18px] font-bold">{snapshot.storeName}・本日の受取</p>}
+          <p className="text-[13px] text-muted" aria-live="polite">
+            {offline ? "接続を確認しています…" : `最終更新 ${hm(new Date(now).toISOString())}`}
+          </p>
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          {kiosk && (
+            <span className="inline-flex items-center gap-1 rounded-full bg-canvas px-3 py-2 text-[12px] font-semibold text-ink-2" data-testid="wake-lock-status">
+              <Sun className="h-4 w-4" aria-hidden />
+              {wakeLockOn ? "画面スリープ防止 ON" : "画面スリープ防止 非対応（端末の設定で自動ロックをオフに）"}
+            </span>
+          )}
+          <button
+            type="button"
+            onClick={toggleKiosk}
+            className="inline-flex items-center gap-1.5 rounded-full border border-line bg-paper px-4 py-2 text-[13px] font-bold"
+            data-testid="monitor-kiosk"
+          >
+            {kiosk ? <Minimize2 className="h-4 w-4" aria-hidden /> : <Maximize2 className="h-4 w-4" aria-hidden />}
+            {kiosk ? "全画面を終了" : "全画面モード"}
+          </button>
         <button
           type="button"
           onClick={enableSound}
@@ -99,6 +157,7 @@ export function MonitorBoard({ initial }: { initial: MonitorSnapshot }) {
           {soundOn ? <Bell className="h-4 w-4" aria-hidden /> : <BellOff className="h-4 w-4" aria-hidden />}
           {soundOn ? "受取通知音 ON" : "受取通知音をON"}
         </button>
+        </div>
       </div>
 
       <dl className="grid grid-cols-4 gap-2 text-center">

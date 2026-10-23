@@ -17,6 +17,7 @@ const NAV = [
   { href: "/store/qr", label: "QRコード" },
   { href: "/store/payouts", label: "売上受取設定" },
   { href: "/store/settings", label: "店舗設定・プラン" },
+  { href: "/store/help", label: "使い方" },
 ];
 
 export default async function StoreLayout({ children }: { children: React.ReactNode }) {

@@ -208,7 +208,7 @@ DB を初期化したいときは `.data/` を削除してください。
 | `LINE_CHANNEL_ACCESS_TOKEN` | 任意 | まとめ通知の送信（未設定なら dry run） |
 | `NEXT_PUBLIC_SUPABASE_URL` / `SUPABASE_SERVICE_ROLE_KEY` | 任意 | 商品写真の保存（未設定だと本番では写真なしで出品） |
 | `OPENAI_API_KEY` / `OPENAI_MODEL` | 任意 | AI 文章生成（未設定ならテンプレート） |
-| `ENABLE_V2_CHECKOUT` | 任意 | `true` で v2（事前決済）をメインの購入導線にする。未設定は旧導線（§11-4） |
+| `ENABLE_V2_CHECKOUT` | 任意 | `true` で v2（事前決済）をメインの購入導線にする。未設定は旧導線（§11-4）。production では必要な設定がそろわないと OFF のまま |
 | `STRIPE_SECRET_KEY` / `STRIPE_WEBHOOK_SECRET` | v2 決済 | Stripe（事前決済・Connect）。未設定なら購入・売上受取設定は準備中 |
 | `STRIPE_CHECKOUT_RETURN_URL` | 任意 | Checkout からの戻り先（未設定なら `NEXT_PUBLIC_APP_URL`。LIFF なら `https://liff.line.me/<LIFF ID>`） |
 | `STRIPE_PAYMENT_METHOD_CONFIGURATION` | 任意 | 決済手段を固定する Payment Method Configuration（`pmc_...`） |
@@ -235,7 +235,7 @@ DATABASE_URL=... npm run db:migrate -- --bootstrap
 
 ## 8. Supabase 設定
 
-> **いちばん簡単な方法（Node.js 不要）**：Supabase の **SQL Editor** に [`supabase/setup/01_schema.sql`](./supabase/setup/01_schema.sql)（テーブル）→ [`supabase/setup/02_demo_data.sql`](./supabase/setup/02_demo_data.sql)（デモデータ・プレビュー用）→ [`supabase/setup/03_v2_foundation.sql`](./supabase/setup/03_v2_foundation.sql)（v2 の注文・ポイント台帳）→ [`supabase/setup/04_v2_stripe.sql`](./supabase/setup/04_v2_stripe.sql)（v2 の決済・返金・Connect）→ [`supabase/setup/05_v2_pickup.sql`](./supabase/setup/05_v2_pickup.sql)（v2 の受取）の順に中身を貼り付けて Run するだけで準備できます。本番の DB には 01・03・04・05 だけを使ってください（02 を入れる場合は 03 より前に）。01・03・04・05 は `supabase/migrations/` から作ったもので、適用済みとして記録されるため、あとから `npm run db:migrate` を実行しても二重には適用されません。
+> **いちばん簡単な方法（Node.js 不要）**：Supabase の **SQL Editor** に [`supabase/setup/01_schema.sql`](./supabase/setup/01_schema.sql)（テーブル）→ [`supabase/setup/02_demo_data.sql`](./supabase/setup/02_demo_data.sql)（デモデータ・プレビュー用）→ [`supabase/setup/03_v2_foundation.sql`](./supabase/setup/03_v2_foundation.sql)（v2 の注文・ポイント台帳）→ [`supabase/setup/04_v2_stripe.sql`](./supabase/setup/04_v2_stripe.sql)（v2 の決済・返金・Connect）→ [`supabase/setup/05_v2_pickup.sql`](./supabase/setup/05_v2_pickup.sql)（v2 の受取）→ [`supabase/setup/06_v2_poc_readiness.sql`](./supabase/setup/06_v2_poc_readiness.sql)（定期処理の監視・返金状態の同期）の順に中身を貼り付けて Run するだけで準備できます。本番の DB には 01・03・04・05・06 だけを使ってください（02 を入れる場合は 03 より前に）。01・03〜06 は `supabase/migrations/` から作ったもので、適用済みとして記録されるため、あとから `npm run db:migrate` を実行しても二重には適用されません。
 
 1. プロジェクトを作成（リージョン：Tokyo `ap-northeast-1`）
 2. **Database → Connection string → Transaction pooler（:6543）** を `DATABASE_URL` に設定し、`npm run db:migrate`
@@ -359,7 +359,10 @@ stripe trigger payment_intent.succeeded   # この注文システム以外の決
 - 売上の基準（v2）: 決済済み（paid / picked_up / unclaimed）を決済日時で計上。返金済み・決済待ちは含めない。旧フローの成約とは別のテーブルなので二重計上しない（`src/server/services/v2-metrics.ts`）。
 - PoC 指標（自己スワイプ完了率・食べつなぎ率・30日リピート率・店舗 WAU・STANDARD 移行対象）の定義は `getV2Kpis` のコメントにあります。
 
-### v2 本番導線 ON の条件（production で `ENABLE_V2_CHECKOUT=true` にする前に）
+- **production の安全ガード**: `ENABLE_V2_CHECKOUT=true` でも、`STRIPE_SECRET_KEY` / `STRIPE_WEBHOOK_SECRET` / `STRIPE_CHECKOUT_RETURN_URL`（https）/ `CRON_SECRET`（16文字以上）のどれかが欠けていれば v2 は強制的に OFF（旧導線のまま動く。サーバーログと管理画面「PoC 公開準備」に不足項目を表示）。
+- **PoC 公開の判定は [`POC_GO_LIVE_CHECKLIST.md`](./POC_GO_LIVE_CHECKLIST.md)**（Stripe テストモード・LINE 実機の手順と結果記入欄、運用・法務・PoC、障害時のフォールバック、PoC 指標の定義）。
+
+### v2 本番導線 ON の条件（概要。詳細は POC_GO_LIVE_CHECKLIST.md）
 - [ ] **Stripe test mode E2E completed（STEP 2.5）**: テストモードで Connect 登録・1,030円の決済・application fee 230円・店舗 800円・Webhook（paid・30pt・再送で二重にならない）・ユーザー返金（transfer と application fee の巻き戻し）・期限切れとの競合の自動返金を確認した
 - [ ] Stripe の本番キー・Webhook（連結アカウントのイベントを含む）・カードのみの Payment Method Configuration を設定した
 - [ ] `/api/cron/orders` を 5 分ごとに呼ぶスケジューラーを設定した（未設定だと管理画面 KPI に「定期処理の遅れ」の警告が出る）

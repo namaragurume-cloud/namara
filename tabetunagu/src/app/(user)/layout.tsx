@@ -1,4 +1,5 @@
 import { BottomNav } from "@/components/layout/BottomNav";
+import { LegalLinks } from "@/components/layout/LegalLinks";
 import { UserHeader } from "@/components/layout/UserHeader";
 import { features } from "@/lib/features";
 import { getViewer } from "@/server/auth/viewer";
@@ -8,7 +9,10 @@ export default async function UserLayout({ children }: { children: React.ReactNo
   return (
     <div className="min-h-dvh bg-paper">
       <UserHeader loggedIn={Boolean(viewer)} storeLink={Boolean(viewer?.memberships.length)} adminLink={viewer?.isAdmin} />
-      <main className="mx-auto max-w-xl px-4 pb-[calc(88px+env(safe-area-inset-bottom))] pt-4">{children}</main>
+      <main className="mx-auto max-w-xl px-4 pb-[calc(88px+env(safe-area-inset-bottom))] pt-4">
+        {children}
+        <LegalLinks />
+      </main>
       <BottomNav v2={features.v2Journey} />
     </div>
   );

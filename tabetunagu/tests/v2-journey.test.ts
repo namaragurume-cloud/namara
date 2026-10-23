@@ -26,7 +26,9 @@ vi.mock("@/server/auth/viewer", () => ({
 }));
 const { purchaseAction } = await import("@/app/actions/payments");
 
-const ENV_KEYS = ["ENABLE_V2_CHECKOUT", "APP_ENV", "VERCEL_ENV"] as const;
+const ENV_KEYS = ["ENABLE_V2_CHECKOUT", "APP_ENV", "VERCEL_ENV", "STRIPE_CHECKOUT_RETURN_URL", "CRON_SECRET"] as const;
+/** production で v2 を ON にするのに必要な設定（STEP 5 の安全ガード。Stripe の鍵は installFakeStripe が設定する） */
+const PROD_READY = { STRIPE_CHECKOUT_RETURN_URL: "https://tabetunagu.example", CRON_SECRET: "c".repeat(32) };
 const savedEnv = Object.fromEntries(ENV_KEYS.map((k) => [k, process.env[k]]));
 function setEnv(values: Partial<Record<(typeof ENV_KEYS)[number], string | undefined>>) {
   for (const k of ENV_KEYS) {
@@ -77,7 +79,7 @@ describe("機能フラグ", () => {
   it("production では明示的に ON にしない限り v2 の購入を受け付けない（開発・プレビューでは URL で確認できる）", () => {
     setEnv({ ENABLE_V2_CHECKOUT: undefined, APP_ENV: "production" });
     expect(features.v2CheckoutOpen).toBe(false);
-    setEnv({ ENABLE_V2_CHECKOUT: "true", APP_ENV: "production" });
+    setEnv({ ENABLE_V2_CHECKOUT: "true", APP_ENV: "production", ...PROD_READY });
     expect(features.v2CheckoutOpen).toBe(true);
     setEnv({ ENABLE_V2_CHECKOUT: undefined, APP_ENV: "preview" });
     expect(features.v2CheckoutOpen).toBe(true);
@@ -92,7 +94,7 @@ describe("機能フラグ", () => {
     expect(await purchaseAction(null, form({ productId, quantity: "1" }))).toMatchObject({ ok: false, code: "v2_checkout_closed" });
     expect(fake.sessions).toHaveLength(0);
 
-    setEnv({ ENABLE_V2_CHECKOUT: "true", APP_ENV: "production" });
+    setEnv({ ENABLE_V2_CHECKOUT: "true", APP_ENV: "production", ...PROD_READY });
     await expect(purchaseAction(null, form({ productId, quantity: "1" }))).rejects.toMatchObject({ url: expect.stringContaining("checkout.stripe.com") });
     expect(fake.sessions).toHaveLength(1);
   });

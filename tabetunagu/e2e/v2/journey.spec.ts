@@ -57,6 +57,8 @@ test("商品詳細 →「食べつなぐ」→ ログイン → 購入確認（�
   await expect(summary).toContainText("つなぐチャージ30円");
   await expect(summary).toContainText("お支払い合計1,230");
   await expect(page.getByTestId("points-note")).toHaveText("つなぐチャージ30円につき、30ptを付与します。");
+  await expect(page.getByTestId("cancellation-note")).toContainText("決済後5分以内かつ受取開始前までキャンセル可能です。");
+  await expect(page.getByTestId("cancellation-note").getByRole("link", { name: "キャンセルポリシー" })).toBeVisible();
   const pay = page.getByRole("button", { name: "1,230円で食べつなぐ" });
   await expect(pay).toBeVisible();
   await expectNoHorizontalScroll(page);

@@ -13,6 +13,8 @@ import { pickupLabel } from "@/lib/format";
 import { requireViewer } from "@/server/auth/viewer";
 import { getProductDetail } from "@/server/services/catalog";
 import { isProductPurchasable } from "@/server/services/payments";
+import { cancellationSummary, getPolicySettings } from "@/server/services/settings";
+import Link from "next/link";
 
 export const metadata: Metadata = { title: "購入の確認" };
 
@@ -28,6 +30,7 @@ export default async function BuyPage({ params }: { params: Promise<{ id: string
   const open = features.v2CheckoutOpen;
   const purchasable = open && available && (await isProductPurchasable(viewer.id, product.id));
   const max = Math.min(product.maxPerReservation, product.remaining);
+  const policy = await getPolicySettings();
 
   return (
     <div className="space-y-5">
@@ -67,7 +70,12 @@ export default async function BuyPage({ params }: { params: Promise<{ id: string
         <ul className="space-y-1.5 text-[12.5px] leading-relaxed text-ink-2">
           <li>・お支払いはオンライン（事前決済）です。お店でのお会計はありません。</li>
           <li>・つなぐチャージ（{PRICING.tsunaguCharge}円）は、1回のご注文ごとにかかるシステム利用料です。{chargeNote.points}</li>
-          <li>・お支払い後のお客様都合のキャンセル・返金は、お支払いから一定時間内かつ受取開始前のみ受け付けています。</li>
+          <li data-testid="cancellation-note">
+            ・{cancellationSummary(policy)}
+            <Link href="/cancellation-policy" className="ml-1 underline">
+              キャンセルポリシー
+            </Link>
+          </li>
           {product.isBox && <li>・食べつなぎBOXの中身は当日のお楽しみです。アレルギーなどはお店に直接ご確認ください。</li>}
         </ul>
       </section>

@@ -14,20 +14,25 @@ import { ORDER_POLICY } from "@/lib/orders";
 import { Notice } from "@/components/ui/Section";
 import { getKpis, listStoresWithMetrics, MIN_RESOLVED_FOR_FLAG, periodRange, SUSPICIOUS_QR_RATE } from "@/server/services/admin";
 import { getV2Kpis } from "@/server/services/v2-metrics";
+import { CRON_STALE_MINUTES, getOpsReadiness, type OpsReadiness } from "@/server/services/ops";
+import { Badge } from "@/components/ui/Badge";
 
 export default async function AdminKpiPage({ searchParams }: { searchParams: Promise<{ period?: string }> }) {
   const period = parsePeriod((await searchParams).period);
   const range = periodRange(period);
-  const [k, stores, v2] = await Promise.all([
+  const [k, stores, v2, ops] = await Promise.all([
     getKpis(period),
     listStoresWithMetrics(period),
     getV2Kpis(range.from, range.to, ORDER_POLICY.pickupLateGraceMinutes),
+    getOpsReadiness(),
   ]);
   const flagged = stores.filter((s) => s.flag === "suspicious" || s.flag === "warning");
 
   return (
     <div className="space-y-8">
       <PageHeader title="KPI" sub={k.label} action={<PeriodTabs base="/admin" period={period} />} />
+
+      <LaunchReadiness ops={ops} period={period} />
 
       {v2.maintenanceBacklog > 0 && (
         <Notice tone="error">
@@ -179,5 +184,88 @@ export default async function AdminKpiPage({ searchParams }: { searchParams: Pro
         </div>
       </section>
     </div>
+  );
+}
+
+function Check({ label, ok, detail }: { label: string; ok: boolean; detail?: string }) {
+  return (
+    <li className="flex items-center justify-between gap-3 py-1.5">
+      <span>{label}</span>
+      <span className="flex items-center gap-2">
+        {detail && <span className="text-[12px] text-muted">{detail}</span>}
+        <Badge tone={ok ? "green" : "clay"}>{ok ? "OK" : "要対応"}</Badge>
+      </span>
+    </li>
+  );
+}
+
+/** PoC 公開準備（秘密情報の値は表示しない。設定の有無と状態だけ） */
+function LaunchReadiness({ ops, period }: { ops: OpsReadiness; period: string }) {
+  const f = ops.flag;
+  const cron =
+    ops.cron.state === "never"
+      ? "未実行"
+      : `最終実行 ${ops.cron.minutesAgo}分前${ops.cron.state === "stale" ? `（${CRON_STALE_MINUTES}分以上前）` : ""}`;
+  return (
+    <section className="card space-y-4 p-5" data-testid="launch-readiness">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <h2 className="text-[15px] font-bold">PoC 公開準備</h2>
+        <div className="flex items-center gap-2" data-testid="flag-status">
+          <span className="text-[12px] text-muted">ENABLE_V2_CHECKOUT</span>
+          {f.effective ? (
+            <Badge tone={f.enforced ? "clay" : "dark"}>{f.enforced ? "ON（本番で有効）" : "ON"}</Badge>
+          ) : f.requested ? (
+            <Badge tone="clay">ON 指定・設定不足のため OFF</Badge>
+          ) : (
+            <Badge tone="outline">OFF（旧導線）</Badge>
+          )}
+        </div>
+      </div>
+      {f.requested && !f.effective && (
+        <p className="rounded-xl bg-clay-soft px-4 py-3 text-[13px] text-clay">
+          v2 を有効にするには次の設定が必要です: {f.missing.join("、")}
+        </p>
+      )}
+      <div className="grid gap-4 md:grid-cols-2">
+        <ul className="divide-y divide-line text-[13px]">
+          <Check label="Stripe 秘密鍵" ok={ops.stripe.secretKey} />
+          <Check label="Stripe Webhook 署名鍵" ok={ops.stripe.webhookSecret} />
+          <Check label="Checkout の戻り先 URL（https）" ok={ops.stripe.checkoutReturnUrl} />
+          <Check label="CRON_SECRET" ok={ops.cronSecret} />
+        </ul>
+        <ul className="divide-y divide-line text-[13px]">
+          <Check label="定期処理（/api/cron/orders）" ok={ops.cron.state === "ok"} detail={cron} />
+          <Check
+            label="売上受取設定が未完了の稼働店舗"
+            ok={ops.storesConnectPending === 0}
+            detail={`${ops.storesConnectPending} / ${ops.storesActive}店舗`}
+          />
+          <li className="flex items-center justify-between gap-3 py-1.5">
+            <Link href="/admin/review" className="font-semibold text-forest hover:underline">
+              要確認の決済（requires_review）
+            </Link>
+            <Badge tone={ops.requiresReview === 0 ? "green" : "clay"}>{ops.requiresReview}件</Badge>
+          </li>
+          <Check label="失敗した返金" ok={ops.refundsFailed === 0} detail={`${ops.refundsFailed}件`} />
+        </ul>
+      </div>
+      <p className="text-[12px] text-muted">
+        Stripe テストモードの疎通・LINE 実機確認は POC_GO_LIVE_CHECKLIST.md で管理します（この画面では判定できません）。
+        <span className="ml-2">
+          CSV:{" "}
+          <a href={`/admin/export?type=orders&period=${period}`} className="text-forest underline">
+            注文
+          </a>
+          ・
+          <a href={`/admin/export?type=stores&period=${period}`} className="text-forest underline">
+            店舗別
+          </a>
+          ・
+          <Link href="/admin/unclaimed" className="text-forest underline">
+            未受取の一覧
+          </Link>
+        </span>
+      </p>
+    </section>
   );
 }

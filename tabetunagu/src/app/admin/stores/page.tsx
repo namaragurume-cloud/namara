@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/Badge";
 import { AREAS, areaLabel, CATEGORIES } from "@/lib/categories";
 import { percent, yen } from "@/lib/format";
 import { listStoresWithMetrics } from "@/server/services/admin";
+import { getStoreReadiness } from "@/server/services/readiness";
 
 export const metadata: Metadata = { title: "店舗" };
 
@@ -18,6 +19,7 @@ export default async function AdminStoresPage({ searchParams }: { searchParams: 
   const sp = await searchParams;
   const period = parsePeriod(sp.period);
   let stores = await listStoresWithMetrics(period);
+  const readiness = await getStoreReadiness();
   if (sp.sort === "qr") stores = [...stores].sort((a, b) => (a.qrRate ?? 2) - (b.qrRate ?? 2));
   const free = stores.filter((s) => s.plan === "free" && s.status !== "suspended").length;
   const standard = stores.filter((s) => s.plan === "standard" && s.status !== "suspended").length;
@@ -45,6 +47,7 @@ export default async function AdminStoresPage({ searchParams }: { searchParams: 
               <th className="px-3 py-2.5">エリア</th>
               <th className="px-3 py-2.5">プラン</th>
               <th className="px-3 py-2.5">状態</th>
+              <th className="px-3 py-2.5">公開準備</th>
               <th className="px-3 py-2.5 text-right">出品</th>
               <th className="px-3 py-2.5 text-right">予約</th>
               <th className="px-3 py-2.5 text-right">成約</th>
@@ -70,6 +73,9 @@ export default async function AdminStoresPage({ searchParams }: { searchParams: 
                   <Badge tone={s.plan === "standard" ? "dark" : "outline"}>{s.plan.toUpperCase()}</Badge>
                 </td>
                 <td className="px-3 py-3">{STATUS[s.status] ?? s.status}</td>
+                <td className="px-3 py-3" data-testid="store-launch-status">
+                  <LaunchBadge status={readiness.get(s.id)?.status} />
+                </td>
                 <td className="tnum px-3 py-3 text-right">{s.listings}</td>
                 <td className="tnum px-3 py-3 text-right">{s.reservations}</td>
                 <td className="tnum px-3 py-3 text-right">{s.completed}</td>
@@ -131,4 +137,10 @@ export default async function AdminStoresPage({ searchParams }: { searchParams: 
       </section>
     </div>
   );
+}
+
+function LaunchBadge({ status }: { status?: string }) {
+  if (!status) return <span className="text-muted">—</span>;
+  const tone = status === "公開準備OK" ? "green" : status === "Stripe設定待ち" ? "sand" : status === "商品準備中" ? "outline" : "clay";
+  return <Badge tone={tone}>{status}</Badge>;
 }

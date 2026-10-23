@@ -14,7 +14,8 @@ export type EventName =
   | "product_published"
   | "login"
   | "pickup_ticket_viewed"
-  | "pickup_swipe_started";
+  | "pickup_swipe_started"
+  | "monitor_opened";
 
 /** 分析イベントを記録する。失敗しても本処理は止めない。 */
 export async function logEvent(

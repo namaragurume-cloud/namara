@@ -11,6 +11,8 @@ const NAV = [
   { href: "/admin/users", label: "ユーザー" },
   { href: "/admin/products", label: "商品" },
   { href: "/admin/reservations", label: "予約・成約" },
+  { href: "/admin/review", label: "要確認の決済" },
+  { href: "/admin/unclaimed", label: "未受取" },
   { href: "/admin/notifications", label: "通知" },
   { href: "/admin/billing", label: "請求" },
 ];
