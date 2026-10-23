@@ -88,7 +88,7 @@ test("注文 → 受取チケット → スワイプ → 受取完了 → 店舗
   const owner = await ownerCtx.newPage();
   await demoLogin(owner, "storeOwner");
   await owner.goto("/store/monitor");
-  await expect(owner.getByTestId("monitor-section-active").getByText("受取チケットのデモBOX×1")).toBeVisible();
+  await expect(owner.getByTestId("monitor-section-active").getByText(/受取チケットのデモBOX/)).toBeVisible();
 
   await demoLogin(page, "user");
   // ナビ: v2 では「注文」「お気に入り」
@@ -147,8 +147,20 @@ test("注文 → 受取チケット → スワイプ → 受取完了 → 店舗
   await expect(page.getByTestId("pickup-swipe-knob")).toHaveCount(0);
   await expect(page.getByTestId("ticket-guide")).toHaveCount(0);
 
-  // 店舗モニターに自動で反映（再読み込みしない）
-  await expect(owner.getByTestId("monitor-section-picked_up").getByText("受取チケットのデモBOX×1")).toBeVisible({ timeout: 8000 });
+  // 店舗モニターに自動で反映（再読み込みしない）。新しい受取完了は「✓ 受取完了」で約10秒強調し、通知は1回
+  const doneCard = owner.getByTestId("monitor-section-picked_up").getByTestId("monitor-card").filter({ hasText: "受取チケットのデモBOX" });
+  await expect(doneCard).toBeVisible({ timeout: 8000 });
+  await expect(doneCard).toHaveAttribute("data-highlight", "on");
+  await expect(doneCard.getByTestId("monitor-card-status")).toHaveText("✓ 受取完了");
+  await expect(owner.getByTestId("store-monitor")).toHaveAttribute("data-chimes", "1");
+  await expect(doneCard).toHaveAttribute("data-highlight", "off", { timeout: 13_000 });
+  await expect(doneCard.getByTestId("monitor-card-status")).toHaveText(/^受取完了 \d{2}:\d{2}$/);
+  await expect(owner.getByTestId("store-monitor")).toHaveAttribute("data-chimes", "1"); // 同じ注文で二度鳴らさない
+  // 再読み込み後は、既にある受取完了を強調・通知しない
+  await owner.reload();
+  await expect(doneCard).toHaveAttribute("data-highlight", "off");
+  await owner.waitForTimeout(2500);
+  await expect(owner.getByTestId("store-monitor")).toHaveAttribute("data-chimes", "0");
   await ownerCtx.close();
 });
 
