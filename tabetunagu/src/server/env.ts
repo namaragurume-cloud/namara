@@ -86,6 +86,32 @@ export const env = {
     get loginEnabled() {
       return Boolean(process.env.LINE_CHANNEL_ID && process.env.LINE_CHANNEL_SECRET);
     },
+    /**
+     * LINE ミニアプリのチャネル（サービスメッセージ用の channel access token の発行に使う）。
+     * 未設定なら LINE Login のチャネル（LINE_CHANNEL_ID / SECRET）。LIFF アプリを置いたチャネルと同じにする。
+     */
+    get miniAppChannelId() {
+      return process.env.LINE_MINIAPP_CHANNEL_ID || process.env.LINE_CHANNEL_ID || "";
+    },
+    get miniAppChannelSecret() {
+      return process.env.LINE_MINIAPP_CHANNEL_SECRET || process.env.LINE_CHANNEL_SECRET || "";
+    },
+    /**
+     * サービスメッセージの送信デモ（管理者のみ）。本番（APP_ENV / VERCEL_ENV = production）では常に無効。
+     * それ以外も ENABLE_LINE_NOTIFICATION_DEMO=true のときだけ有効（既定は無効）。
+     */
+    get serviceMessageDemoEnabled() {
+      if (appEnv() === "production") return false;
+      return process.env.ENABLE_LINE_NOTIFICATION_DEMO === "true";
+    },
+    /** 注文完了（予約完了）に使うテンプレート名（例: xxxx_ja。LINE Developers コンソールで選んだテンプレート） */
+    get serviceMessageOrderTemplate() {
+      return process.env.LINE_SERVICE_MESSAGE_ORDER_TEMPLATE || "";
+    },
+    /** テンプレート変数 → TABETUNAGU の項目の対応（JSON。例: {"shop_name":"storeName","item":"items"}） */
+    get serviceMessageOrderParams() {
+      return process.env.LINE_SERVICE_MESSAGE_ORDER_PARAMS || "";
+    },
   },
   openai: {
     get apiKey() {

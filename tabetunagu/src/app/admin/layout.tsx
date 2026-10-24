@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { ConsoleShell } from "@/components/layout/ConsoleShell";
 import { Badge } from "@/components/ui/Badge";
 import { requireAdmin } from "@/server/auth/viewer";
+import { env } from "@/server/env";
 
 export const metadata: Metadata = { title: { default: "運営管理", template: "%s｜運営管理｜TABETUNAGU" }, robots: { index: false } };
 
@@ -20,7 +21,13 @@ const NAV = [
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   const viewer = await requireAdmin("/admin");
   return (
-    <ConsoleShell title="運営管理" badge={<Badge tone="dark">ADMIN</Badge>} nav={NAV} headerExtra={<span className="text-[12px] text-muted">{viewer.displayName}</span>}>
+    <ConsoleShell
+      title="運営管理"
+      badge={<Badge tone="dark">ADMIN</Badge>}
+      // LINE 通知デモは開発・プレビュー環境で有効にしたときだけ（本番では出さない）
+      nav={env.line.serviceMessageDemoEnabled ? [...NAV, { href: "/admin/line-demo", label: "LINE通知デモ" }] : NAV}
+      headerExtra={<span className="text-[12px] text-muted">{viewer.displayName}</span>}
+    >
       {children}
     </ConsoleShell>
   );

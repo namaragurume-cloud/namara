@@ -206,6 +206,9 @@ DB を初期化したいときは `.data/` を削除してください。
 | `CRON_SECRET` | ○ | Vercel Cron の認証 |
 | `NEXT_PUBLIC_LIFF_ID` / `LINE_CHANNEL_ID` / `LINE_CHANNEL_SECRET` | ○ | LIFF・LINE Login |
 | `LINE_CHANNEL_ACCESS_TOKEN` | 任意 | まとめ通知の送信（未設定なら dry run） |
+| `ENABLE_LINE_NOTIFICATION_DEMO` | 任意 | `true` で LINE サービスメッセージのデモ（管理画面「LINE通知デモ」）を有効にする。**本番（APP_ENV=production）では常に無効** |
+| `LINE_MINIAPP_CHANNEL_ID` / `LINE_MINIAPP_CHANNEL_SECRET` | 任意 | サービスメッセージ用（LIFF を置いた LINE ミニアプリのチャネル）。未設定なら `LINE_CHANNEL_ID` / `LINE_CHANNEL_SECRET` |
+| `LINE_SERVICE_MESSAGE_ORDER_TEMPLATE` / `LINE_SERVICE_MESSAGE_ORDER_PARAMS` | 任意 | 注文完了に使うテンプレート名（例 `xxxx_ja`）と、テンプレート変数 → 項目の対応（JSON） |
 | `NEXT_PUBLIC_SUPABASE_URL` / `SUPABASE_SERVICE_ROLE_KEY` | 任意 | 商品写真の保存（未設定だと本番では写真なしで出品） |
 | `OPENAI_API_KEY` / `OPENAI_MODEL` | 任意 | AI 文章生成（未設定ならテンプレート） |
 | `ENABLE_V2_CHECKOUT` | 任意 | `true` で v2（事前決済）をメインの購入導線にする。未設定は旧導線（§11-4）。production では必要な設定がそろわないと OFF のまま |
@@ -235,7 +238,7 @@ DATABASE_URL=... npm run db:migrate -- --bootstrap
 
 ## 8. Supabase 設定
 
-> **いちばん簡単な方法（Node.js 不要）**：Supabase の **SQL Editor** に [`supabase/setup/01_schema.sql`](./supabase/setup/01_schema.sql)（テーブル）→ [`supabase/setup/02_demo_data.sql`](./supabase/setup/02_demo_data.sql)（デモデータ・プレビュー用）→ [`supabase/setup/03_v2_foundation.sql`](./supabase/setup/03_v2_foundation.sql)（v2 の注文・ポイント台帳）→ [`supabase/setup/04_v2_stripe.sql`](./supabase/setup/04_v2_stripe.sql)（v2 の決済・返金・Connect）→ [`supabase/setup/05_v2_pickup.sql`](./supabase/setup/05_v2_pickup.sql)（v2 の受取）→ [`supabase/setup/06_v2_poc_readiness.sql`](./supabase/setup/06_v2_poc_readiness.sql)（定期処理の監視・返金状態の同期）の順に中身を貼り付けて Run するだけで準備できます。本番の DB には 01・03・04・05・06 だけを使ってください（02 を入れる場合は 03 より前に）。01・03〜06 は `supabase/migrations/` から作ったもので、適用済みとして記録されるため、あとから `npm run db:migrate` を実行しても二重には適用されません。
+> **いちばん簡単な方法（Node.js 不要）**：Supabase の **SQL Editor** に [`supabase/setup/01_schema.sql`](./supabase/setup/01_schema.sql)（テーブル）→ [`supabase/setup/02_demo_data.sql`](./supabase/setup/02_demo_data.sql)（デモデータ・プレビュー用）→ [`supabase/setup/03_v2_foundation.sql`](./supabase/setup/03_v2_foundation.sql)（v2 の注文・ポイント台帳）→ [`supabase/setup/04_v2_stripe.sql`](./supabase/setup/04_v2_stripe.sql)（v2 の決済・返金・Connect）→ [`supabase/setup/05_v2_pickup.sql`](./supabase/setup/05_v2_pickup.sql)（v2 の受取）→ [`supabase/setup/06_v2_poc_readiness.sql`](./supabase/setup/06_v2_poc_readiness.sql)（定期処理の監視・返金状態の同期）→ [`supabase/setup/07_line_service_messages.sql`](./supabase/setup/07_line_service_messages.sql)（LINE サービスメッセージのデモ）の順に中身を貼り付けて Run するだけで準備できます。本番の DB には 01・03〜07 だけを使ってください（02 を入れる場合は 03 より前に）。01・03〜07 は `supabase/migrations/` から作ったもので、適用済みとして記録されるため、あとから `npm run db:migrate` を実行しても二重には適用されません。
 
 1. プロジェクトを作成（リージョン：Tokyo `ap-northeast-1`）
 2. **Database → Connection string → Transaction pooler（:6543）** を `DATABASE_URL` に設定し、`npm run db:migrate`
@@ -266,6 +269,27 @@ DATABASE_URL=... npm run db:migrate -- --bootstrap
 - 長期のチャネルアクセストークンを発行して **`LINE_CHANNEL_ACCESS_TOKEN`** に設定
 - 通知は公式アカウントを友だち追加しているユーザーにのみ届きます
 - 送信数は LINE 公式アカウントの料金プランのメッセージ数にカウントされます（まとめ通知は 1 人 1 日 1 通まで）
+
+### LINE ミニアプリのサービスメッセージ（デモ）
+
+LINE ミニアプリでのユーザーの操作（注文など）に対する確認・応答を、LINE の「LINEミニアプリ お知らせ」に届ける仕組みです。
+Messaging API の通常の Push（友だちへのメッセージ）とは別のもので、**販促（値下げ・新商品・クーポン・おすすめ）には使いません**。
+現在はデモ（管理者が自分の LINE に「注文完了」を1件送る）だけで、決済成功時などの自動送信は有効にしていません。
+
+1. LINE Developers の LINE ミニアプリのチャネル（**開発用**の内部チャネル）で、サービスメッセージのテンプレートを追加する。
+   注文完了・予約完了に近いテンプレートを選び、テンプレート名（`{名前}_ja`）と変数名を控える
+2. 開発・プレビュー環境だけに設定する（本番には設定しない。設定しても本番では無効）
+   - `ENABLE_LINE_NOTIFICATION_DEMO=true`
+   - `LINE_MINIAPP_CHANNEL_ID` / `LINE_MINIAPP_CHANNEL_SECRET`（開発用のチャネル）
+   - `LINE_SERVICE_MESSAGE_ORDER_TEMPLATE=<テンプレート名>`
+   - `LINE_SERVICE_MESSAGE_ORDER_PARAMS={"<変数名>":"storeName", ...}`
+     使える項目: `storeName`（店舗名）/ `items`（商品と数量）/ `pickup`（受取時間）/ `orderNumber` / `total`（支払総額）/ `orderPath`（`orders/<注文ID>`。ボタンの URL 用）
+3. 自分の LINE（開発用チャネルの Admin / Tester 権限のある開発者）で LINE ミニアプリを開き、管理者でログインして「LINE通知デモ」→「LINEテスト通知を送る」
+4. LINE アプリの「LINEミニアプリ お知らせ」のトークを確認する
+
+仕組み: LIFF アクセストークン（ボタンを押したときに取得・保存しない）→ サーバーでサービス通知トークンに交換（1年間・最大5回）→ DB に保存。
+送信のたびに LINE から返る新しいトークンに更新します。トークン・シークレットは画面・ログに出しません。
+送信の記録（種類・結果・エラーの分類）は `line_service_message_logs` に残ります（本文・トークンは保存しない）。
 
 ## 10. LIFF 設定
 
