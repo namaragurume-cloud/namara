@@ -118,10 +118,7 @@ export async function sendDigestAction(): Promise<ActionState> {
     refresh();
     return {
       ok: true,
-      message:
-        r.status === "dry_run"
-          ? `LINE_CHANNEL_ACCESS_TOKEN が未設定のため送信せず、対象 ${r.targets}人分を記録しました（dry run）。`
-          : `${r.sent}人に送信しました（対象 ${r.targets}人）。`,
+      message: `LINE へは送らず、対象 ${r.targets}人分を記録しました（記録のみ）。`,
     };
   } catch (error) {
     return toActionError(error);

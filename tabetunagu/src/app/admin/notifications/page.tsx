@@ -4,7 +4,6 @@ import { ActionButton } from "@/components/admin/ActionButton";
 import { PageHeader } from "@/components/layout/ConsoleShell";
 import { Badge } from "@/components/ui/Badge";
 import { dateTime } from "@/lib/format";
-import { env } from "@/server/env";
 import { DIGEST_COOLDOWN_HOURS, listNotifications, previewEveningDigest } from "@/server/services/notifications";
 
 export const metadata: Metadata = { title: "通知" };
@@ -12,18 +11,17 @@ export const metadata: Metadata = { title: "通知" };
 export default async function AdminNotificationsPage() {
   const [preview, history] = await Promise.all([previewEveningDigest(), listNotifications()]);
   const lineTargets = preview.targets.filter((t) => t.lineUserId).length;
-  const live = env.line.digestSendEnabled;
   return (
     <div className="space-y-6">
       <PageHeader
         title="通知"
-        sub={`商品ごとに全員へは送らず、1日1回のまとめ通知だけを送ります（1人あたり${DIGEST_COOLDOWN_HOURS}時間に1通まで）。`}
+        sub={`旧まとめ通知（エリアごとの件数）の記録だけを行います（1人あたり${DIGEST_COOLDOWN_HOURS}時間に1通まで）。LINE への配信は「LINE日次通知」から行います。`}
       />
       <div className="grid gap-4 lg:grid-cols-[1fr_1fr]">
         <section className="card p-5">
           <div className="flex items-center justify-between">
             <h2 className="text-[15px] font-bold">今夜のTABETUNAGU（プレビュー）</h2>
-            <Badge tone={live ? "green" : "sand"}>{live ? "LINE 送信可" : "dry run"}</Badge>
+            <Badge tone="sand">記録のみ</Badge>
           </div>
           <pre className="mt-3 whitespace-pre-wrap rounded-2xl bg-[#e7f1e3] p-4 font-sans text-[13.5px] leading-relaxed">{preview.sample}</pre>
           <dl className="mt-4 grid grid-cols-3 gap-2 text-center text-[12px]">
@@ -42,10 +40,10 @@ export default async function AdminNotificationsPage() {
           </dl>
           <p className="mt-3 text-[12px] text-muted">
             通知エリアを登録しているユーザーにはそのエリアの件数だけを、STANDARD 店舗をお気に入りにしているユーザーにはその店舗名も添えます。
-            {!live && " LINE_CHANNEL_ACCESS_TOKEN が未設定のため、送信はせず対象者の記録だけを行います。"}
+            {" 全員への一斉配信にならないよう、LINE へは送りません（対象者の記録だけ）。"}
           </p>
           <div className="mt-4">
-            <ActionButton action={sendDigestAction} label={live ? "いま送信する" : "通知対象を作成する（dry run）"} variant="dark" confirm="まとめ通知を作成します。よろしいですか？" />
+            <ActionButton action={sendDigestAction} label="通知対象を作成する（記録のみ）" variant="dark" confirm="まとめ通知を作成します。よろしいですか？" />
           </div>
         </section>
         <section className="card p-5">

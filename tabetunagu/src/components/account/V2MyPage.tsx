@@ -1,7 +1,7 @@
 import { ChevronRight, Clock, Coins, Heart, LogOut, MapPin, ReceiptText, Ticket } from "lucide-react";
 import Link from "next/link";
 import { logoutAction } from "@/app/actions/auth";
-import { NotificationSettingsForm } from "@/components/forms/NotificationSettingsForm";
+import { LineFeaturedOptInForm } from "@/components/forms/LineFeaturedOptInForm";
 import { OrderCard } from "@/components/orders/OrderCard";
 import { Badge } from "@/components/ui/Badge";
 import { ButtonLink } from "@/components/ui/Button";
@@ -13,7 +13,7 @@ import { pickupHeading, pickupHint, upcomingPickups } from "@/lib/my-orders";
 import { requireViewer } from "@/server/auth/viewer";
 import { getMyAccountSummary, type MyOrderCard } from "@/server/services/account";
 import { logEvent } from "@/server/services/events";
-import { getMyProfile } from "@/server/services/reservations";
+import { getFeaturedOptIn } from "@/server/services/line-digest";
 
 /**
  * v2 のマイページ。「次にやることが分かる」順に並べる:
@@ -23,7 +23,7 @@ import { getMyProfile } from "@/server/services/reservations";
 export async function V2MyPage() {
   const viewer = await requireViewer("/me");
   const now = new Date();
-  const [summary, profile] = await Promise.all([getMyAccountSummary(viewer.id, now), getMyProfile(viewer.id)]);
+  const [summary, optIn] = await Promise.all([getMyAccountSummary(viewer.id, now), getFeaturedOptIn(viewer.id)]);
   await logEvent("my_page_viewed", { userId: viewer.id });
   const pickups = upcomingPickups(summary.paidOrders, now);
   const [first, ...rest] = pickups;
@@ -165,9 +165,9 @@ export async function V2MyPage() {
           {viewer.isDemo && <Badge tone="sand">デモ</Badge>}
         </div>
         <details className="rounded-2xl border border-line">
-          <summary className="flex min-h-[48px] cursor-pointer items-center px-4 text-[14px] font-semibold">通知設定</summary>
+          <summary className="flex min-h-[48px] cursor-pointer items-center px-4 text-[14px] font-semibold">LINE通知</summary>
           <div className="border-t border-line p-4">
-            <NotificationSettingsForm enabled={profile?.notify_enabled ?? true} areas={profile?.notify_areas ?? []} lineLinked={viewer.lineLinked} />
+            <LineFeaturedOptInForm on={optIn.on} lineLinked={optIn.lineLinked} />
           </div>
         </details>
         <nav className="divide-y divide-line rounded-2xl border border-line text-[13.5px]" aria-label="その他のメニュー">

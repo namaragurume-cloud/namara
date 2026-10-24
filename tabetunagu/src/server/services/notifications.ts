@@ -85,83 +85,29 @@ export async function previewEveningDigest(): Promise<DigestPreview> {
   });
 }
 
-/** LINE Messaging API の multicast（最大500人/回）。同じ本文の宛先をまとめて送る。 */
-async function multicast(to: string[], text: string) {
-  const res = await fetch("https://api.line.me/v2/bot/message/multicast", {
-    method: "POST",
-    headers: { "content-type": "application/json", authorization: `Bearer ${env.line.messagingAccessToken}` },
-    body: JSON.stringify({ to, messages: [{ type: "text", text }] }),
-    cache: "no-store",
-  });
-  if (!res.ok) throw new Error(`LINE multicast failed: ${res.status} ${await res.text().catch(() => "")}`);
-}
-
 /**
- * まとめ通知を作成し、LINE_CHANNEL_ACCESS_TOKEN があれば送信する（なければ dry_run として記録のみ）。
+ * 旧まとめ通知（エリアごとの件数）を記録だけする（dry run）。LINE へは送らない。
+ * 全員（通知設定が既定で ON）への Multicast になるため、送信の機能は外した。
+ * LINE への配信は、通知を ON にしたユーザーだけへの「今夜の食べつなぎ」（services/line-digest）で行う。
  */
 export async function sendEveningDigest(createdBy: string | null) {
   const preview = await previewEveningDigest();
-  // 実際に送るのは ENABLE_LINE_DIGEST_SEND=true のときだけ（トークンを設定しただけでは全員への配信をしない）
-  const live = env.line.digestSendEnabled;
   const notificationId = await asService(async (q) => {
     const [n] = await q.query<{ id: string }>(
       `insert into public.notifications (kind, title, body, payload, status, target_count, created_by, scheduled_for)
-       values ('evening_digest', $1, $2, $3::jsonb, $4, $5, $6, now()) returning id`,
-      [preview.title, preview.sample, JSON.stringify({ areaCounts: preview.areaCounts }), live ? "sending" : "dry_run", preview.targets.length, createdBy],
+       values ('evening_digest', $1, $2, $3::jsonb, 'dry_run', $4, $5, now()) returning id`,
+      [preview.title, preview.sample, JSON.stringify({ areaCounts: preview.areaCounts }), preview.targets.length, createdBy],
     );
     for (const t of preview.targets) {
       await q.query(
         `insert into public.notification_deliveries (notification_id, user_id, message, status)
-         values ($1, $2, $3, $4)`,
-        [n.id, t.userId, t.message, live ? (t.lineUserId ? "pending" : "skipped") : "dry_run"],
+         values ($1, $2, $3, 'dry_run')`,
+        [n.id, t.userId, t.message],
       );
     }
     return n.id;
   });
-  if (!live) return { notificationId, status: "dry_run" as const, sent: 0, targets: preview.targets.length };
-
-  const groups = new Map<string, { userIds: string[]; lineIds: string[] }>();
-  for (const t of preview.targets) {
-    if (!t.lineUserId) continue;
-    const g = groups.get(t.message) ?? { userIds: [], lineIds: [] };
-    g.userIds.push(t.userId);
-    g.lineIds.push(t.lineUserId);
-    groups.set(t.message, g);
-  }
-  let sent = 0;
-  let failed = 0;
-  for (const [message, g] of groups) {
-    for (let i = 0; i < g.lineIds.length; i += 500) {
-      const lineIds = g.lineIds.slice(i, i + 500);
-      const userIds = g.userIds.slice(i, i + 500);
-      try {
-        await multicast(lineIds, message);
-        sent += lineIds.length;
-        await asService((q) =>
-          q.query(
-            "update public.notification_deliveries set status = 'sent', sent_at = now() where notification_id = $1 and user_id = any($2::uuid[])",
-            [notificationId, userIds],
-          ),
-        );
-      } catch (error) {
-        failed += lineIds.length;
-        await asService((q) =>
-          q.query(
-            "update public.notification_deliveries set status = 'failed', error = $3 where notification_id = $1 and user_id = any($2::uuid[])",
-            [notificationId, userIds, String((error as Error).message).slice(0, 500)],
-          ),
-        );
-      }
-    }
-  }
-  await asService((q) =>
-    q.query("update public.notifications set status = $2, sent_count = $3, sent_at = now() where id = $1", [
-      notificationId,
-      failed > 0 && sent === 0 ? "failed" : "sent",
-      sent,
-    ]),
-  );
-  return { notificationId, status: "sent" as const, sent, targets: preview.targets.length };
+  return { notificationId, status: "dry_run" as const, sent: 0, targets: preview.targets.length };
 }
 
 export async function listNotifications() {

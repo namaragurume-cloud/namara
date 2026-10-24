@@ -84,12 +84,19 @@ export const env = {
       return process.env.LINE_CHANNEL_ACCESS_TOKEN || "";
     },
     /**
-     * まとめ通知（今夜のTABETUNAGU・複数ユーザーへの Multicast。管理画面の送信と /api/cron/digest）を実際に LINE へ送るか。
+     * 日次注目商品通知（「今夜の食べつなぎ」。通知を ON にしたユーザーへの Push）を実際に LINE へ送るか（正式な安全装置）。
      * LINE_CHANNEL_ACCESS_TOKEN を設定しただけでは送らない（自分へのテスト送信のためにトークンを設定しても、
-     * 定期処理で全員に配信されないように）。ENABLE_LINE_DIGEST_SEND=true のときだけ送り、それ以外は dry run。
+     * 対象ユーザーに配信されないように）。ENABLE_LINE_DIGEST_SEND=true のときだけ送り、それ以外は dry run（記録のみ）。
      */
     get digestSendEnabled() {
       return Boolean(process.env.LINE_CHANNEL_ACCESS_TOKEN) && process.env.ENABLE_LINE_DIGEST_SEND === "true";
+    },
+    /**
+     * 定期処理（Vercel Cron の /api/cron/digest）で日次注目商品通知を実行するか。既定は無効（呼ばれても何もしない）。
+     * 有効にしても、実際に LINE へ送るのは digestSendEnabled（ENABLE_LINE_DIGEST_SEND=true）のときだけ。それ以外は dry run。
+     */
+    get digestCronEnabled() {
+      return process.env.ENABLE_LINE_DIGEST_CRON === "true";
     },
     get loginEnabled() {
       return Boolean(process.env.LINE_CHANNEL_ID && process.env.LINE_CHANNEL_SECRET);

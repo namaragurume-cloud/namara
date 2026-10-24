@@ -3,14 +3,15 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import { logoutAction } from "@/app/actions/auth";
-import { NotificationSettingsForm } from "@/components/forms/NotificationSettingsForm";
+import { LineFeaturedOptInForm } from "@/components/forms/LineFeaturedOptInForm";
 import { Badge } from "@/components/ui/Badge";
 import { SectionTitle } from "@/components/ui/Section";
 import { areaLabel } from "@/lib/categories";
 import { grams } from "@/lib/format";
 import { features } from "@/lib/features";
 import { requireViewer } from "@/server/auth/viewer";
-import { getMyProfile, getMyStats, listFavoriteStores } from "@/server/services/reservations";
+import { getFeaturedOptIn } from "@/server/services/line-digest";
+import { getMyStats, listFavoriteStores } from "@/server/services/reservations";
 import { V2MyPage } from "@/components/account/V2MyPage";
 
 export const metadata: Metadata = { title: "マイページ" };
@@ -23,7 +24,7 @@ export default async function MyPage() {
 /** 旧フロー（予約 → 店頭 QR）のマイページ。ENABLE_V2_CHECKOUT が OFF のときはこれまでどおり */
 async function LegacyMyPage() {
   const viewer = await requireViewer("/me");
-  const [stats, favorites, profile] = await Promise.all([getMyStats(viewer.id), listFavoriteStores(viewer.id), getMyProfile(viewer.id)]);
+  const [stats, favorites, optIn] = await Promise.all([getMyStats(viewer.id), listFavoriteStores(viewer.id), getFeaturedOptIn(viewer.id)]);
   const v2 = features.v2Journey;
   // v2 では、旧フローの完了と v2 の受取完了を合わせて表示する（それぞれ別のテーブルなので二重には数えない）
   const completed = v2 ? stats.completedCount + stats.v2PickedUpCount : stats.completedCount;
@@ -114,9 +115,9 @@ async function LegacyMyPage() {
       </section>
 
       <section>
-        <SectionTitle title="通知設定" />
+        <SectionTitle title="LINE通知" />
         <div className="card p-4">
-          <NotificationSettingsForm enabled={profile?.notify_enabled ?? true} areas={profile?.notify_areas ?? []} lineLinked={viewer.lineLinked} />
+          <LineFeaturedOptInForm on={optIn.on} lineLinked={optIn.lineLinked} />
         </div>
       </section>
 

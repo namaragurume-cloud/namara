@@ -2,11 +2,10 @@
 
 import { refresh } from "next/cache";
 import { redirect } from "next/navigation";
-import { notificationSettingsSchema } from "@/lib/validation";
 import { getViewer } from "@/server/auth/viewer";
 import { checkinWithToken } from "@/server/services/checkin";
 import { logEvent } from "@/server/services/events";
-import { cancelReservation, createReservation, setFavorite, updateNotificationSettings } from "@/server/services/reservations";
+import { cancelReservation, createReservation, setFavorite } from "@/server/services/reservations";
 import { toActionError, type ActionState } from "./state";
 
 const CHECKIN_MESSAGES: Record<string, string> = {
@@ -73,21 +72,4 @@ export async function toggleFavoriteAction(formData: FormData) {
   await setFavorite(viewer.id, storeId, favorite);
   await logEvent(favorite ? "favorite_store" : "unfavorite_store", { userId: viewer.id, storeId });
   refresh();
-}
-
-export async function updateNotificationsAction(_prev: ActionState, formData: FormData): Promise<ActionState> {
-  const viewer = await getViewer();
-  if (!viewer) redirect("/login?next=/me");
-  const parsed = notificationSettingsSchema.safeParse({
-    notifyEnabled: formData.get("notifyEnabled") ?? "",
-    notifyAreas: formData.getAll("notifyAreas").map(String),
-  });
-  if (!parsed.success) return { ok: false, message: "入力内容をご確認ください。" };
-  try {
-    await updateNotificationSettings(viewer.id, parsed.data.notifyEnabled, parsed.data.notifyAreas);
-  } catch (error) {
-    return toActionError(error);
-  }
-  refresh();
-  return { ok: true, message: "通知設定を保存しました。" };
 }

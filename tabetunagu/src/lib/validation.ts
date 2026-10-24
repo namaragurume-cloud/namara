@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { AREA_IDS, CATEGORY_IDS } from "./categories";
+import { CATEGORY_IDS } from "./categories";
 
 const HHMM = /^([01]\d|2[0-3]):[0-5]\d$/;
 const YMD = /^\d{4}-\d{2}-\d{2}$/;
@@ -57,11 +57,6 @@ export const storeSettingsSchema = z.object({
   description: optionalText(600),
   openingHours: optionalText(200),
   pickupNote: optionalText(300),
-});
-
-export const notificationSettingsSchema = z.object({
-  notifyEnabled: checkbox,
-  notifyAreas: z.array(z.enum(AREA_IDS)).max(AREA_IDS.length).default([]),
 });
 
 export const aiDescriptionSchema = z.object({

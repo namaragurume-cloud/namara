@@ -206,7 +206,8 @@ DB を初期化したいときは `.data/` を削除してください。
 | `CRON_SECRET` | ○ | Vercel Cron の認証 |
 | `NEXT_PUBLIC_LIFF_ID` / `LINE_CHANNEL_ID` / `LINE_CHANNEL_SECRET` | ○ | LIFF・LINE Login |
 | `LINE_CHANNEL_ACCESS_TOKEN` | 任意 | LINE 公式アカウント（Messaging API）のアクセストークン。まとめ通知・注目商品のテスト送信に使う |
-| `ENABLE_LINE_DIGEST_SEND` | 任意 | `true` のときだけ、まとめ通知（複数ユーザーへの Multicast・管理画面と `/api/cron/digest`）を実際に送る。未設定なら dry run（トークンを設定しただけでは送らない） |
+| `ENABLE_LINE_DIGEST_SEND` | 任意 | **日次注目商品通知の安全装置**。`true` のときだけ、通知を ON にしたユーザーへ「今夜の食べつなぎ」を実際に送る（Push・1人ずつ）。未設定・`false` は dry run（記録のみ。LINE に問い合わせない）。トークンを設定しただけでは送らない。本番で `true` にするのは運営が明示的に決めたときだけ |
+| `ENABLE_LINE_DIGEST_CRON` | 任意 | `true` のときだけ、定期処理 `/api/cron/digest`（18:00 JST）で日次注目商品通知を実行する。既定は無効（呼ばれても何もしない）。有効でも、送信は `ENABLE_LINE_DIGEST_SEND=true` のときだけ |
 | `ENABLE_LINE_NOTIFICATION_DEMO` | 任意 | `true` で LINE サービスメッセージのデモ（管理画面「LINE通知デモ」）を有効にする。**本番（APP_ENV=production）では常に無効** |
 | `ENABLE_LINE_MARKETING_DEMO` | 任意 | `true` で「今日の食べつなぎ」（注目商品）を LINE 公式アカウントから**管理者が自分にだけ1件**テスト送信するデモ（管理画面「LINE注目商品デモ」）。既定は無効。実機確認のため本番環境でも明示的に有効にできるが、Broadcast・Multicast・定期配信は有効にならない（まとめ通知は `ENABLE_LINE_DIGEST_SEND`）。送信には `LINE_CHANNEL_ACCESS_TOKEN` を使う |
 | `LINE_MINIAPP_CHANNEL_ID` / `LINE_MINIAPP_CHANNEL_SECRET` | 任意 | サービスメッセージ用（LIFF を置いた LINE ミニアプリのチャネル）。未設定なら `LINE_CHANNEL_ID` / `LINE_CHANNEL_SECRET` |
@@ -240,7 +241,7 @@ DATABASE_URL=... npm run db:migrate -- --bootstrap
 
 ## 8. Supabase 設定
 
-> **いちばん簡単な方法（Node.js 不要）**：Supabase の **SQL Editor** に [`supabase/setup/01_schema.sql`](./supabase/setup/01_schema.sql)（テーブル）→ [`supabase/setup/02_demo_data.sql`](./supabase/setup/02_demo_data.sql)（デモデータ・プレビュー用）→ [`supabase/setup/03_v2_foundation.sql`](./supabase/setup/03_v2_foundation.sql)（v2 の注文・ポイント台帳）→ [`supabase/setup/04_v2_stripe.sql`](./supabase/setup/04_v2_stripe.sql)（v2 の決済・返金・Connect）→ [`supabase/setup/05_v2_pickup.sql`](./supabase/setup/05_v2_pickup.sql)（v2 の受取）→ [`supabase/setup/06_v2_poc_readiness.sql`](./supabase/setup/06_v2_poc_readiness.sql)（定期処理の監視・返金状態の同期）→ [`supabase/setup/07_line_service_messages.sql`](./supabase/setup/07_line_service_messages.sql)（LINE サービスメッセージのデモ）→ [`supabase/setup/08_line_push_message_logs.sql`](./supabase/setup/08_line_push_message_logs.sql)（LINE 公式アカウントの Push のデモ）の順に中身を貼り付けて Run するだけで準備できます。本番の DB には 01・03〜08 だけを使ってください（02 を入れる場合は 03 より前に）。01・03〜08 は `supabase/migrations/` から作ったもので、適用済みとして記録されるため、あとから `npm run db:migrate` を実行しても二重には適用されません。
+> **いちばん簡単な方法（Node.js 不要）**：Supabase の **SQL Editor** に [`supabase/setup/01_schema.sql`](./supabase/setup/01_schema.sql)（テーブル）→ [`supabase/setup/02_demo_data.sql`](./supabase/setup/02_demo_data.sql)（デモデータ・プレビュー用）→ [`supabase/setup/03_v2_foundation.sql`](./supabase/setup/03_v2_foundation.sql)（v2 の注文・ポイント台帳）→ [`supabase/setup/04_v2_stripe.sql`](./supabase/setup/04_v2_stripe.sql)（v2 の決済・返金・Connect）→ [`supabase/setup/05_v2_pickup.sql`](./supabase/setup/05_v2_pickup.sql)（v2 の受取）→ [`supabase/setup/06_v2_poc_readiness.sql`](./supabase/setup/06_v2_poc_readiness.sql)（定期処理の監視・返金状態の同期）→ [`supabase/setup/07_line_service_messages.sql`](./supabase/setup/07_line_service_messages.sql)（LINE サービスメッセージのデモ）→ [`supabase/setup/08_line_push_message_logs.sql`](./supabase/setup/08_line_push_message_logs.sql)（LINE 公式アカウントの Push のデモ）→ [`supabase/setup/09_line_featured_digest.sql`](./supabase/setup/09_line_featured_digest.sql)（LINE 日次注目商品通知・オプトイン）の順に中身を貼り付けて Run するだけで準備できます。本番の DB には 01・03〜09 だけを使ってください（02 を入れる場合は 03 より前に）。01・03〜09 は `supabase/migrations/` から作ったもので、適用済みとして記録されるため、あとから `npm run db:migrate` を実行しても二重には適用されません。
 
 1. プロジェクトを作成（リージョン：Tokyo `ap-northeast-1`）
 2. **Database → Connection string → Transaction pooler（:6543）** を `DATABASE_URL` に設定し、`npm run db:migrate`
@@ -305,7 +306,26 @@ LINE 公式アカウントの Messaging API（Push）で、**ログイン中の�
 4. 管理画面「LINE注目商品デモ」→ 商品を選ぶ → プレビュー →「自分にテスト送信」
 
 送信記録は `line_push_message_logs`（種類・商品・内部のユーザー ID・結果・エラーの分類）に残ります。LINE の userId・トークン・本文は保存しません。
-将来の日次配信（1日1回・1〜3件）は、通知を受け取ると選んだ（オプトインした）ユーザーだけに送る前提で、今回は有効にしていません。
+
+### 日次注目商品通知「今夜の食べつなぎ」（オプトイン・PoC）
+
+通知を ON にした（オプトインした）ユーザーだけに、1日1回まで、今日の注目商品を最大3件 LINE 公式アカウントから送ります（Push を1人ずつ。Broadcast・Multicast は使いません）。
+
+- **通知の ON / OFF**: マイページ「LINE通知 → 今日の注目商品」。既定は OFF。LINE でログインした本人が「ONにする」を押したときだけ ON（`users.line_featured_opt_in`・ON にした日時 `line_featured_opt_in_at`）
+- **対象**: 通知 ON・LINE の userId あり・デモユーザーではない・LINE 公式アカウントの友だち（送る直前にプロフィールを取得できるか確認。友だち未追加・ブロック中は「送信せず」）・連続3回失敗していない（本人が ON にし直すと再開）
+- **商品**: 公開中・在庫あり・当日受取・受取終了まで30分以上。割引率が高い順 → 受取終了が近い順に最大3件（まず1店舗1件ずつ、足りなければ1店舗2件まで）。直近2日に同じ人へ送った商品は除く。0件なら送らない。AI 推薦は使わない
+- **1日1回**: 配信日（JST）ごとに「送信中・送信済み・失敗」は1件だけ（DB の一意インデックス）。失敗しても同じ日に再送しない。Push には送信記録の ID を再試行キー（`X-Line-Retry-Key`）として付ける
+- **記録**: `line_push_message_logs`（内部のユーザー ID・種類・商品 ID・結果・配信日・送信日時・エラーの分類）。LINE の userId・トークン・本文は保存・表示しない
+- **管理画面「LINE日次通知」**: 通知ONユーザー数・配信対象・今日の送信済み/成功/失敗・今日の商品・自分へのテスト送信・今日の配信の手動実行（`ENABLE_LINE_DIGEST_SEND` が `true` でなければ dry run）
+- **定期処理**: `vercel.json` の `/api/cron/digest`（毎日 9:00 UTC = 18:00 JST）。`ENABLE_LINE_DIGEST_CRON=true` でなければ何もしない
+- 旧まとめ通知（エリアごとの件数・通知設定が既定で ON）は全員への一斉配信になるため、LINE へは送らず記録だけにしました
+
+確認の手順（dry run → 自分だけ → テストユーザー）:
+1. `supabase/setup/09_line_featured_digest.sql` を実行する
+2. テストユーザー（自分など）が LINE でログインし、LINE 公式アカウントを友だち追加して、マイページで「今日の注目商品」を ON にする
+3. 管理画面「LINE日次通知」→「dry run を実行する」で対象人数・商品を確認する（LINE へは送らない）
+4. 「自分のLINEにテスト送信」で見た目を確認する（`ENABLE_LINE_MARKETING_DEMO=true` が必要。自分にだけ送る）
+5. 実際に ON のユーザーへ送るのは、運営が `ENABLE_LINE_DIGEST_SEND=true` を明示的に設定したときだけ。定期実行はさらに `ENABLE_LINE_DIGEST_CRON=true` が必要
 
 ## 10. LIFF 設定
 

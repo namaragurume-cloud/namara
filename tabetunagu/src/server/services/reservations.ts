@@ -173,18 +173,3 @@ export async function setFavorite(userId: string, storeId: string, favorite: boo
     }
   });
 }
-
-export async function getMyProfile(userId: string) {
-  const [row] = await asUser(userId, (q) =>
-    q.query<{ display_name: string; notify_enabled: boolean; notify_areas: string[]; line_user_id: string | null }>(
-      "select display_name, notify_enabled, notify_areas, line_user_id from public.my_profile()",
-    ),
-  );
-  return row ?? null;
-}
-
-export async function updateNotificationSettings(userId: string, enabled: boolean, areas: string[]) {
-  await asUser(userId, (q) =>
-    q.query("update public.users set notify_enabled = $2, notify_areas = $3::text[] where id = $1", [userId, enabled, areas]),
-  );
-}

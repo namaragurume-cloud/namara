@@ -15,6 +15,7 @@ const NAV = [
   { href: "/admin/review", label: "要確認の決済" },
   { href: "/admin/unclaimed", label: "未受取" },
   { href: "/admin/notifications", label: "通知" },
+  { href: "/admin/line-digest", label: "LINE日次通知" },
   { href: "/admin/billing", label: "請求" },
 ];
 

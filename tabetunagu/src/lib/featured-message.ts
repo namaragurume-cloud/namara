@@ -91,39 +91,40 @@ export function featuredCard(p: FeaturedProduct, opts: { liffId: string; appUrl:
 
 /** 1商品の Flex Message（bubble）。スマホで読みやすい最小限の構成 */
 export function featuredFlexMessage(c: FeaturedCard) {
+  return { type: "flex", altText: c.altText, contents: featuredFlexBubble(c) };
+}
+
+/** 1商品の bubble（日次通知のカルーセルでも使う） */
+export function featuredFlexBubble(c: FeaturedCard) {
   const text = (t: string, extra: Record<string, unknown> = {}) => ({ type: "text", text: t, wrap: true, ...extra });
   return {
-    type: "flex",
-    altText: c.altText,
-    contents: {
-      type: "bubble",
-      size: "kilo",
-      ...(c.imageUrl ? { hero: { type: "image", url: c.imageUrl, size: "full", aspectRatio: "20:13", aspectMode: "cover" } } : {}),
-      body: {
-        type: "box",
-        layout: "vertical",
-        spacing: "sm",
-        contents: [
-          text(c.title, { size: "xs", color: "#2f6b4f", weight: "bold" }),
-          text(c.storeName, { size: "sm", color: "#555555" }),
-          text(c.productName, { size: "lg", weight: "bold" }),
-          {
-            type: "box",
-            layout: "baseline",
-            spacing: "sm",
-            contents: [
-              text(c.priceLine, { size: "md", weight: "bold", flex: 0 }),
-              ...(c.discount ? [text(c.discount, { size: "sm", color: "#2f6b4f", weight: "bold", flex: 0 })] : []),
-            ],
-          },
-          text(`${c.remaining}・受取 ${c.pickup}`, { size: "sm", color: "#555555" }),
-        ],
-      },
-      footer: {
-        type: "box",
-        layout: "vertical",
-        contents: [{ type: "button", style: "primary", color: "#2f6b4f", action: { type: "uri", label: c.ctaLabel, uri: c.ctaUrl } }],
-      },
+    type: "bubble",
+    size: "kilo",
+    ...(c.imageUrl ? { hero: { type: "image", url: c.imageUrl, size: "full", aspectRatio: "20:13", aspectMode: "cover" } } : {}),
+    body: {
+      type: "box",
+      layout: "vertical",
+      spacing: "sm",
+      contents: [
+        text(c.title, { size: "xs", color: "#2f6b4f", weight: "bold" }),
+        text(c.storeName, { size: "sm", color: "#555555" }),
+        text(c.productName, { size: "lg", weight: "bold" }),
+        {
+          type: "box",
+          layout: "baseline",
+          spacing: "sm",
+          contents: [
+            text(c.priceLine, { size: "md", weight: "bold", flex: 0 }),
+            ...(c.discount ? [text(c.discount, { size: "sm", color: "#2f6b4f", weight: "bold", flex: 0 })] : []),
+          ],
+        },
+        text(`${c.remaining}・受取 ${c.pickup}`, { size: "sm", color: "#555555" }),
+      ],
+    },
+    footer: {
+      type: "box",
+      layout: "vertical",
+      contents: [{ type: "button", style: "primary", color: "#2f6b4f", action: { type: "uri", label: c.ctaLabel, uri: c.ctaUrl } }],
     },
   };
 }
