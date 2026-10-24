@@ -1,4 +1,4 @@
-import { Copy, Plus } from "lucide-react";
+import { Plus } from "lucide-react";
 import Link from "next/link";
 import { PageHeader } from "@/components/layout/ConsoleShell";
 import { OneTapPublish } from "@/components/store/OneTapPublish";
@@ -13,7 +13,7 @@ import { getStoreDashboard } from "@/server/services/store";
 import { getStoreReadiness } from "@/server/services/readiness";
 import { getStoreOrderSales } from "@/server/services/v2-metrics";
 import { ReadinessCard } from "@/components/store/ReadinessCard";
-import { V2StoreDashboard } from "@/components/store/V2StoreDashboard";
+import { RelistCta, V2StoreDashboard } from "@/components/store/V2StoreDashboard";
 import { logEvent } from "@/server/services/events";
 import { getStoreOnboarding } from "@/server/services/onboarding";
 import { getStoreOps } from "@/server/services/store-ops";
@@ -71,16 +71,22 @@ export default async function StoreDashboardPage({ searchParams }: { searchParam
                 detail={`本日 ${t.pickupStart}〜${t.pickupEnd}・${t.quantity}${t.isBox ? "BOX" : "点"}・${t.rescuePrice.toLocaleString("ja-JP")}円`}
               />
             ))}
+            {d.lastProduct && <RelistCta product={d.lastProduct} />}
             <div className="grid grid-cols-2 gap-2">
               {d.lastProduct && (
-                <ButtonLink href={`/store/products/new?from=${d.lastProduct.id}`} variant="secondary" className="h-12 rounded-2xl">
-                  <Copy className="h-4 w-4" aria-hidden />
-                  前回と同じ内容で
+                <ButtonLink href="/store/products/quick" className="h-12 rounded-2xl" data-testid="store-cta-quick">
+                  <Plus className="h-4 w-4" aria-hidden />
+                  かんたん出品
                 </ButtonLink>
               )}
-              <ButtonLink href="/store/products/new" className={d.lastProduct ? "h-12 rounded-2xl" : "col-span-2 h-12 rounded-2xl"}>
-                <Plus className="h-4 w-4" aria-hidden />
-                新しく出品
+              <ButtonLink
+                href="/store/products/new"
+                variant={d.lastProduct ? "secondary" : "primary"}
+                className={d.lastProduct ? "h-12 rounded-2xl" : "col-span-2 h-12 rounded-2xl"}
+                data-testid="store-cta-publish"
+              >
+                {!d.lastProduct && <Plus className="h-4 w-4" aria-hidden />}
+                {d.lastProduct ? "出品する（新しい商品）" : "新しく出品"}
               </ButtonLink>
             </div>
           </div>

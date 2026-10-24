@@ -55,10 +55,16 @@ export function V2StoreDashboard({
             余ったら、出品するだけ。売れたら、渡すだけ。
           </p>
         </div>
-        <div className="grid w-full grid-cols-[1fr_auto] gap-2 sm:flex sm:w-auto">
-          <ButtonLink href="/store/products/new" size="lg" className="whitespace-nowrap" data-testid="store-cta-publish">
-            <Plus className="h-5 w-5" aria-hidden />
-            商品を出品する
+        <div className={cn("grid w-full gap-2 sm:flex sm:w-auto", d.lastProduct ? "grid-cols-[1fr_1fr_auto]" : "grid-cols-[1fr_auto]")}>
+          {d.lastProduct && (
+            <ButtonLink href="/store/products/quick" size="lg" className="whitespace-nowrap px-4" data-testid="store-cta-quick">
+              <Plus className="h-5 w-5" aria-hidden />
+              かんたん出品
+            </ButtonLink>
+          )}
+          <ButtonLink href="/store/products/new" variant={d.lastProduct ? "secondary" : "primary"} size="lg" className="whitespace-nowrap px-4" data-testid="store-cta-publish">
+            {!d.lastProduct && <Plus className="h-5 w-5" aria-hidden />}
+            {d.lastProduct ? "出品する" : "商品を出品する"}
           </ButtonLink>
           <ButtonLink href="/store/monitor" variant="secondary" size="lg" className="whitespace-nowrap px-4" aria-label="店舗モニターを開く">
             <MonitorSmartphone className="h-5 w-5" aria-hidden />
@@ -167,6 +173,7 @@ export function V2StoreDashboard({
               </div>
             ) : (
               <div className="mt-3 space-y-2">
+                {d.lastProduct && <RelistCta product={d.lastProduct} />}
                 {d.templates.slice(0, 3).map((t) => (
                   <OneTapPublish
                     key={t.id}
@@ -176,12 +183,6 @@ export function V2StoreDashboard({
                     detail={`本日 ${t.pickupStart}〜${t.pickupEnd}・${t.quantity}${t.isBox ? "BOX" : "点"}・${t.rescuePrice.toLocaleString("ja-JP")}円`}
                   />
                 ))}
-                {d.lastProduct && (
-                  <ButtonLink href={`/store/products/new?from=${d.lastProduct.id}`} variant="secondary" className="h-12 w-full rounded-2xl">
-                    <Copy className="h-4 w-4" aria-hidden />
-                    前回の「{d.lastProduct.name}」を複製して出品
-                  </ButtonLink>
-                )}
               </div>
             )}
           </section>
@@ -294,5 +295,17 @@ function Row({ label, value, strong }: { label: string; value: string; strong?: 
       <dt className={strong ? "" : "text-ink-2"}>{label}</dt>
       <dd>{value}</dd>
     </div>
+  );
+}
+
+/** 直近の商品の「昨日と同じ商品を出品」/「もう一度出品」→ かんたん出品（数量・受取時間は入力し直す） */
+export function RelistCta({ product }: { product: { id: string; name: string; yesterday: boolean } }) {
+  return (
+    <ButtonLink href={`/store/products/quick?from=${product.id}`} variant="secondary" className="h-auto min-h-12 w-full rounded-2xl py-2" data-testid="store-cta-relist">
+      <Copy className="h-4 w-4 shrink-0" aria-hidden />
+      <span className="min-w-0 truncate">
+        {product.yesterday ? "昨日と同じ商品を出品" : "もう一度出品"}：{product.name}
+      </span>
+    </ButtonLink>
   );
 }

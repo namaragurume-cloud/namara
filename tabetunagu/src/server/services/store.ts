@@ -149,10 +149,14 @@ export async function getStoreDashboard(userId: string, storeId: string, now = n
       [storeId, month.start.toISOString(), month.end.toISOString()],
     );
 
-    const [last] = await q.query<{ id: string; name: string }>(
-      `select id, name from public.products where store_id = $1 and deleted_at is null order by created_at desc limit 1`,
+    const [lastRow] = await q.query<{ id: string; name: string; pickup_start_at: Date | string }>(
+      `select id, name, pickup_start_at from public.products where store_id = $1 and deleted_at is null order by created_at desc limit 1`,
       [storeId],
     );
+    // 直近の商品の受取日が昨日なら「昨日と同じ商品を出品」
+    const last = lastRow
+      ? { id: lastRow.id, name: lastRow.name, yesterday: ymd(new Date(lastRow.pickup_start_at)) === ymd(new Date(now.getTime() - DAY)) }
+      : null;
     const [favorites] = await q.query<{ count: number }>(
       "select count(*)::int as count from public.favorites where store_id = $1",
       [storeId],

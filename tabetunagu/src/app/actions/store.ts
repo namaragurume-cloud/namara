@@ -5,6 +5,7 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { AppError } from "@/lib/errors";
 import { isPlanCode } from "@/lib/fees";
+import { quickRelistSchema } from "@/lib/quick-relist";
 import { aiDescriptionSchema, fieldErrors, productFormSchema, storeSettingsSchema } from "@/lib/validation";
 import { assertStoreMember, STORE_COOKIE } from "@/server/auth/viewer";
 import { generateProductDescription } from "@/server/services/ai";
@@ -23,6 +24,7 @@ import {
   updateProductDetails,
   updateStoreSettings,
 } from "@/server/services/store";
+import { quickRelist } from "@/server/services/quick-relist";
 import { saveProductImage } from "@/server/services/uploads";
 import { toActionError, type ActionState } from "./state";
 
@@ -209,4 +211,20 @@ export async function autoRelistAction(formData: FormData) {
     .filter((d) => Number.isInteger(d) && d >= 0 && d <= 6);
   await setTemplateAutoRelist(viewer.id, storeId, str(formData, "templateId"), formData.get("enabled") === "on", weekdays);
   refresh();
+}
+
+/** かんたん出品: 過去の商品の内容 + 今回の数量・受取時間で、新しい商品として出品する（オーナー・スタッフ。自店舗の商品だけ） */
+export async function quickRelistAction(_prev: ActionState, formData: FormData): Promise<ActionState> {
+  const storeId = str(formData, "storeId");
+  try {
+    const { viewer } = await assertStoreMember(storeId);
+    const parsed = quickRelistSchema.safeParse(Object.fromEntries(formData.entries()));
+    if (!parsed.success) return { ok: false, message: "入力内容をご確認ください。", fieldErrors: fieldErrors(parsed.error) };
+    const productId = await quickRelist(viewer.id, storeId, parsed.data);
+    await logEvent("product_published", { userId: viewer.id, storeId, productId, properties: { source: "quick_relist" } });
+    refresh();
+    return { ok: true, message: "出品しました！", data: { productId } };
+  } catch (error) {
+    return toActionError(error);
+  }
 }
