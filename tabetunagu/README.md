@@ -208,7 +208,7 @@ DB を初期化したいときは `.data/` を削除してください。
 | `LINE_CHANNEL_ACCESS_TOKEN` | 任意 | LINE 公式アカウント（Messaging API）のアクセストークン。まとめ通知・注目商品のテスト送信に使う |
 | `ENABLE_LINE_DIGEST_SEND` | 任意 | `true` のときだけ、まとめ通知（複数ユーザーへの Multicast・管理画面と `/api/cron/digest`）を実際に送る。未設定なら dry run（トークンを設定しただけでは送らない） |
 | `ENABLE_LINE_NOTIFICATION_DEMO` | 任意 | `true` で LINE サービスメッセージのデモ（管理画面「LINE通知デモ」）を有効にする。**本番（APP_ENV=production）では常に無効** |
-| `ENABLE_LINE_MARKETING_DEMO` | 任意 | `true` で「今日の食べつなぎ」（注目商品）を LINE 公式アカウントから自分にテスト送信するデモ（管理画面「LINE注目商品デモ」）。**本番では常に無効**。送信には `LINE_CHANNEL_ACCESS_TOKEN` を使う |
+| `ENABLE_LINE_MARKETING_DEMO` | 任意 | `true` で「今日の食べつなぎ」（注目商品）を LINE 公式アカウントから**管理者が自分にだけ1件**テスト送信するデモ（管理画面「LINE注目商品デモ」）。既定は無効。実機確認のため本番環境でも明示的に有効にできるが、Broadcast・Multicast・定期配信は有効にならない（まとめ通知は `ENABLE_LINE_DIGEST_SEND`）。送信には `LINE_CHANNEL_ACCESS_TOKEN` を使う |
 | `LINE_MINIAPP_CHANNEL_ID` / `LINE_MINIAPP_CHANNEL_SECRET` | 任意 | サービスメッセージ用（LIFF を置いた LINE ミニアプリのチャネル）。未設定なら `LINE_CHANNEL_ID` / `LINE_CHANNEL_SECRET` |
 | `LINE_SERVICE_MESSAGE_ORDER_TEMPLATE` / `LINE_SERVICE_MESSAGE_ORDER_PARAMS` | 任意 | 注文完了に使うテンプレート名（例 `xxxx_ja`）と、テンプレート変数 → 項目の対応（JSON） |
 | `NEXT_PUBLIC_SUPABASE_URL` / `SUPABASE_SERVICE_ROLE_KEY` | 任意 | 商品写真の保存（未設定だと本番では写真なしで出品） |
@@ -300,7 +300,7 @@ LINE 公式アカウントの Messaging API（Push）で、**ログイン中の�
 
 1. LINE 公式アカウント（Messaging API チャネル）を、LINE Login / LINE ミニアプリのチャネルと**同じプロバイダー**に置く
    （LINE の userId はプロバイダーごとに発行されるため。別のプロバイダーだと LINE Login で保存した userId に送れません）
-2. 開発・プレビュー環境だけに `ENABLE_LINE_MARKETING_DEMO=true` と `LINE_CHANNEL_ACCESS_TOKEN`（Messaging API チャネルのアクセストークン）を設定する
+2. `ENABLE_LINE_MARKETING_DEMO=true` と `LINE_CHANNEL_ACCESS_TOKEN`（Messaging API チャネルのアクセストークン）を設定する（確認が終わったら `ENABLE_LINE_MARKETING_DEMO` を外す。`ENABLE_LINE_DIGEST_SEND` は設定しない）
 3. 受け取る人（自分）が LINE 公式アカウントを友だち追加する
 4. 管理画面「LINE注目商品デモ」→ 商品を選ぶ → プレビュー →「自分にテスト送信」
 

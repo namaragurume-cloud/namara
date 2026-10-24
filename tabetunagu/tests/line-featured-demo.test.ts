@@ -89,11 +89,14 @@ describe("カードの内容・Flex Message・リンク", () => {
     expect(m.contents.footer.contents[0].action).toEqual({ type: "uri", label: "商品を見る", uri: `https://miniapp.line.me/L/products/${product.id}` });
     expect(m.altText.length).toBeLessThanOrEqual(400);
   });
-  it("本番では ENABLE_LINE_MARKETING_DEMO=true でも無効。既定も無効", () => {
+  it("ENABLE_LINE_MARKETING_DEMO=true のときだけ有効（本番でも明示的に指定した場合のみ）。既定は無効・まとめ通知の送信は別のフラグ", () => {
+    setEnv({ ...READY, APP_ENV: "production", ENABLE_LINE_MARKETING_DEMO: undefined });
+    expect(env.line.marketingDemoEnabled).toBe(false);
+    setEnv({ ...READY, APP_ENV: "production", ENABLE_LINE_MARKETING_DEMO: "false" });
+    expect(env.line.marketingDemoEnabled).toBe(false);
     setEnv({ ...READY, APP_ENV: "production" });
-    expect(env.line.marketingDemoEnabled).toBe(false);
-    setEnv({ ...READY, ENABLE_LINE_MARKETING_DEMO: undefined });
-    expect(env.line.marketingDemoEnabled).toBe(false);
+    expect(env.line.marketingDemoEnabled).toBe(true);
+    expect(env.line.digestSendEnabled).toBe(false);
     setEnv({});
   });
 });
@@ -159,11 +162,29 @@ describe("自分へのテスト送信（DB・LINE API はモック）", () => {
     expect(calls).toHaveLength(0);
   });
 
-  it("本番では送れない（LINE に問い合わせない）", async () => {
+  it("フラグがなければ送れない（本番の既定。LINE に問い合わせない）", async () => {
     mockLine();
-    setEnv({ ...READY, APP_ENV: "production" });
+    setEnv({ ...READY, APP_ENV: "production", ENABLE_LINE_MARKETING_DEMO: undefined });
     expect(await sendFeaturedProductDemoAction(null, form(productId))).toMatchObject({ ok: false, code: "not_enabled" });
     expect(calls).toHaveLength(0);
+  });
+
+  it("本番で明示的に有効にしても、送れるのは管理者本人への Push 1件だけ。一般ユーザーは不可・まとめ通知（Multicast）は送らない", async () => {
+    mockLine();
+    setEnv({ ...READY, APP_ENV: "production" });
+    await asService((q) => q.query("update public.users set line_user_id = $2, notify_enabled = true where id = $1", [IDS.userA, `U${"c".repeat(32)}`]));
+    expect(await sendFeaturedProductDemoAction(null, form(productId))).toMatchObject({ ok: true });
+    expect(calls).toHaveLength(1);
+    expect(calls[0].url).toBe("https://api.line.me/v2/bot/message/push");
+    expect(calls[0].body.to).toBe(LINE_USER);
+    // 一般ユーザーは本番でも送れない
+    session.userId = IDS.userA;
+    session.admin = false;
+    expect(await sendFeaturedProductDemoAction(null, form(productId))).toMatchObject({ ok: false, code: "forbidden" });
+    // まとめ通知（全員への配信・定期処理）は ENABLE_LINE_DIGEST_SEND がない限り送らない
+    expect((await sendEveningDigest(null)).status).toBe("dry_run");
+    expect(calls).toHaveLength(1);
+    expect(calls.some((c) => /multicast|broadcast|narrowcast/.test(c.url))).toBe(false);
   });
 
   it("商品なし・公開されていない商品・不正な ID は送らない", async () => {

@@ -113,11 +113,12 @@ export const env = {
       return process.env.ENABLE_LINE_NOTIFICATION_DEMO === "true";
     },
     /**
-     * 「今日の食べつなぎ」（注目商品）の LINE 公式アカウントからのテスト送信（管理者が自分にだけ送る）。
-     * 本番（APP_ENV / VERCEL_ENV = production）では常に無効。それ以外も ENABLE_LINE_MARKETING_DEMO=true のときだけ（既定は無効）。
+     * 「今日の食べつなぎ」（注目商品）の LINE 公式アカウントからのテスト送信（管理者が自分にだけ1件送る）。
+     * ENABLE_LINE_MARKETING_DEMO=true のときだけ有効（既定は無効）。実機確認のため、本番環境でも明示的に有効にできる。
+     * 有効にしても送れるのは「管理者が、自分自身の LINE に、Push で1件」だけ（services/line-marketing）。
+     * Broadcast / Multicast / 定期処理での配信はこのフラグでは有効にならない（まとめ通知は ENABLE_LINE_DIGEST_SEND で別に管理）。
      */
     get marketingDemoEnabled() {
-      if (appEnv() === "production") return false;
       return process.env.ENABLE_LINE_MARKETING_DEMO === "true";
     },
     /** 注文完了（予約完了）に使うテンプレート名（例: xxxx_ja。LINE Developers コンソールで選んだテンプレート） */

@@ -14,7 +14,7 @@ export const metadata: Metadata = { title: "LINE 注目商品デモ" };
 const STATUS: Record<string, string> = { sent: "送信済み", failed: "失敗", skipped: "送信せず" };
 
 /**
- * 「今日の食べつなぎ」（注目商品）のテスト送信（管理者・開発／プレビュー環境のみ。本番では表示しない）。
+ * 「今日の食べつなぎ」（注目商品）のテスト送信（管理者のみ。ENABLE_LINE_MARKETING_DEMO=true のときだけ表示）。
  * LINE 公式アカウント（Messaging API の Push）から、ログイン中の自分の LINE にだけ1件送る。自動配信・Broadcast はしない。
  */
 export default async function LineFeaturedDemoPage({ searchParams }: { searchParams: Promise<{ product?: string }> }) {

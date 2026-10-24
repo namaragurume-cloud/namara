@@ -6,7 +6,7 @@ import { env } from "../env";
 
 /**
  * 「今日の食べつなぎ」（注目商品）を LINE 公式アカウントの Messaging API（Push）で送るデモ。
- * - 送信先はログイン中の管理者本人だけ（Broadcast・Multicast はしない）。本番では無効
+ * - 送信先はログイン中の管理者本人だけ（Broadcast・Multicast はしない）。ENABLE_LINE_MARKETING_DEMO=true のときだけ（本番でも明示的に有効にした場合のみ）
  * - LINE の userId は LINE Login で保存した users.line_user_id（同じプロバイダーのチャネル間でだけ一致する）
  * - チャネルアクセストークンは環境変数（LINE_CHANNEL_ACCESS_TOKEN）だけ。DB・ログ・画面には出さない
  * - 毎日の自動配信（Cron）は有効にしていない
