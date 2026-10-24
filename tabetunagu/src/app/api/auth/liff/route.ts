@@ -1,6 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { z } from "zod";
-import { upsertLineUser, verifyLineIdToken } from "@/server/auth/line";
+import { lineConfigIssues, upsertLineUser, verifyLineIdToken } from "@/server/auth/line";
 import { SESSION_COOKIE, sessionCookieOptions, signSession, verifySession } from "@/server/auth/session";
 import { asService } from "@/server/db";
 import { env } from "@/server/env";
@@ -15,7 +15,10 @@ export async function POST(req: NextRequest) {
   if (origin && new URL(origin).host !== host) {
     return NextResponse.json({ ok: false }, { status: 403 });
   }
-  if (!env.line.channelId) return NextResponse.json({ ok: false, error: "line_not_configured" }, { status: 503 });
+  if (!env.line.channelId) {
+    console.error("[auth] LIFF login not configured", lineConfigIssues().join("; "));
+    return NextResponse.json({ ok: false, error: "line_not_configured" }, { status: 503 });
+  }
   const parsed = bodySchema.safeParse(await req.json().catch(() => null));
   if (!parsed.success) return NextResponse.json({ ok: false }, { status: 400 });
   // すでにログインしている（例: 管理者のデモログインの直後）なら、自動ログインでセッションを上書きしない
@@ -31,7 +34,8 @@ export async function POST(req: NextRequest) {
     res.cookies.set(SESSION_COOKIE, await signSession(userId), sessionCookieOptions);
     return res;
   } catch (error) {
-    console.error("[auth] LIFF login failed", error);
+    // 原因の切り分け用（設定の問題があれば一緒に出す。値・トークンは出さない）
+    console.error("[auth] LIFF login failed", error instanceof Error ? error.message : "unknown", lineConfigIssues().join("; "));
     return NextResponse.json({ ok: false }, { status: 401 });
   }
 }

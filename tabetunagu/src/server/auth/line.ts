@@ -12,6 +12,22 @@ import { env } from "../env";
 
 export type LineProfile = { sub: string; name: string; picture: string | null; email: string | null };
 
+/**
+ * LINE ログインの設定の問題（値そのものは返さない）。ログで原因を特定するため。
+ * LIFF ID は「<チャネルID>-<英数字>」の形式。ID トークンの宛先（aud）は LIFF アプリを置いたチャネルなので、
+ * LINE_CHANNEL_ID はその LIFF ID の先頭（ハイフンの前）と一致している必要がある。
+ */
+export function lineConfigIssues(): string[] {
+  const issues: string[] = [];
+  if (!env.line.channelId) issues.push("LINE_CHANNEL_ID not set");
+  if (!env.line.channelSecret) issues.push("LINE_CHANNEL_SECRET not set");
+  if (!env.line.liffId) issues.push("NEXT_PUBLIC_LIFF_ID not set");
+  else if (env.line.channelId && env.line.liffId.split("-")[0] !== env.line.channelId) {
+    issues.push("LINE_CHANNEL_ID does not match the channel of NEXT_PUBLIC_LIFF_ID");
+  }
+  return issues;
+}
+
 export async function verifyLineIdToken(idToken: string, nonce?: string): Promise<LineProfile> {
   if (!env.line.channelId) throw new AppError("line_not_configured");
   const body = new URLSearchParams({ id_token: idToken, client_id: env.line.channelId });
@@ -22,7 +38,12 @@ export async function verifyLineIdToken(idToken: string, nonce?: string): Promis
     body,
     cache: "no-store",
   });
-  if (!res.ok) throw new AppError("login_failed");
+  if (!res.ok) {
+    // LINE の説明（例: "Invalid IdToken audience." / "IdToken expired."）だけをログに出す。トークンは出さない
+    const detail = (await res.json().catch(() => null)) as { error_description?: string } | null;
+    console.error("[auth] LINE id token verify failed", res.status, String(detail?.error_description ?? "").slice(0, 120));
+    throw new AppError("login_failed");
+  }
   const data = (await res.json()) as { sub?: string; name?: string; picture?: string; email?: string };
   if (!data.sub) throw new AppError("login_failed");
   return { sub: data.sub, name: data.name || "LINEユーザー", picture: data.picture ?? null, email: data.email ?? null };

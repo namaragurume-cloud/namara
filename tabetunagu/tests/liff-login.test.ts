@@ -5,7 +5,7 @@ import type { Driver } from "@/server/db/types";
 import { createTestDb, IDS } from "./support/db";
 
 const line = vi.hoisted(() => ({ verify: vi.fn(), upsert: vi.fn() }));
-vi.mock("@/server/auth/line", () => ({ verifyLineIdToken: line.verify, upsertLineUser: line.upsert }));
+vi.mock("@/server/auth/line", () => ({ verifyLineIdToken: line.verify, upsertLineUser: line.upsert, lineConfigIssues: () => [] }));
 const { POST } = await import("@/app/api/auth/liff/route");
 
 /** LINE ミニアプリの自動ログイン（LIFF）が、管理者のデモログインなど既存のセッションを上書きしない */
