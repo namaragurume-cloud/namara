@@ -15,6 +15,8 @@ declare global {
  * 外部ブラウザ（Safari / Chrome）では自動でログインしない（withLoginOnExternalBrowser は使わない）:
  *   LINE を使わない人も商品を見られるようにし、購入など必要なときだけ「LINEでログイン」へ案内する（LINE MINI App の外部ブラウザの推奨どおり）。
  * liff.init() は「liff.state」（miniapp.line.me/<LIFF ID>/<パス> で開いたときの遷移先）の処理も行う。
+ * data-explicit-login の付いたフォーム（デモログイン）が送信されたら、自動ログインを止める
+ *   （途中の自動ログインの応答で、選んだアカウントのセッションが LINE のユーザーに上書きされないように）。
  */
 const RETRY_KEY = "tabetunagu.liff.relogin";
 
@@ -34,6 +36,14 @@ export function LiffBootstrap({ liffId, loggedIn }: { liffId: string; loggedIn: 
   const router = useRouter();
   useEffect(() => {
     let cancelled = false;
+    const controller = new AbortController();
+    const onSubmit = (e: SubmitEvent) => {
+      if (e.target instanceof HTMLFormElement && e.target.hasAttribute("data-explicit-login")) {
+        cancelled = true;
+        controller.abort();
+      }
+    };
+    document.addEventListener("submit", onSubmit, true);
     (async () => {
       const { default: liff } = await import("@line/liff");
       await liff.init({ liffId });
@@ -50,13 +60,14 @@ export function LiffBootstrap({ liffId, loggedIn }: { liffId: string; loggedIn: 
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ idToken }),
+        signal: controller.signal,
       });
       if (res.ok) {
         if (!cancelled) router.refresh();
         return;
       }
       // ID トークンの期限切れなど（401）: LINE アプリ内なら一度だけログインし直す（無限ループにしない）
-      if (res.status === 401 && liff.isInClient() && shouldRetryLogin()) {
+      if (!cancelled && res.status === 401 && liff.isInClient() && shouldRetryLogin()) {
         liff.logout();
         liff.login({ redirectUri: window.location.href });
       }
@@ -66,6 +77,8 @@ export function LiffBootstrap({ liffId, loggedIn }: { liffId: string; loggedIn: 
     });
     return () => {
       cancelled = true;
+      controller.abort();
+      document.removeEventListener("submit", onSubmit, true);
     };
   }, [liffId, loggedIn, router]);
   return null;

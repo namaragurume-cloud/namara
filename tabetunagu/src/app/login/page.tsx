@@ -70,7 +70,7 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
           <p className="mt-1 text-[12px] text-muted">開発・確認用です。本番環境（APP_ENV=production）では表示されません。</p>
           <div className="mt-4 space-y-2">
             {(features.v2Journey ? V2_DEMO : DEMO).map((d) => (
-              <form key={d.account} action={demoLoginAction}>
+              <form key={d.account} action={demoLoginAction} data-explicit-login>
                 <input type="hidden" name="account" value={d.account} />
                 <input type="hidden" name="next" value={rawNext ? next : ""} />
                 <SubmitButton variant="secondary" className="h-auto w-full flex-col items-start rounded-2xl px-4 py-3 text-left" pendingLabel="ログイン中…">
