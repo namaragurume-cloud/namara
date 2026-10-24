@@ -5,6 +5,7 @@ import { cn } from "@/components/ui/cn";
 import { ReservationStatusBadge } from "@/components/ui/StatusBadge";
 import { dateTime, pickupLabel, yen } from "@/lib/format";
 import { listAllReservations } from "@/server/services/admin";
+import { requireAdmin } from "@/server/auth/viewer";
 
 export const metadata: Metadata = { title: "予約・成約" };
 
@@ -18,6 +19,7 @@ const TABS = [
 ];
 
 export default async function AdminReservationsPage({ searchParams }: { searchParams: Promise<{ status?: string }> }) {
+  await requireAdmin("/admin/reservations");
   const status = (await searchParams).status ?? "";
   const rows = await listAllReservations(status || undefined);
   const gmv = rows.filter((r) => r.status === "completed").reduce((s, r) => s + Number(r.total_price), 0);

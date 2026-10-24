@@ -5,10 +5,12 @@ import { PageHeader } from "@/components/layout/ConsoleShell";
 import { Badge } from "@/components/ui/Badge";
 import { dateTime } from "@/lib/format";
 import { DIGEST_COOLDOWN_HOURS, listNotifications, previewEveningDigest } from "@/server/services/notifications";
+import { requireAdmin } from "@/server/auth/viewer";
 
 export const metadata: Metadata = { title: "通知" };
 
 export default async function AdminNotificationsPage() {
+  await requireAdmin("/admin/notifications");
   const [preview, history] = await Promise.all([previewEveningDigest(), listNotifications()]);
   const lineTargets = preview.targets.filter((t) => t.lineUserId).length;
   return (

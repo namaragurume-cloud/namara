@@ -1,12 +1,13 @@
 import { Clock, MapPin } from "lucide-react";
 import type { Metadata } from "next";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { ReserveForm } from "@/components/forms/ReserveForm";
 import { ProductVisual } from "@/components/product/ProductVisual";
 import { ButtonLink } from "@/components/ui/Button";
 import { Notice } from "@/components/ui/Section";
 import { MAX_ACTIVE_RESERVATIONS } from "@/lib/constants";
 import { pickupLabel } from "@/lib/format";
+import { features } from "@/lib/features";
 import { requireViewer } from "@/server/auth/viewer";
 import { getProductDetail } from "@/server/services/catalog";
 import { nowMs } from "@/lib/clock";
@@ -15,6 +16,8 @@ export const metadata: Metadata = { title: "予約の確認" };
 
 export default async function ReservePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
+  // v2（事前決済）のときは旧フローの予約画面を出さない（商品ページの「食べつなぐ」→ 購入確認へ）
+  if (features.v2Journey) redirect(`/products/${encodeURIComponent(id)}`);
   const viewer = await requireViewer(`/products/${id}/reserve`);
   const data = await getProductDetail(viewer.id, id);
   if (!data) notFound();

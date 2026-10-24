@@ -13,6 +13,7 @@ import type { StoreLaunchStatus } from "@/lib/readiness";
 import { env } from "@/server/env";
 import { getKpis, listStoresWithMetrics, MIN_RESOLVED_FOR_FLAG, SUSPICIOUS_QR_RATE } from "@/server/services/admin";
 import { getPocDashboard, STORE_HEALTH_LABEL, type PocDashboard } from "@/server/services/poc-dashboard";
+import { requireAdmin } from "@/server/auth/viewer";
 
 /**
  * 管理ダッシュボード（PoC 運営の判断用）。上から: PoC ステータス・要対応 → PoC KPI → 売上 → 店舗 → ユーザー → STANDARD 候補 → 決済・リスク / 技術状態。
@@ -20,6 +21,7 @@ import { getPocDashboard, STORE_HEALTH_LABEL, type PocDashboard } from "@/server
  * 判定の定義・目標値は src/lib/poc-dashboard.ts。
  */
 export default async function AdminDashboardPage({ searchParams }: { searchParams: Promise<{ period?: string }> }) {
+  await requireAdmin("/admin");
   const period = parseDashboardPeriod((await searchParams).period);
   const d = await getPocDashboard(period);
 

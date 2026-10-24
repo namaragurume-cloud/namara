@@ -8,6 +8,7 @@ import { EmptyState } from "@/components/ui/Section";
 import { yen } from "@/lib/format";
 import { jstMonthRange } from "@/lib/time";
 import { listBilling } from "@/server/services/admin";
+import { requireAdmin } from "@/server/auth/viewer";
 
 export const metadata: Metadata = { title: "請求" };
 
@@ -18,6 +19,7 @@ function shift(month: string, delta: number) {
 }
 
 export default async function AdminBillingPage({ searchParams }: { searchParams: Promise<{ month?: string }> }) {
+  await requireAdmin("/admin/billing");
   const month = jstMonthRange((await searchParams).month).month;
   const rows = await listBilling(month);
   const total = rows.reduce((s, r) => s + r.total_amount, 0);

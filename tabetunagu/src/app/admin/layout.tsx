@@ -20,6 +20,8 @@ const NAV = [
 ];
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
+  // ナビ表示用。レイアウトの確認だけでは部分レンダリング（クライアント遷移の RSC）でページが返ってしまうため、
+  // 各ページ（page.tsx）でも必ず requireAdmin を呼ぶ（tests/admin-pages-auth.test.ts で確認）
   const viewer = await requireAdmin("/admin");
   return (
     <ConsoleShell

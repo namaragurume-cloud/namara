@@ -5,10 +5,12 @@ import { cn } from "@/components/ui/cn";
 import { ProductStatusBadge } from "@/components/ui/StatusBadge";
 import { pickupLabel, yen } from "@/lib/format";
 import { listAllProducts } from "@/server/services/admin";
+import { requireAdmin } from "@/server/auth/viewer";
 
 export const metadata: Metadata = { title: "商品" };
 
 export default async function AdminProductsPage({ searchParams }: { searchParams: Promise<{ scope?: string }> }) {
+  await requireAdmin("/admin/products");
   const scope = (await searchParams).scope === "recent" ? "recent" : "live";
   const items = await listAllProducts(scope);
   return (

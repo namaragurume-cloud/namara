@@ -1,30 +1,82 @@
 # TABETUNAGU v2 PoC 公開チェックリスト
 
 production で `ENABLE_V2_CHECKOUT=true` にする前に、このチェックリストをすべて満たしてください。
-**人の手による確認（Stripe テストモードの疎通・LINE 実機）が終わるまで、判定は No-Go です。**
+状態の表記: **DONE**（確認済み）/ **BLOCKED**（公開前に対応が必要）/ **HUMAN CHECK**（人の確認が必要・未実施）/ **NOT REQUIRED**（PoC には不要）。
+コードのテスト・Playwright だけで確認したものは「コードで確認」と書き、実機・実決済の確認とは区別します。
 
-- 記入者・日付を各セクションの末尾に残してください。
-- アプリ側の設定の状態（秘密鍵の有無・定期処理の最終実行・売上受取設定が未完了の店舗数・要確認の決済）は、
-  管理画面トップの「PoC 公開準備」で確認できます（値そのものは表示しません）。
 - production で `ENABLE_V2_CHECKOUT=true` にしても、`STRIPE_SECRET_KEY` / `STRIPE_WEBHOOK_SECRET` /
   `STRIPE_CHECKOUT_RETURN_URL`（https）/ `CRON_SECRET`（16文字以上）のどれかが欠けていれば、v2 は自動的に OFF（旧導線）のままになります。
+- 設定の状態（秘密鍵の有無・定期処理の最終実行・売上受取設定が未完了の店舗数・要確認の決済）は、管理画面トップの「技術状態・PoC 公開準備」で確認できます（値そのものは表示しません）。
 
-## 現在の状態（STEP 11 時点）
+## 最終総点検（STEP 12・2026-10-24）
 
-| 項目 | 状態 |
+**判定: NO-GO**（コードは READY。実決済・Cron・法務・LINE 実機の人の確認が終わっていないため、v2 を production で ON にしない）
+下の P0 がすべて DONE になったら **CONDITIONAL GO**（限られた店舗・テストユーザーから開始）に進めます。
+
+| 領域 | 判定 | 理由 |
+|---|---|---|
+| コード | READY | 総点検で見つけた3件を修正済み（下の「修正したもの」）。lint / typecheck / unit 431件 / build / E2E 85件（skip 0）すべて成功 |
+| Stripe | NOT READY | テストモードの実通信（STEP 2.5）が未実施。計算・Webhook はコードのテストのみ |
+| LINE | CONDITIONAL | LINE ミニアプリの起動・LINE ログイン（本番 DB にユーザー保存）・注目商品 Push の受信は運営が実機で確認済み。購入〜受取の実機確認・外部決済ポリシーの確認が未了 |
+| DB | CONDITIONAL | マイグレーションはコードにそろっている。production DB への 03〜09 の適用は未確認 |
+| Cron | NOT READY | `/api/cron/orders`（5分ごと）は vercel.json に入っていない（Hobby は1日1回のため外部スケジューラーが必要）。production での設定が未確認 |
+| 法務 | NOT READY | 特定商取引法の表記に【要記入】（販売事業者・運営責任者・所在地・電話・メール）。全ページ「ドラフト（専門家確認前）」 |
+| 店舗運用 | CONDITIONAL | 画面・使い方・モニターはそろっている。PoC 店舗の売上受取設定・説明・連絡体制は未着手 |
+| 監視 | READY | 管理画面で 定期処理の最終実行・要確認の決済・失敗した返金・未受取・LINE 送信記録を確認できる（監視担当は未決定） |
+| ロールバック | READY | `ENABLE_V2_CHECKOUT=false` で旧導線へ戻せる（下の「ロールバック」） |
+
+### 修正したもの（STEP 12）
+
+| # | 内容 | 重大度 |
+|---|---|---|
+| 1 | 管理画面の各ページがレイアウトの管理者確認だけに頼っていた。一般ユーザーがクライアント遷移の RSC リクエストを送ると、ユーザー一覧などの管理データが返っていた（ローカルで再現）。全管理ページで `requireAdmin` を呼ぶよう修正し、ユニットテスト（全 page.tsx の確認）と E2E（同じリクエストを一般ユーザーで再送）を追加 | P0（修正済み・デプロイ要） |
+| 2 | v2 では画面から隠していた STANDARD への切り替えを、Server Action を直接呼べば実行できた（月額の課金なしで手数料 8%）。v2 では拒否するよう修正 | P1（修正済み） |
+| 3 | v2 でも旧フローの予約（店頭払い）が URL 直打ちで作れた（支払いなしで在庫を確保できる）。v2 では予約画面を商品ページへ戻し、予約の Server Action も拒否 | P1（修正済み） |
+
+## ブロッカー
+
+### P0（公開禁止。すべて DONE になるまで v2 を ON にしない）
+
+| 内容 | リスク | 対応 | 担当 | 状態 |
+|---|---|---|---|---|
+| Stripe テストモードの実確認（STEP 2.5）が未実施 | 手数料・送金・返金・Webhook が本番で想定どおり動かない | 下の「1. Stripe」を Stripe テストモードで全項目確認し、結果を記入 | 運営 + 開発 | HUMAN CHECK |
+| `/api/cron/orders` の5分ごとの実行が未設定・未確認 | 決済されなかった注文の在庫が戻らない・未受取にならない | 外部スケジューラー（GitHub Actions の schedule 等）または Vercel Pro の Cron で5分ごとに `Authorization: Bearer <CRON_SECRET>` で呼ぶ。管理画面「定期処理」が15分未満になることを確認 | 開発 | BLOCKED |
+| 特定商取引法の表記に【要記入】 | 法令違反の状態で販売することになる | 販売事業者・運営責任者・所在地・電話番号・メールを記入し、専門家が確認 | 運営 + 専門家 | BLOCKED |
+| production DB のマイグレーション適用が未確認 | 未適用のまま新しいコードをデプロイすると画面が壊れる（例: 09 未適用だとマイページがエラー） | `supabase/setup/` の 01・03〜09 が適用済みか `select version from public.schema_migrations order by 1` で確認。**このブランチをデプロイする前に 09 を適用** | 開発 | HUMAN CHECK |
+| 購入〜受取の LINE 実機確認（iOS・Android）が未実施 | LINE 内ブラウザで決済・戻り・スワイプが動かない | 下の「LINE 実機テスト手順」を Stripe テストモードの環境で実施 | 運営 | HUMAN CHECK |
+| 管理画面の権限修正（上の #1）が production に未デプロイ | ユーザー一覧などが一般ユーザーに見える | このブランチの修正をデプロイ | 開発 | HUMAN CHECK |
+
+### P1（PoC 開始前に対応）
+
+| 内容 | リスク | 対応 | 担当 | 状態 |
+|---|---|---|---|---|
+| LINE ミニアプリでの外部決済（物理商品の Stripe Checkout）の確認 | 審査で差し戻し・公開停止 | LINE の最新ポリシーを確認し、必要なら LINE に問い合わせる。正式回答までは「LINE 審査確認待ち」 | 運営 | HUMAN CHECK |
+| つなぐチャージ30円 → 30pt 即時付与の法務・会計 | 景品表示法・資金決済法・会計処理 | 専門家に確認（コードで「問題なし」とはしない） | 運営 + 専門家 | HUMAN CHECK |
+| 利用規約・プライバシーポリシー・キャンセルポリシーの確定（ドラフト表示を外す） | 規約なしでの販売 | 専門家確認後、【要記入】【要確認】を埋めて `src/components/legal/LegalPage.tsx` のドラフト表示を外す | 運営 + 専門家 | HUMAN CHECK |
+| 紛争（Dispute）・早期不正警告をアプリで取り込んでいない | 対応期限を逃す | Stripe ダッシュボードのメール通知を ON にし、監視担当を決める（コード対応は P2） | 運営 | HUMAN CHECK |
+| `ENABLE_LINE_MARKETING_DEMO` が production で true のまま | 本番機能ではないデモ画面が残る（管理者本人にしか送れないのでリスクは低い） | PoC 開始時に false（または削除）にして再デプロイ | 運営 | HUMAN CHECK |
+| PoC 店舗の準備（売上受取設定・商品登録・モニター端末・スタッフ説明・連絡先） | 店舗で受け取れない | 下の「5. PoC 店舗」 | 運営 | HUMAN CHECK |
+| 消費税・インボイス（プラットフォーム手数料・つなぐチャージ）・Stripe の手数料の扱い | 会計・税務 | 税理士に確認 | 運営 + 専門家 | HUMAN CHECK |
+
+### P2（PoC 中に改善可能）
+
+| 内容 | 対応 |
 |---|---|
-| Stripe テストモードの疎通（STEP 2.5） | **未完了**（開発環境に Stripe の鍵・外部接続がないため未実施） |
-| LINE 実機確認 | **未完了**（コードレビュー・Playwright のモバイル幅の確認のみ。実機は未実施） |
-| LINE ミニアプリの外部決済ポリシーの確認 | **未完了**（下の「公開前に確認が必要な事項」） |
-| 法務ページ | **ドラフト**（専門家確認前・【要記入】あり） |
-| production の `ENABLE_V2_CHECKOUT` | OFF（変更しない） |
-| 判定 | **No-Go** |
+| Messaging API の Webhook（follow / unfollow）が未実装 | 日次通知は送る直前の友だち確認で代替。日次通知を広げる前に実装 |
+| 紛争・早期不正警告の取り込み | Webhook で受け取り、管理画面の要対応に出す |
+| STANDARD の月額課金（Billing）が未実装 | PoC は FREE で開始（v2 では STANDARD は「申込準備中」表示・切り替え不可）。Month3 の候補店舗が出るまでに設計 |
+| 店舗 WAU が代わりの指標（直近7日に出品があった店舗） | ログイン状況での WAU が必要なら追加 |
+| 保存したテンプレートからのワンタップ出品は、保存した数量・時間をそのまま公開する | かんたん出品（数量・時間を毎回入力）に寄せるか判断 |
+| 店舗 QR（緊急用）の URL が旧形式 `liff.line.me` | 発行し直すときに miniapp.line.me へ |
+| 日次通知の「送信中」のまま止まった記録は、その日は送らない（翌日から再開） | 必要なら自動復旧 |
 
 ---
 
 ## 1. Stripe（テストモード → 本番）
 
 手順: [README §11-2「Stripe CLI での手動の統合確認（テストモード）」](./README.md#11-2-stripev2-事前決済)
+コードのテストでは確認済み（checkout / fees / stripe-webhook / refunds のユニットテスト）: 1,000円 → 支払 1,030円・application fee 230円（手数料 200円 + つなぐチャージ 30円）・店舗 800円、Webhook の署名検証（raw body）・イベントの重複排除・金額の不一致の検出、paid で +30pt・再送で二重付与なし、返金で -30pt、期限切れ後の決済の自動返金、返金の失敗・要確認。
+**以下はすべて Stripe テストモードの実通信では未確認（HUMAN CHECK）。**
 
 - [ ] **Stripe test mode E2E 完了（STEP 2.5）** … 以下のすべてをテストモードで確認した
 - [ ] Connect Express の登録（店舗の「売上受取設定」→ Stripe → 戻る → 状態が「完了」）。同じ店舗で接続アカウントが二重に作られない
@@ -32,59 +84,128 @@ production で `ENABLE_V2_CHECKOUT=true` にする前に、このチェックリ
 - [ ] application fee が 230円（FREE: 手数料 200円 + つなぐチャージ 30円）
 - [ ] 店舗（接続アカウント）側に 800円
 - [ ] Webhook（`payment_intent.succeeded`）で注文が paid、30pt 付与。同じイベントの再送で二重にならない
-- [ ] ユーザー返金（決済から5分以内・受取開始前）で refunded・-30pt。Stripe 側で transfer と application fee が戻っている
+- [ ] ユーザー返金（決済から5分以内・受取開始前）で refunded・-30pt。Stripe 側で transfer（reverse_transfer）と application fee（refund_application_fee）が戻っている
 - [ ] 返金の状態が `pending` / `succeeded` / `failed` のどれで返るかを記録した（`refund.updated` で同期される）
 - [ ] 期限切れとの競合（期限切れで取り消された注文への決済）が自動で全額返金される
 - [ ] Connect のイベント（`account.updated`）が Webhook に届く（「連結アカウントのイベント」を送る設定）
 - [ ] 本番: 本番キー・Webhook エンドポイント（`https://<ドメイン>/api/stripe/webhook`、通常 + 連結アカウントのイベント）・カードのみの Payment Method Configuration を設定した
+- [ ] Stripe ダッシュボードで紛争（Dispute）・早期不正警告のメール通知を ON にした
 
 記入: ＿＿＿＿　日付: ＿＿＿＿　返金の状態の実測結果: ＿＿＿＿
 
-## 2. LINE（実機）
+## 2. LINE
 
-手順: 下の「LINE 実機テスト手順」。iOS・Android の両方で行う。
+| 項目 | 状態 | メモ |
+|---|---|---|
+| LINE ミニアプリの起動（開発用 LIFF） | DONE（運営が実機で確認・端末未記録） | |
+| LINE ログイン → production DB に LINE ユーザーが保存される | DONE（運営が実機で確認） | 注目商品 Push の受信で確認 |
+| 自動ログインがデモログインを上書きする問題 | DONE（コードで修正・テスト） | |
+| `NEXT_PUBLIC_LIFF_ID` / `LINE_CHANNEL_ID`（LIFF のチャネル）/ `LINE_CHANNEL_SECRET` / LIFF の scope（openid・profile） | DONE（ログインできたことで確認） | 値は記録しない |
+| LINE 注目商品 Push（管理者本人のみ・Flex・商品詳細へのリンク・重複防止・送信記録） | DONE（運営が実機で受信を確認） | 同じプロバイダーの Messaging API チャネル |
+| 日次注目商品通知（オプトイン・既定 OFF・1日1回・dry run） | DONE（コードで確認）。送信は OFF | `ENABLE_LINE_DIGEST_SEND` / `ENABLE_LINE_DIGEST_CRON` は production で設定しない（PoC 必須ではない） |
+| 購入〜受取の実機確認（下の手順） | HUMAN CHECK | iOS・Android とも未実施 |
+| LINE ミニアプリの外部決済ポリシー | HUMAN CHECK（LINE 審査確認待ち） | 下の「公開前に確認が必要な事項」 |
 
-- [ ] iOS 実機
-- [ ] Android 実機
-- [ ] LINE 内ブラウザ（LIFF / LINE ミニアプリ）で表示が崩れない（幅 375px 前後）
-- [ ] Checkout への遷移と、TABETUNAGU（`STRIPE_CHECKOUT_RETURN_URL`、LINE ミニアプリなら `https://miniapp.line.me/<LIFF ID>`）への戻り
-- [ ] 外部ブラウザ（Safari / Chrome）でも白画面にならず、購入時に LINE ログイン → 元の画面へ戻る
-- [ ] 未ログインから購入 → ログイン → 購入確認に戻る
-- [ ] 受取チケットの縦スクロールと、横スワイプが干渉しない
-- [ ] 店舗モニターの通知音（「受取通知音をON」後）
+- [ ] iOS 実機（下の手順の 1〜14）
+- [ ] Android 実機（下の手順の 1〜14）
+- [ ] 店舗モニター（タブレット）の受取完了表示・通知音・画面スリープ防止
 
 記入: ＿＿＿＿　日付: ＿＿＿＿
 
-## 3. 運用
+## 3. DB・環境変数（値は記録しない）
 
-- [ ] `/api/cron/orders` を 5 分ごとに呼ぶスケジューラーを設定（`Authorization: Bearer <CRON_SECRET>`）。管理画面の「定期処理」が「最終実行 N分前」（15分未満）になっている
+production DB に適用が必要なもの（`supabase/setup/`）: 01・03（v2 の注文・ポイント台帳）・04（決済・返金・Connect）・05（受取）・06（定期処理の監視・返金状態の同期）・07（LINE サービスメッセージ）・08（LINE Push の記録）・09（LINE 日次通知・オプトイン）。
+
+- [ ] `select version from public.schema_migrations order by 1` で 13 件（`20261017000000_init` 〜 `20261030000000_line_featured_digest`）がそろっている（HUMAN CHECK）
+- [ ] Vercel の production の環境変数（設定済み / 未設定だけを記録）:
+
+| 変数 | 必須 | production |
+|---|---|---|
+| `DATABASE_URL` | 必須 | ＿＿＿＿ |
+| `AUTH_SECRET` | 必須 | ＿＿＿＿ |
+| `NEXT_PUBLIC_LIFF_ID` / `LINE_CHANNEL_ID` / `LINE_CHANNEL_SECRET` | 必須 | 設定済み（ログインできたため） |
+| `LINE_CHANNEL_ACCESS_TOKEN` | 任意（Push） | 設定済み（Push を受信できたため） |
+| `STRIPE_SECRET_KEY` / `STRIPE_WEBHOOK_SECRET` / `STRIPE_CHECKOUT_RETURN_URL` | v2 で必須 | ＿＿＿＿ |
+| `CRON_SECRET`（16文字以上） | v2 で必須 | ＿＿＿＿ |
+| `ENABLE_V2_CHECKOUT` | | false（PoC 公開の最終判定まで変更しない） |
+| `ENABLE_LINE_MARKETING_DEMO` | | true（確認用。PoC 開始時に false 推奨） |
+| `ENABLE_LINE_DIGEST_SEND` / `ENABLE_LINE_DIGEST_CRON` | | 未設定のまま |
+| `ENABLE_DEMO_LOGIN` | | production（APP_ENV=production）では常に無効 |
+
+## 4. 運用
+
+- [ ] `/api/cron/orders` を 5 分ごとに呼ぶスケジューラーを設定（`Authorization: Bearer <CRON_SECRET>`）。管理画面の「定期処理」が「最終実行 N分前」（15分未満）になっている（**P0**）
+- [ ] `/api/cron/daily`・`/api/cron/sweep` は vercel.json の Vercel Cron（1日1回）で動いている。`/api/cron/digest` は `ENABLE_LINE_DIGEST_CRON=true` でなければ何もしない
 - [ ] 店頭端末で受取モニター（全画面モード・受取通知音 ON・画面スリープ防止 または 端末の自動ロック OFF）
 - [ ] PoC 店舗の売上受取設定（Connect）がすべて完了（管理画面「売上受取設定が未完了の稼働店舗」が 0）
-- [ ] 管理画面の監視担当・確認頻度を決めた（要確認の決済・失敗した返金・未受取・定期処理）
-- [ ] 障害時の切り替え手順（下記「障害時のフォールバック」）を運営メンバーが把握している
+- [ ] 管理画面の監視担当・確認頻度を決めた（下の「障害時の対応」）
+- [ ] 緊急用の店頭 QR（旧フロー）を各店舗に印刷して保管（通常は使わない）
 
-## 4. 法務（専門家の確認が必要）
+## 5. 法務・会計（専門家の確認が必要）
 
-- [ ] 利用規約（`/terms`）
-- [ ] プライバシーポリシー（`/privacy`）
-- [ ] 特定商取引法に基づく表記（`/commerce`）… 販売事業者・運営責任者・所在地・電話番号・メールを記入
+特定商取引法の表記（`/commerce`）の【要記入】【要確認】:
+
+| 項目 | 状態 |
+|---|---|
+| 販売事業者 / 運営責任者 / 所在地 / 電話番号 / メールアドレス | 【要記入】 |
+| 販売価格（各商品ページ・税込） | 記載済み |
+| 商品代金以外の必要料金（つなぐチャージ） | 記載済み |
+| 支払方法 | 【要確認】 |
+| 支払時期 / 引渡時期・方法 / キャンセル | 記載済み |
+| 返金 | 【要確認】 |
+| 販売事業者と店舗の関係 | 【要記入・専門家確認】 |
+
+- [ ] 利用規約（`/terms`）… 【要記入・専門家確認】あり
+- [ ] プライバシーポリシー（`/privacy`）… 【要記入・専門家確認】あり（LINE 通知のオプトイン・停止方法の記載も確認）
 - [ ] キャンセルポリシー（`/cancellation-policy`）
 - [ ] 各ページの「ドラフト」表示を外した（`src/components/legal/LegalPage.tsx`）
-- [ ] つなぐポイントの扱い（景品表示法・資金決済法・会計）を確認した
+- [ ] つなぐポイントの扱い（つなぐチャージ30円 → 30pt 即時付与。景品表示法・資金決済法・会計）を確認した
+- [ ] プラットフォーム手数料・つなぐチャージの消費税・インボイス、STANDARD 月額課金の扱いを確認した
 
-## 5. PoC
+## 6. PoC 店舗
 
-- [ ] 30 店舗（管理画面「店舗」の「公開準備」が「公開準備OK」）
-- [ ] 各店舗の商品登録（テンプレート・受取時間）
-- [ ] 店舗担当者への説明（店舗画面「使い方」: レジ操作不要・受取完了操作不要）
-- [ ] 緊急連絡先（店舗 ↔ 運営）
-- [ ] お客様の問い合わせ窓口（特定商取引法の表記・LINE 公式アカウント）
+- [ ] 約30店舗（管理画面「店舗」の「公開準備」が「公開準備OK」）
+- [ ] 各店舗の商品登録（出品する / かんたん出品）
+- [ ] 店舗担当者への説明（店舗画面「使い方」: レジ操作不要・受取完了操作不要。受取チケットを見て商品を渡すだけ）
+- [ ] 緊急連絡先（店舗 ↔ 運営）・お客様の問い合わせ窓口（特定商取引法の表記・LINE 公式アカウント）
+- [ ] 返金・未受取（No Show）・トラブル時の運営の対応手順を店舗と共有
 
-## 6. 最後に
+## 7. 最後に（CONDITIONAL GO の条件）
 
-- [ ] 上記 1〜5 がすべて完了
+`ENABLE_V2_CHECKOUT=true` にしてよい条件（すべて満たすこと）:
+
+1. 上の P0 がすべて DONE（Stripe テストモードの確認・`/api/cron/orders` の5分ごとの実行・特定商取引法の記入・production DB のマイグレーション・LINE 実機の購入〜受取・管理画面の権限修正のデプロイ）
+2. 本番キー・Webhook（通常 + 連結アカウント）を設定し、管理画面の「技術状態」で Stripe・CRON_SECRET がすべて「設定済み」、定期処理が15分未満
+3. PoC 店舗の売上受取設定が完了し、最初は少数の店舗・限られたユーザーで開始する
+4. ロールバック担当（`ENABLE_V2_CHECKOUT=false` にして再デプロイする人）が決まっている
+
+- [ ] 上記 1〜4 がすべて完了
 - [ ] production の環境変数に `ENABLE_V2_CHECKOUT=true` を設定して再デプロイ（担当: ＿＿＿＿）
 - [ ] 管理画面で「ENABLE_V2_CHECKOUT: ON（本番で有効）」になったことを確認
+
+## 障害時の対応（誰が何を見るか）
+
+| 事象 | 気づき方 | 対応 | 担当 |
+|---|---|---|---|
+| Stripe Webhook が止まった | 注文が「お支払いを確認しています」のまま・管理画面の要対応 | Stripe ダッシュボード → Webhook の配信履歴で失敗を確認し、再送。署名の秘密鍵が正しいか確認 | 開発 |
+| 定期処理（Cron）が止まった | 管理画面「定期処理の遅れ」（15分以上） | スケジューラーの実行履歴を確認し、手動で `/api/cron/orders` を呼ぶ | 開発 |
+| 返金の失敗 / 要確認の決済（requires_review） | 管理画面「要確認の決済」「失敗した返金」 | Stripe ダッシュボードで状態を確認し、必要なら手動で返金。お客様に連絡 | 運営 |
+| 店舗の売上受取設定が未完了 | 管理画面「売上受取設定が未完了の稼働店舗」 | 店舗に「売上受取設定」の再開を案内（未完了の店舗の商品は購入できない） | 運営 |
+| 店舗モニターが更新されない | モニターの「最終更新」・接続エラー表示 | 店舗に再読み込みを案内。受取チケットの目視確認で受け渡しは続けられる | 運営 |
+| DB 接続の障害 | 画面のエラー・Vercel のログ | Supabase のステータスを確認。長引く場合は `ENABLE_V2_CHECKOUT=false`（新しい決済を止める） | 開発 |
+| LINE Push が unauthorized（401） | 管理画面「LINE日次通知」「LINE注目商品デモ」の記録（unauthorized） | チャネルアクセストークンを再発行して Vercel に設定。日次通知は `ENABLE_LINE_DIGEST_SEND=false` で停止 | 開発 |
+| 不正・紛争 | Stripe のメール通知 | Stripe ダッシュボードで期限内に対応 | 運営 |
+
+## ロールバック
+
+最優先: **`ENABLE_V2_CHECKOUT=false`（または削除）にして再デプロイ** → 旧フロー（予約 → 店頭 QR → お店で支払い）に戻る。すでに決済済みの v2 注文の受取チケット・スワイプ・返金・Webhook はそのまま動く。
+
+| 止めたいもの | 方法 |
+|---|---|
+| v2 の新しい決済 | `ENABLE_V2_CHECKOUT=false` → 再デプロイ |
+| LINE 日次通知の送信 | `ENABLE_LINE_DIGEST_SEND=false`（定期実行は `ENABLE_LINE_DIGEST_CRON=false`）→ 再デプロイ |
+| LINE 注目商品デモ | `ENABLE_LINE_MARKETING_DEMO=false` → 再デプロイ |
+| コードの不具合 | Vercel の Deployments で直前のデプロイに Promote（Instant Rollback）。DB のマイグレーションは追加のみのため、古いコードでもそのまま動く |
 
 ---
 

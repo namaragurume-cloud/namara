@@ -72,3 +72,29 @@ test("一般ユーザー・店舗は管理者ページと CSV にアクセスで
   const csv = await page.request.get("/admin/export?type=orders");
   expect(csv.status()).toBe(404);
 });
+
+test("一般ユーザーが管理画面のクライアント遷移（RSC）リクエストを送っても、管理データは返らない", async ({ page, browser }) => {
+  // 管理者がクライアント遷移したときのリクエスト（RSC・ルーターの状態）を記録する
+  await demoLogin(page, "admin");
+  await page.goto("/admin");
+  await page.waitForLoadState("networkidle");
+  let captured: { url: string; headers: Record<string, string> } | null = null;
+  page.on("request", (r) => {
+    if (r.url().includes("/admin/users") && r.headers()["rsc"]) captured = { url: r.url(), headers: r.headers() };
+  });
+  await page.locator('a[href="/admin/users"]').first().click();
+  await page.waitForURL(/\/admin\/users/);
+  await page.waitForLoadState("networkidle");
+  expect(captured).not.toBeNull();
+  const { url, headers } = captured!;
+  const replay = Object.fromEntries(Object.entries(headers).filter(([k]) => /^(rsc|next-router-state-tree|next-url)$/i.test(k)));
+
+  // 同じリクエストを一般ユーザーで送る
+  const context = await browser.newContext();
+  const user = await context.newPage();
+  await demoLogin(user, "user");
+  const body = await user.evaluate(async ({ url, replay }) => (await fetch(url, { headers: replay })).text(), { url, replay });
+  expect(body).not.toContain("TABETUNAGU 運営");
+  expect(body).not.toContain("大通ベーカリー 店主");
+  await context.close();
+});

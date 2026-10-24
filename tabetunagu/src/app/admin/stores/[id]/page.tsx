@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/Badge";
 import { areaLabel } from "@/lib/categories";
 import { dateTime, percent, yen } from "@/lib/format";
 import { getAdminStore, listStoresWithMetrics } from "@/server/services/admin";
+import { requireAdmin } from "@/server/auth/viewer";
 
 export const metadata: Metadata = { title: "店舗詳細" };
 
@@ -22,6 +23,7 @@ const RESULT_LABEL: Record<string, string> = {
 };
 
 export default async function AdminStorePage({ params }: { params: Promise<{ id: string }> }) {
+  await requireAdmin("/admin/stores");
   const { id } = await params;
   if (!/^[0-9a-f-]{36}$/i.test(id)) notFound();
   const data = await getAdminStore(id);

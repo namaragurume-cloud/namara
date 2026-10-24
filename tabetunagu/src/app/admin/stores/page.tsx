@@ -10,12 +10,14 @@ import { AREAS, areaLabel, CATEGORIES } from "@/lib/categories";
 import { percent, yen } from "@/lib/format";
 import { listStoresWithMetrics } from "@/server/services/admin";
 import { getStoreReadiness } from "@/server/services/readiness";
+import { requireAdmin } from "@/server/auth/viewer";
 
 export const metadata: Metadata = { title: "店舗" };
 
 const STATUS = { active: "稼働中", pending: "審査中", suspended: "停止中" } as Record<string, string>;
 
 export default async function AdminStoresPage({ searchParams }: { searchParams: Promise<{ period?: string; sort?: string }> }) {
+  await requireAdmin("/admin/stores");
   const sp = await searchParams;
   const period = parsePeriod(sp.period);
   let stores = await listStoresWithMetrics(period);

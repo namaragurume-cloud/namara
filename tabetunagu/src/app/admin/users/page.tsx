@@ -3,10 +3,12 @@ import { PageHeader } from "@/components/layout/ConsoleShell";
 import { Badge } from "@/components/ui/Badge";
 import { dateTime } from "@/lib/format";
 import { listUsers } from "@/server/services/admin";
+import { requireAdmin } from "@/server/auth/viewer";
 
 export const metadata: Metadata = { title: "ユーザー" };
 
 export default async function AdminUsersPage({ searchParams }: { searchParams: Promise<{ q?: string }> }) {
+  await requireAdmin("/admin/users");
   const { q } = await searchParams;
   const users = await listUsers(q);
   return (

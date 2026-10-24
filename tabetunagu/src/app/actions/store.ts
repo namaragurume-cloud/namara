@@ -4,6 +4,7 @@ import { refresh } from "next/cache";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { AppError } from "@/lib/errors";
+import { features } from "@/lib/features";
 import { isPlanCode } from "@/lib/fees";
 import { quickRelistSchema } from "@/lib/quick-relist";
 import { aiDescriptionSchema, fieldErrors, productFormSchema, storeSettingsSchema } from "@/lib/validation";
@@ -174,6 +175,8 @@ export async function changePlanAction(_prev: ActionState, formData: FormData): 
   try {
     const { viewer } = await assertStoreMember(storeId, { owner: true });
     if (!isPlanCode(plan)) throw new AppError("invalid_plan");
+    // v2（事前決済）では月額の課金（Billing）が未実装のため、店舗側から STANDARD（手数料 8%）に切り替えさせない（画面にも出していない）
+    if (features.v2Journey && plan === "standard") throw new AppError("forbidden", "STANDARD への切り替えは準備中です。運営担当にご相談ください。");
     await changeStorePlan(viewer.id, storeId, plan);
   } catch (error) {
     return toActionError(error);

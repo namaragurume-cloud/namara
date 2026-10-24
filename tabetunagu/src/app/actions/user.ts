@@ -2,6 +2,7 @@
 
 import { refresh } from "next/cache";
 import { redirect } from "next/navigation";
+import { features } from "@/lib/features";
 import { getViewer } from "@/server/auth/viewer";
 import { checkinWithToken } from "@/server/services/checkin";
 import { logEvent } from "@/server/services/events";
@@ -22,6 +23,8 @@ export async function reserveAction(_prev: ActionState, formData: FormData): Pro
   const productId = String(formData.get("productId") ?? "");
   const viewer = await getViewer();
   if (!viewer) redirect(`/login?next=${encodeURIComponent(`/products/${productId}/reserve`)}`);
+  // v2（事前決済）のときは旧フローの予約（店頭払い）を受け付けない（URL を直接開いても在庫を確保させない）
+  if (features.v2Journey) return { ok: false, message: "現在はオンライン決済でのご注文のみ受け付けています。商品ページからお進みください。" };
   const quantity = Number(formData.get("quantity") ?? 1);
   let reservationId: string;
   try {
