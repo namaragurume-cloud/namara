@@ -101,7 +101,8 @@ async function multicast(to: string[], text: string) {
  */
 export async function sendEveningDigest(createdBy: string | null) {
   const preview = await previewEveningDigest();
-  const live = Boolean(env.line.messagingAccessToken);
+  // 実際に送るのは ENABLE_LINE_DIGEST_SEND=true のときだけ（トークンを設定しただけでは全員への配信をしない）
+  const live = env.line.digestSendEnabled;
   const notificationId = await asService(async (q) => {
     const [n] = await q.query<{ id: string }>(
       `insert into public.notifications (kind, title, body, payload, status, target_count, created_by, scheduled_for)

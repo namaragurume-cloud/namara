@@ -135,13 +135,16 @@ test("管理者以外（一般ユーザー・店舗オーナー）はダッシ�
   }
 });
 
-test("LINE 通知デモ: 有効にしていない環境では管理者にも出さない（一般ユーザーは常に不可）", async ({ page }) => {
+test("LINE 通知デモ・注目商品デモ: 有効にしていない環境では管理者にも出さない（一般ユーザーは常に不可）", async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 900 });
   await demoLogin(page, "admin");
   expect((await page.goto("/admin/line-demo"))?.status()).toBe(404);
+  expect((await page.goto("/admin/line-featured-demo"))?.status()).toBe(404);
   await page.goto("/admin");
   await expect(page.getByRole("link", { name: "LINE通知デモ" })).toHaveCount(0);
+  await expect(page.getByRole("link", { name: "LINE注目商品デモ" })).toHaveCount(0);
   await page.context().clearCookies();
   await demoLogin(page, "user");
   expect((await page.goto("/admin/line-demo"))?.status()).toBe(404);
+  expect((await page.goto("/admin/line-featured-demo"))?.status()).toBe(404);
 });

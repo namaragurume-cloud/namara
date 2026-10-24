@@ -205,8 +205,10 @@ DB を初期化したいときは `.data/` を削除してください。
 | `QR_SIGNING_SECRET` | ○ | 店舗 QR の署名鍵（32 文字以上。変えると印刷済み QR が無効） |
 | `CRON_SECRET` | ○ | Vercel Cron の認証 |
 | `NEXT_PUBLIC_LIFF_ID` / `LINE_CHANNEL_ID` / `LINE_CHANNEL_SECRET` | ○ | LIFF・LINE Login |
-| `LINE_CHANNEL_ACCESS_TOKEN` | 任意 | まとめ通知の送信（未設定なら dry run） |
+| `LINE_CHANNEL_ACCESS_TOKEN` | 任意 | LINE 公式アカウント（Messaging API）のアクセストークン。まとめ通知・注目商品のテスト送信に使う |
+| `ENABLE_LINE_DIGEST_SEND` | 任意 | `true` のときだけ、まとめ通知（複数ユーザーへの Multicast・管理画面と `/api/cron/digest`）を実際に送る。未設定なら dry run（トークンを設定しただけでは送らない） |
 | `ENABLE_LINE_NOTIFICATION_DEMO` | 任意 | `true` で LINE サービスメッセージのデモ（管理画面「LINE通知デモ」）を有効にする。**本番（APP_ENV=production）では常に無効** |
+| `ENABLE_LINE_MARKETING_DEMO` | 任意 | `true` で「今日の食べつなぎ」（注目商品）を LINE 公式アカウントから自分にテスト送信するデモ（管理画面「LINE注目商品デモ」）。**本番では常に無効**。送信には `LINE_CHANNEL_ACCESS_TOKEN` を使う |
 | `LINE_MINIAPP_CHANNEL_ID` / `LINE_MINIAPP_CHANNEL_SECRET` | 任意 | サービスメッセージ用（LIFF を置いた LINE ミニアプリのチャネル）。未設定なら `LINE_CHANNEL_ID` / `LINE_CHANNEL_SECRET` |
 | `LINE_SERVICE_MESSAGE_ORDER_TEMPLATE` / `LINE_SERVICE_MESSAGE_ORDER_PARAMS` | 任意 | 注文完了に使うテンプレート名（例 `xxxx_ja`）と、テンプレート変数 → 項目の対応（JSON） |
 | `NEXT_PUBLIC_SUPABASE_URL` / `SUPABASE_SERVICE_ROLE_KEY` | 任意 | 商品写真の保存（未設定だと本番では写真なしで出品） |
@@ -238,7 +240,7 @@ DATABASE_URL=... npm run db:migrate -- --bootstrap
 
 ## 8. Supabase 設定
 
-> **いちばん簡単な方法（Node.js 不要）**：Supabase の **SQL Editor** に [`supabase/setup/01_schema.sql`](./supabase/setup/01_schema.sql)（テーブル）→ [`supabase/setup/02_demo_data.sql`](./supabase/setup/02_demo_data.sql)（デモデータ・プレビュー用）→ [`supabase/setup/03_v2_foundation.sql`](./supabase/setup/03_v2_foundation.sql)（v2 の注文・ポイント台帳）→ [`supabase/setup/04_v2_stripe.sql`](./supabase/setup/04_v2_stripe.sql)（v2 の決済・返金・Connect）→ [`supabase/setup/05_v2_pickup.sql`](./supabase/setup/05_v2_pickup.sql)（v2 の受取）→ [`supabase/setup/06_v2_poc_readiness.sql`](./supabase/setup/06_v2_poc_readiness.sql)（定期処理の監視・返金状態の同期）→ [`supabase/setup/07_line_service_messages.sql`](./supabase/setup/07_line_service_messages.sql)（LINE サービスメッセージのデモ）の順に中身を貼り付けて Run するだけで準備できます。本番の DB には 01・03〜07 だけを使ってください（02 を入れる場合は 03 より前に）。01・03〜07 は `supabase/migrations/` から作ったもので、適用済みとして記録されるため、あとから `npm run db:migrate` を実行しても二重には適用されません。
+> **いちばん簡単な方法（Node.js 不要）**：Supabase の **SQL Editor** に [`supabase/setup/01_schema.sql`](./supabase/setup/01_schema.sql)（テーブル）→ [`supabase/setup/02_demo_data.sql`](./supabase/setup/02_demo_data.sql)（デモデータ・プレビュー用）→ [`supabase/setup/03_v2_foundation.sql`](./supabase/setup/03_v2_foundation.sql)（v2 の注文・ポイント台帳）→ [`supabase/setup/04_v2_stripe.sql`](./supabase/setup/04_v2_stripe.sql)（v2 の決済・返金・Connect）→ [`supabase/setup/05_v2_pickup.sql`](./supabase/setup/05_v2_pickup.sql)（v2 の受取）→ [`supabase/setup/06_v2_poc_readiness.sql`](./supabase/setup/06_v2_poc_readiness.sql)（定期処理の監視・返金状態の同期）→ [`supabase/setup/07_line_service_messages.sql`](./supabase/setup/07_line_service_messages.sql)（LINE サービスメッセージのデモ）→ [`supabase/setup/08_line_push_message_logs.sql`](./supabase/setup/08_line_push_message_logs.sql)（LINE 公式アカウントの Push のデモ）の順に中身を貼り付けて Run するだけで準備できます。本番の DB には 01・03〜08 だけを使ってください（02 を入れる場合は 03 より前に）。01・03〜08 は `supabase/migrations/` から作ったもので、適用済みとして記録されるため、あとから `npm run db:migrate` を実行しても二重には適用されません。
 
 1. プロジェクトを作成（リージョン：Tokyo `ap-northeast-1`）
 2. **Database → Connection string → Transaction pooler（:6543）** を `DATABASE_URL` に設定し、`npm run db:migrate`
@@ -290,6 +292,20 @@ Messaging API の通常の Push（友だちへのメッセージ）とは別の�
 仕組み: LIFF アクセストークン（ボタンを押したときに取得・保存しない）→ サーバーでサービス通知トークンに交換（1年間・最大5回）→ DB に保存。
 送信のたびに LINE から返る新しいトークンに更新します。トークン・シークレットは画面・ログに出しません。
 送信の記録（種類・結果・エラーの分類）は `line_service_message_logs` に残ります（本文・トークンは保存しない）。
+
+### 「今日の食べつなぎ」（注目商品）の LINE 公式アカウントからのテスト送信（デモ）
+
+注目商品・おすすめ・値引きは販促のお知らせのため、LINE ミニアプリのサービスメッセージでは送りません。
+LINE 公式アカウントの Messaging API（Push）で、**ログイン中の管理者本人にだけ** 1件送るデモです（Broadcast・自動配信はしません）。
+
+1. LINE 公式アカウント（Messaging API チャネル）を、LINE Login / LINE ミニアプリのチャネルと**同じプロバイダー**に置く
+   （LINE の userId はプロバイダーごとに発行されるため。別のプロバイダーだと LINE Login で保存した userId に送れません）
+2. 開発・プレビュー環境だけに `ENABLE_LINE_MARKETING_DEMO=true` と `LINE_CHANNEL_ACCESS_TOKEN`（Messaging API チャネルのアクセストークン）を設定する
+3. 受け取る人（自分）が LINE 公式アカウントを友だち追加する
+4. 管理画面「LINE注目商品デモ」→ 商品を選ぶ → プレビュー →「自分にテスト送信」
+
+送信記録は `line_push_message_logs`（種類・商品・内部のユーザー ID・結果・エラーの分類）に残ります。LINE の userId・トークン・本文は保存しません。
+将来の日次配信（1日1回・1〜3件）は、通知を受け取ると選んだ（オプトインした）ユーザーだけに送る前提で、今回は有効にしていません。
 
 ## 10. LIFF 設定
 

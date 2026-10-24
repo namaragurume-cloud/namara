@@ -12,7 +12,7 @@ export const metadata: Metadata = { title: "通知" };
 export default async function AdminNotificationsPage() {
   const [preview, history] = await Promise.all([previewEveningDigest(), listNotifications()]);
   const lineTargets = preview.targets.filter((t) => t.lineUserId).length;
-  const live = Boolean(env.line.messagingAccessToken);
+  const live = env.line.digestSendEnabled;
   return (
     <div className="space-y-6">
       <PageHeader

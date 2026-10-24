@@ -83,6 +83,14 @@ export const env = {
     get messagingAccessToken() {
       return process.env.LINE_CHANNEL_ACCESS_TOKEN || "";
     },
+    /**
+     * まとめ通知（今夜のTABETUNAGU・複数ユーザーへの Multicast。管理画面の送信と /api/cron/digest）を実際に LINE へ送るか。
+     * LINE_CHANNEL_ACCESS_TOKEN を設定しただけでは送らない（自分へのテスト送信のためにトークンを設定しても、
+     * 定期処理で全員に配信されないように）。ENABLE_LINE_DIGEST_SEND=true のときだけ送り、それ以外は dry run。
+     */
+    get digestSendEnabled() {
+      return Boolean(process.env.LINE_CHANNEL_ACCESS_TOKEN) && process.env.ENABLE_LINE_DIGEST_SEND === "true";
+    },
     get loginEnabled() {
       return Boolean(process.env.LINE_CHANNEL_ID && process.env.LINE_CHANNEL_SECRET);
     },
@@ -103,6 +111,14 @@ export const env = {
     get serviceMessageDemoEnabled() {
       if (appEnv() === "production") return false;
       return process.env.ENABLE_LINE_NOTIFICATION_DEMO === "true";
+    },
+    /**
+     * 「今日の食べつなぎ」（注目商品）の LINE 公式アカウントからのテスト送信（管理者が自分にだけ送る）。
+     * 本番（APP_ENV / VERCEL_ENV = production）では常に無効。それ以外も ENABLE_LINE_MARKETING_DEMO=true のときだけ（既定は無効）。
+     */
+    get marketingDemoEnabled() {
+      if (appEnv() === "production") return false;
+      return process.env.ENABLE_LINE_MARKETING_DEMO === "true";
     },
     /** 注文完了（予約完了）に使うテンプレート名（例: xxxx_ja。LINE Developers コンソールで選んだテンプレート） */
     get serviceMessageOrderTemplate() {

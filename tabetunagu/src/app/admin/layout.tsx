@@ -24,8 +24,12 @@ export default async function AdminLayout({ children }: { children: React.ReactN
     <ConsoleShell
       title="運営管理"
       badge={<Badge tone="dark">ADMIN</Badge>}
-      // LINE 通知デモは開発・プレビュー環境で有効にしたときだけ（本番では出さない）
-      nav={env.line.serviceMessageDemoEnabled ? [...NAV, { href: "/admin/line-demo", label: "LINE通知デモ" }] : NAV}
+      // LINE のデモは開発・プレビュー環境で有効にしたときだけ（本番では出さない）
+      nav={[
+        ...NAV,
+        ...(env.line.serviceMessageDemoEnabled ? [{ href: "/admin/line-demo", label: "LINE通知デモ" }] : []),
+        ...(env.line.marketingDemoEnabled ? [{ href: "/admin/line-featured-demo", label: "LINE注目商品デモ" }] : []),
+      ]}
       headerExtra={<span className="text-[12px] text-muted">{viewer.displayName}</span>}
     >
       {children}
