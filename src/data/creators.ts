@@ -322,7 +322,7 @@ export const creators: Creator[] = [
   {
     id: "hiro",
     account: "hiro_hokkaido_food",
-    image: "/images/creators/hiro.jpg",
+    image: "/images/creators/hiro-2.jpg",
     platform: "Instagram",
     profileUrl: "https://www.instagram.com/hiro_hokkaido_food/",
     genres: [],
