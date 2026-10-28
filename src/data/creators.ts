@@ -49,6 +49,8 @@ export type Creator = {
   /** 投稿事例（掲載許可済みのもののみ） */
   examples?: { title: string; url: string }[];
   published: boolean;
+  /** "compact" は小さいカードでまとめて表示（主要メンバー以外のネットワーク発信者） */
+  size?: "compact";
 };
 
 export const creators: Creator[] = [
@@ -184,6 +186,61 @@ export const creators: Creator[] = [
     genres: [],
     areas: [],
     published: true,
+  },
+  {
+    id: "kazu",
+    account: "kazu_hokkaidocafe",
+    image: "/images/creators/kazu.jpg",
+    platform: "Instagram",
+    profileUrl: "https://www.instagram.com/kazu_hokkaidocafe/",
+    genres: [],
+    areas: [],
+    published: true,
+    size: "compact",
+  },
+  {
+    id: "kawa",
+    account: "kawa.sapporo.gourmet",
+    image: "/images/creators/kawa.jpg",
+    platform: "Instagram",
+    profileUrl: "https://www.instagram.com/kawa.sapporo.gourmet/",
+    genres: [],
+    areas: [],
+    published: true,
+    size: "compact",
+  },
+  {
+    id: "hiromi",
+    account: "hiromiiiii_28",
+    image: "/images/creators/hiromi.jpg",
+    platform: "Instagram",
+    profileUrl: "https://www.instagram.com/hiromiiiii_28/",
+    genres: [],
+    areas: [],
+    published: true,
+    size: "compact",
+  },
+  {
+    id: "kana",
+    account: "kana.j.y.h.k.m",
+    image: "/images/creators/kana.jpg",
+    platform: "Instagram",
+    profileUrl: "https://www.instagram.com/kana.j.y.h.k.m/",
+    genres: [],
+    areas: [],
+    published: true,
+    size: "compact",
+  },
+  {
+    id: "syun",
+    account: "syu.n0203",
+    image: "/images/creators/syun.jpg",
+    platform: "Instagram",
+    profileUrl: "https://www.instagram.com/syu.n0203/",
+    genres: [],
+    areas: [],
+    published: true,
+    size: "compact",
   },
 ];
 

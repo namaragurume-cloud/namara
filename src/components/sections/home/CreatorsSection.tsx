@@ -5,10 +5,13 @@ import { CTAButton } from "@/components/ui/CTAButton";
 import { Carousel } from "@/components/ui/Carousel";
 import { CreatorCard } from "@/components/ui/CreatorCard";
 import { CreatorsEmpty } from "@/components/ui/CreatorsEmpty";
+import { CreatorMini } from "@/components/ui/CreatorMini";
 import { SectionHeading } from "@/components/ui/SectionHeading";
 
 export async function CreatorsSection() {
-  const creators = await getCreatorsWithFollowers();
+  const all = await getCreatorsWithFollowers();
+  const creators = all.filter((c) => c.size !== "compact");
+  const network = all.filter((c) => c.size === "compact");
   return (
     <section aria-label="インフルエンサー紹介" className="section overflow-hidden bg-mist">
       <div className="container-x">
@@ -54,6 +57,20 @@ export async function CreatorsSection() {
             </Carousel>
           ) : (
             <CreatorsEmpty location="home_creators_empty" />
+          )}
+        </ScrollReveal>
+        <ScrollReveal>
+          {network.length > 0 && (
+            <div className="mt-10">
+              <p className="text-sm font-bold">そのほかのネットワーク発信者</p>
+              <ul className="mt-4 grid grid-cols-2 gap-2.5 sm:gap-3 lg:grid-cols-4">
+                {network.map((c) => (
+                  <li key={c.id}>
+                    <CreatorMini creator={c} />
+                  </li>
+                ))}
+              </ul>
+            </div>
           )}
         </ScrollReveal>
         {creators.length > 0 && (

@@ -6,6 +6,7 @@ import { CreatorList } from "@/components/sections/CreatorList";
 import { FinalCTA } from "@/components/sections/FinalCTA";
 import { CreatorsEmpty } from "@/components/ui/CreatorsEmpty";
 import { CTAButton } from "@/components/ui/CTAButton";
+import { CreatorMini } from "@/components/ui/CreatorMini";
 import { PageHero } from "@/components/ui/PageHero";
 
 export const metadata = pageMetadata({
@@ -16,7 +17,9 @@ export const metadata = pageMetadata({
 });
 
 export default async function CreatorsPage() {
-  const creators = await getCreatorsWithFollowers();
+  const all = await getCreatorsWithFollowers();
+  const creators = all.filter((c) => c.size !== "compact");
+  const network = all.filter((c) => c.size === "compact");
   return (
     <>
       <PageHero
@@ -50,6 +53,18 @@ export default async function CreatorsPage() {
           {creators.length > 0 ? (
             <>
               <CreatorList creators={creators} />
+              {network.length > 0 && (
+              <div className="mt-12">
+                <p className="text-sm font-bold">そのほかのネットワーク発信者</p>
+                <ul className="mt-4 grid grid-cols-2 gap-2.5 sm:gap-3 lg:grid-cols-4">
+                  {network.map((c) => (
+                    <li key={c.id}>
+                      <CreatorMini creator={c} />
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
               <p className="mt-10 text-xs leading-relaxed text-muted">
                 ※掲載しているのはネットワークの一部です。最終的な発信者のご提案は、目的やご予算、スケジュールを踏まえてMIRATSUMUが行います。
               </p>
