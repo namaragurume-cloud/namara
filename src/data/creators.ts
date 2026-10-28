@@ -242,6 +242,116 @@ export const creators: Creator[] = [
     published: true,
     size: "compact",
   },
+  {
+    id: "karina",
+    account: "karina.128.128",
+    // TODO: アイコン画像を受け取ったら /images/creators/karina.jpg を設定
+    platform: "Instagram",
+    profileUrl: "https://www.instagram.com/karina.128.128/",
+    genres: [],
+    areas: [],
+    published: true,
+    size: "compact",
+  },
+  {
+    id: "yucchi",
+    account: "yucchi_dosanko",
+    // TODO: アイコン画像を受け取ったら /images/creators/yucchi.jpg を設定
+    platform: "Instagram",
+    profileUrl: "https://www.instagram.com/yucchi_dosanko/",
+    genres: [],
+    areas: [],
+    published: true,
+    size: "compact",
+  },
+  {
+    id: "christa",
+    account: "sapporo.christa.jp",
+    // TODO: アイコン画像を受け取ったら /images/creators/christa.jpg を設定
+    platform: "Instagram",
+    profileUrl: "https://www.instagram.com/sapporo.christa.jp/",
+    genres: [],
+    areas: [],
+    published: true,
+    size: "compact",
+  },
+  {
+    id: "dosannko-gurume",
+    account: "dosannko_gurume",
+    // TODO: アイコン画像を受け取ったら /images/creators/dosannko-gurume.jpg を設定
+    platform: "Instagram",
+    profileUrl: "https://www.instagram.com/dosannko_gurume/",
+    genres: [],
+    areas: [],
+    published: true,
+    size: "compact",
+  },
+  {
+    id: "miho",
+    account: "miho_sapporocafe",
+    // TODO: アイコン画像を受け取ったら /images/creators/miho.jpg を設定
+    platform: "Instagram",
+    profileUrl: "https://www.instagram.com/miho_sapporocafe/",
+    genres: [],
+    areas: [],
+    published: true,
+    size: "compact",
+  },
+  {
+    id: "mogmooon",
+    account: "mogmooon",
+    // TODO: アイコン画像を受け取ったら /images/creators/mogmooon.jpg を設定
+    platform: "Instagram",
+    profileUrl: "https://www.instagram.com/mogmooon/",
+    genres: [],
+    areas: [],
+    published: true,
+    size: "compact",
+  },
+  {
+    id: "kitamaru",
+    account: "kitamaru_sapporo",
+    // TODO: アイコン画像を受け取ったら /images/creators/kitamaru.jpg を設定
+    platform: "Instagram",
+    profileUrl: "https://www.instagram.com/kitamaru_sapporo/",
+    genres: [],
+    areas: [],
+    published: true,
+    size: "compact",
+  },
+  {
+    id: "hiro",
+    account: "hiro_hokkaido_food",
+    // TODO: アイコン画像を受け取ったら /images/creators/hiro.jpg を設定
+    platform: "Instagram",
+    profileUrl: "https://www.instagram.com/hiro_hokkaido_food/",
+    genres: [],
+    areas: [],
+    published: true,
+    size: "compact",
+  },
+  {
+    id: "narumi",
+    account: "mogumogu_narumi",
+    // TODO: アイコン画像を受け取ったら /images/creators/narumi.jpg を設定
+    platform: "Instagram",
+    profileUrl: "https://www.instagram.com/mogumogu_narumi/",
+    genres: [],
+    areas: [],
+    published: true,
+    size: "compact",
+  },
+  {
+    id: "na-pakupaku",
+    account: "na_pakupaku1008",
+    // TODO: アイコン画像を受け取ったら /images/creators/na-pakupaku.jpg を設定
+    platform: "Instagram",
+    profileUrl: "https://www.instagram.com/na_pakupaku1008/",
+    genres: [],
+    areas: [],
+    published: true,
+    size: "compact",
+  },
 ];
 
 export function getCreatorById(id: string | undefined): Creator | undefined {
