@@ -9,14 +9,14 @@ export function CreatorCard({ creator }: { creator: CreatorView }) {
   const label = creator.name ?? creator.account;
   const contactHref = `/contact?creator=${encodeURIComponent(`${label}（@${creator.account}）`)}`;
   return (
-    <article className="group relative flex h-full flex-col overflow-hidden rounded-[24px] border border-line bg-white transition-all duration-500 ease-out-expo hover:-translate-y-1.5 hover:shadow-[0_30px_60px_-30px_rgba(0,0,0,0.3)]">
+    <article className="group relative flex h-full flex-col overflow-hidden rounded-2xl border border-line bg-white sm:rounded-[24px] transition-all duration-500 ease-out-expo hover:-translate-y-1.5 hover:shadow-[0_30px_60px_-30px_rgba(0,0,0,0.3)]">
       <div className="relative aspect-square overflow-hidden bg-mist">
         {creator.image ? (
           <Image
             src={creator.image}
             alt={`${label}のプロフィール画像`}
             fill
-            sizes="(min-width: 1024px) 30vw, (min-width: 640px) 45vw, 80vw"
+            sizes="(min-width: 1024px) 30vw, 45vw"
             className="object-cover transition-transform duration-700 ease-out-expo group-hover:scale-105"
           />
         ) : (
@@ -31,16 +31,17 @@ export function CreatorCard({ creator }: { creator: CreatorView }) {
         )}
       </div>
 
-      <div className="flex flex-1 flex-col p-6">
-        <p className="text-lg font-bold">{label}</p>
+      <div className="flex flex-1 flex-col p-3.5 sm:p-6">
+        <p className="text-sm leading-snug font-bold sm:text-lg">{label}</p>
         <a
           href={creator.profileUrl}
           target="_blank"
           rel="noopener noreferrer"
-          className="mt-1 inline-flex items-center gap-1.5 self-start text-sm text-muted transition-colors hover:text-brand"
+          className="mt-1 inline-flex max-w-full items-center gap-1 self-start text-[11px] text-muted transition-colors hover:text-brand sm:gap-1.5 sm:text-sm"
         >
-          <InstagramIcon size={15} />@{creator.account}
-          <ArrowUpRight size={14} aria-hidden="true" />
+          <InstagramIcon size={13} className="shrink-0" />
+          <span className="truncate">@{creator.account}</span>
+          <ArrowUpRight size={13} aria-hidden="true" className="hidden shrink-0 sm:block" />
           <span className="sr-only">（{creator.platform}を新しいタブで開きます）</span>
         </a>
 
@@ -93,10 +94,12 @@ export function CreatorCard({ creator }: { creator: CreatorView }) {
           href={contactHref}
           event="cta_click"
           params={{ location: "creator_card", creator: creator.id }}
-          className="group/btn mt-auto flex min-h-12 items-center justify-between gap-2 border-t border-line pt-5 text-sm font-bold transition-colors hover:text-brand"
+          className="group/btn mt-auto flex min-h-11 items-center justify-between gap-1 border-t border-line pt-3 text-xs font-bold transition-colors hover:text-brand sm:min-h-12 sm:gap-2 sm:pt-5 sm:text-sm"
         >
-          この発信者を含めて相談する
-          <ArrowRight size={16} aria-hidden="true" className="transition-transform group-hover/btn:translate-x-1" />
+          <span>
+            この発信者<span className="hidden sm:inline">を含めて</span>で相談
+          </span>
+          <ArrowRight size={16} aria-hidden="true" className="shrink-0 transition-transform group-hover/btn:translate-x-1" />
         </TrackedLink>
         {showFollowerCounts && creator.followers !== undefined && (
           <p className="mt-2 text-[11px] text-muted">

@@ -50,7 +50,7 @@ export async function CreatorsSection() {
 
         <ScrollReveal className="mt-14 md:mt-20">
           {creators.length > 0 ? (
-            <Carousel label="グルメインフルエンサー">
+            <Carousel label="グルメインフルエンサー" itemClassName="w-[calc(50%-10px)] sm:w-[46%] lg:w-[31%]">
               {creators.map((c) => (
                 <CreatorCard key={c.id} creator={c} />
               ))}

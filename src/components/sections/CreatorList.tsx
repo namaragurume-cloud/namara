@@ -74,7 +74,7 @@ export function CreatorList({ creators }: { creators: CreatorView[] }) {
       </p>
 
       {filtered.length > 0 ? (
-        <ul className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+        <ul className="grid grid-cols-2 gap-3 sm:gap-5 lg:grid-cols-3">
           {filtered.map((c) => (
             <li key={c.id}>
               <CreatorCard creator={c} />
