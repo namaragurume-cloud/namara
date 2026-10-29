@@ -6,7 +6,7 @@ import { SectionLabel } from "@/components/ui/SectionHeading";
 
 /** トップページ：MIRATSUMU とは */
 export function BrandConcept() {
-  const [first, second] = brand.slogan.split("、");
+  const [first, second] = brand.sloganParts;
   return (
     <section aria-labelledby="brand-title" className="section overflow-hidden bg-white">
       <div className="container-x grid items-center gap-14 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] lg:gap-20">
@@ -28,7 +28,7 @@ export function BrandConcept() {
           <ScrollReveal>
             <SectionLabel>ABOUT MIRATSUMU</SectionLabel>
             <h2 id="brand-title" className="heading-lg mt-5">
-              {first}、
+              {first}
               <br />
               <span className="text-brand">{second}</span>
             </h2>

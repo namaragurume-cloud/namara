@@ -2,7 +2,7 @@ import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { ImageResponse } from "next/og";
 
-export const alt = "MIRATSUMU（ミラツム）- 北の想いを、未来へ紡ぐ。";
+export const alt = "MIRATSUMU（ミラツム）- 北海道の食を未来へ紡ぐ。";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 

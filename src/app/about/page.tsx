@@ -45,7 +45,7 @@ export default async function AboutPage() {
         en="ABOUT"
         title={
           <>
-            北の想いを、
+            北海道の食を
             <br className="hidden md:block" />
             未来へ紡ぐ。
           </>
@@ -83,7 +83,8 @@ export default async function AboutPage() {
                 {brand.name} — {brand.kana}
               </p>
               <p className="mt-3 text-[clamp(1.75rem,1.2rem+2.4vw,3rem)] leading-snug font-extrabold text-ink">
-                {brand.slogan.split("、")[0]}、<span className="text-brand">{brand.slogan.split("、")[1]}</span>
+                {brand.sloganParts[0]}
+                <span className="text-brand">{brand.sloganParts[1]}</span>
               </p>
             </ScrollReveal>
           </div>
