@@ -1,0 +1,10 @@
+import { parseSearchText } from "@/lib/search/parser";
+import { rankStores, buildSuggestions, formatBudget } from "@/lib/search/ranking";
+import { selectSponsored } from "@/lib/ads/selector";
+import { SAMPLE_STORES } from "@/lib/data/sample-stores";
+import { generateSyntheticSearches, generateSyntheticReviews } from "@/lib/data/synthetic";
+import { summarizeDemand, filterLogs, comparablePeriods, compareBreakdowns, findUnderservedThemes } from "@/lib/analytics/aggregate";
+import { buildActionSuggestions } from "@/lib/analytics/insights";
+import * as dict from "@/lib/shared/dictionaries";
+import { PLANS } from "@/lib/data/plans";
+(globalThis as typeof globalThis & { NAMARA?: unknown }).NAMARA = { parseSearchText, rankStores, buildSuggestions, formatBudget, selectSponsored, SAMPLE_STORES, generateSyntheticSearches, generateSyntheticReviews, summarizeDemand, filterLogs, comparablePeriods, compareBreakdowns, findUnderservedThemes, buildActionSuggestions, dict, PLANS };

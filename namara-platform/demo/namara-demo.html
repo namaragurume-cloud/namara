@@ -1,0 +1,474 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>NAMARA デモ</title>
+<style>
+:root{--navy:#1e3a8a;--navy-d:#172554;--blue:#2563eb;--soft:#eff6ff;--ink:#0f172a;--muted:#64748b;--line:#e2e8f0;--surface:#f8fafc;--paper:#fff;--ad:#b45309;--ad-soft:#fffbeb;--good:#047857;--bad:#b91c1c;color-scheme:light}
+*{box-sizing:border-box}
+body{margin:0;background:var(--surface);color:var(--ink);font-family:"Hiragino Sans","Hiragino Kaku Gothic ProN","Noto Sans JP","Yu Gothic UI",Meiryo,system-ui,sans-serif;line-height:1.7;font-size:14px}
+button,input,select{font:inherit}
+a{color:inherit}
+.top{background:var(--navy-d);color:#fff}
+.top .in{max-width:1180px;margin:0 auto;padding:12px 16px;display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between}
+.brand{font-weight:700;letter-spacing:.04em}
+.pill{display:inline-block;border-radius:999px;padding:1px 9px;font-size:12px;font-weight:600;white-space:nowrap}
+.pill.ad{background:var(--ad-soft);color:var(--ad);border:1px solid #fcd34d}
+.pill.good{background:#ecfdf5;color:var(--good)}
+.pill.bad{background:#fef2f2;color:var(--bad)}
+.pill.info{background:var(--soft);color:var(--navy)}
+.pill.mute{background:var(--surface);color:var(--muted);border:1px solid var(--line)}
+.tabs{max-width:1180px;margin:0 auto;padding:0 16px;display:flex;gap:4px;overflow-x:auto}
+.tabs button{background:none;border:0;border-bottom:2px solid transparent;color:#bfdbfe;padding:9px 14px;cursor:pointer;white-space:nowrap}
+.tabs button[aria-selected=true]{color:#fff;border-color:#fff;font-weight:700}
+main{max-width:1180px;margin:0 auto;padding:20px 16px 60px}
+.notice{border:1px solid #fde68a;background:var(--ad-soft);color:#78350f;border-radius:10px;padding:10px 14px;font-size:13px;margin-bottom:16px}
+.notice.info{border-color:#dbeafe;background:var(--soft);color:var(--navy)}
+.card{background:var(--paper);border:1px solid var(--line);border-radius:12px;padding:16px 18px;box-shadow:0 1px 2px rgba(15,23,42,.04)}
+.card h3{margin:0 0 2px;font-size:15px}
+.card .desc{margin:0 0 12px;color:var(--muted);font-size:12px}
+.grid{display:grid;gap:14px}
+.k5{grid-template-columns:repeat(5,minmax(0,1fr))}.k4{grid-template-columns:repeat(4,minmax(0,1fr))}.k6{grid-template-columns:repeat(6,minmax(0,1fr))}
+.c2{grid-template-columns:repeat(2,minmax(0,1fr))}.c3{grid-template-columns:2fr 1fr}
+@media (max-width:900px){.k5,.k6{grid-template-columns:repeat(3,minmax(0,1fr))}.k4{grid-template-columns:repeat(2,minmax(0,1fr))}.c2,.c3{grid-template-columns:1fr}}
+@media (max-width:520px){.k5,.k6,.k4{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.kpi{background:var(--paper);border:1px solid var(--line);border-radius:12px;padding:12px 14px}
+.kpi .l{font-size:12px;color:var(--muted)}
+.kpi .v{font-size:22px;font-weight:700;font-variant-numeric:tabular-nums}
+.kpi .v small{font-size:12px;color:var(--muted);font-weight:500;margin-left:3px}
+.kpi .s{font-size:12px;color:var(--muted)}
+.up{color:var(--good)}.down{color:var(--bad)}
+h2.sec{font-size:13px;color:var(--muted);margin:22px 0 10px}
+h1.page{font-size:20px;margin:0 0 4px}
+.sub{color:var(--muted);font-size:13px;margin:0 0 16px}
+.bars{list-style:none;margin:0;padding:0}
+.bars li{display:grid;grid-template-columns:minmax(80px,120px) 1fr 96px;gap:10px;align-items:center;margin:7px 0;font-size:13px}
+.bars .track{height:10px;background:var(--surface);border-radius:0 4px 4px 0;position:relative}
+.bars .fill{position:absolute;inset:0 auto 0 0;background:var(--navy);border-radius:0 4px 4px 0}
+.bars .hatch{position:absolute;inset:0;background:repeating-linear-gradient(45deg,#e2e8f0 0 4px,transparent 4px 8px)}
+.bars .num{text-align:right;font-variant-numeric:tabular-nums}
+.bars li:hover .fill{background:var(--blue)}
+.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.btn{border:1px solid var(--line);background:var(--paper);border-radius:8px;padding:6px 12px;cursor:pointer}
+.btn:hover{border-color:var(--blue)}
+.btn.pri{background:var(--navy);color:#fff;border-color:var(--navy);font-weight:700}
+.btn.pri:hover{background:var(--navy-d)}
+.btn.sm{padding:3px 9px;font-size:12px}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{font-weight:500;color:var(--muted);font-size:12px;text-align:left;padding:6px 8px;background:var(--surface)}
+td{border-top:1px solid var(--line);padding:7px 8px;vertical-align:top}
+.num{text-align:right;font-variant-numeric:tabular-nums}
+.scroll{overflow-x:auto}
+/* chat */
+.ai-wrap{display:grid;grid-template-columns:minmax(0,430px) minmax(0,1fr);gap:20px;align-items:start}
+.ai-wrap>*,.grid>*{min-width:0}.store,.sponsor,.cond{overflow-wrap:anywhere}
+@media (max-width:900px){.ai-wrap{grid-template-columns:1fr}}
+.phone{background:linear-gradient(#eff6ff99,#fff);border:1px solid var(--line);border-radius:22px;overflow:hidden;display:flex;flex-direction:column;height:760px}
+.phone-h{display:flex;gap:10px;align-items:center;padding:10px 14px;border-bottom:1px solid var(--line);background:#fffffff0}
+.avatar{width:32px;height:32px;border-radius:50%;background:var(--navy);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700}
+.chat{flex:1;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:12px}
+.bub{max-width:90%;border-radius:16px;padding:9px 13px}
+.bub.bot{background:var(--soft);border-top-left-radius:4px}
+.bub.me{background:var(--navy);color:#fff;align-self:flex-end;border-top-right-radius:4px}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.chip{border:1px solid #93c5fd;background:#fff;color:var(--navy);border-radius:999px;padding:3px 10px;font-size:12px;cursor:pointer}
+.cond{background:var(--surface);border-radius:10px;padding:6px 10px;font-size:12px}
+.cond b{color:var(--navy)}
+.store{background:#fff;border:1px solid var(--line);border-radius:12px;padding:12px}
+.store .head{display:flex;gap:10px}
+.ph{width:76px;aspect-ratio:4/3;flex:none;border-radius:8px;background:var(--soft);color:var(--navy);display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:10px}
+.ph span:first-child{font-size:20px}
+.store h4{margin:0;font-size:14px;line-height:1.4}
+.meta{color:var(--muted);font-size:12px}
+.dl{display:grid;grid-template-columns:60px 1fr;gap:2px 8px;font-size:12px;margin-top:8px}
+.dl dt{color:var(--muted)}
+.dl dd{margin:0}
+.why{background:var(--soft);border-radius:8px;padding:6px 8px;margin-top:8px}
+.why b{font-size:11px;color:var(--navy)}
+.why span{display:inline-block;background:#fff;color:var(--navy);border-radius:999px;padding:0 8px;font-size:11px;margin:2px 3px 0 0}
+.warn{color:var(--ad);font-size:11px;margin-top:4px}
+.acts{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.sponsor{background:var(--ad-soft);border:2px solid #fcd34d;border-radius:12px;padding:12px}
+.sponsor .lab{background:var(--ad);color:#fff;border-radius:4px;padding:1px 8px;font-size:11px;font-weight:700}
+.composer{border-top:1px solid var(--line);padding:10px;background:#fff}
+.composer form{display:flex;gap:6px}
+.composer input{flex:1;min-width:0;border:1px solid var(--line);border-radius:999px;padding:8px 14px}
+.composer p{margin:6px 2px 0;font-size:10px;color:var(--muted)}
+.log{font-family:ui-monospace,Menlo,monospace;font-size:11px;max-height:300px;overflow:auto;background:#0f172a;color:#cbd5e1;border-radius:10px;padding:10px}
+.log div{white-space:nowrap}
+.log .t{color:#93c5fd}
+.subtabs{display:flex;gap:6px;margin-bottom:16px;flex-wrap:wrap}
+.subtabs button{border:1px solid var(--line);background:#fff;border-radius:999px;padding:4px 14px;cursor:pointer}
+.subtabs button[aria-selected=true]{background:var(--navy);color:#fff;border-color:var(--navy)}
+.action{border:1px solid var(--line);border-radius:10px;padding:12px;margin-bottom:10px}
+.action .n{display:inline-flex;width:22px;height:22px;border-radius:50%;background:var(--navy);color:#fff;align-items:center;justify-content:center;font-size:12px;font-weight:700;margin-right:6px}
+.action ul{margin:6px 0 0;padding-left:34px;color:var(--muted);font-size:13px}
+.action .foot{font-size:12px;color:var(--muted);margin:6px 0 0 28px}
+.stars{color:var(--ad)}.stars i{color:var(--line);font-style:normal}
+.empty{border:1px dashed var(--line);border-radius:10px;padding:24px;text-align:center;color:var(--muted);background:var(--surface)}
+.modal{position:fixed;inset:0;background:rgba(15,23,42,.45);display:flex;align-items:center;justify-content:center;padding:16px;z-index:20}
+.modal .card{max-width:520px;width:100%;max-height:90vh;overflow:auto}
+.toast{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);background:var(--ink);color:#fff;padding:8px 14px;border-radius:8px;font-size:13px;z-index:30}
+svg text{font-size:10px;fill:#64748b}
+.tip{position:absolute;right:0;top:0;background:var(--ink);color:#fff;font-size:12px;padding:2px 8px;border-radius:6px;pointer-events:none}
+label.f{display:flex;flex-direction:column;gap:3px;font-size:12px;color:var(--muted)}
+label.f input,label.f select{border:1px solid var(--line);border-radius:8px;padding:6px 8px;color:var(--ink)}
+</style>
+</head>
+<body>
+<div class="top">
+  <div class="in">
+    <div class="row"><span class="brand">NAMARA PLATFORM</span><span class="pill ad">デモ（すべて架空データ）</span></div>
+    <span style="font-size:12px;color:#bfdbfe">なまらAI × NAMARA REVIEW ｜ 運営：なまらグルメ</span>
+  </div>
+  <nav class="tabs" role="tablist">
+    <button role="tab" data-tab="ai" aria-selected="true">なまらAI（消費者）</button>
+    <button role="tab" data-tab="review">NAMARA REVIEW（店舗）</button>
+    <button role="tab" data-tab="admin">運営管理</button>
+  </nav>
+</div>
+<main id="app"><div class="notice">デモを読み込んでいます…<br>この表示のまま変わらない場合、表示画面でスクリプト（JavaScript）が止められています。ファイルをダウンロードして、パソコンの Chrome や Edge で開いてください。</div></main>
+<noscript><div style="max-width:720px;margin:20px auto;padding:12px 16px;border:1px solid #fde68a;background:#fffbeb;border-radius:10px">このデモは JavaScript を使います。ファイルを保存して、Chrome や Edge などのブラウザで開いてください。</div></noscript>
+<script>(function(){var e=Object.defineProperty,t=/* @__PURE__ */ ((t,n)=>{let r={};for(var i in t)e(r,i,{get:t[i],enumerable:!0});return n||e(r,Symbol.toStringTag,{value:`Module`}),r})({AREAS:()=>n,BUDGET_BANDS:()=>s,CITY_SYNONYMS:()=>r,FEATURES:()=>o,GENRES:()=>i,SCENES:()=>a,areaLabel:()=>m,budgetBandLabel:()=>v,budgetBandOf:()=>x,featureLabel:()=>_,genreLabel:()=>h,getArea:()=>y,getGenre:()=>b,sceneLabel:()=>g});let n=[{id:`susukino`,label:`すすきの`,city:`札幌市`,center:{lat:43.0556,lng:141.3536},synonyms:[`すすきの`,`ススキノ`,`薄野`,`すすきの駅`]},{id:`odori`,label:`大通`,city:`札幌市`,center:{lat:43.0605,lng:141.3545},synonyms:[`大通`,`大通り`,`大通公園`,`大通駅`]},{id:`sapporo-station`,label:`札幌駅`,city:`札幌市`,center:{lat:43.0687,lng:141.3508},synonyms:[`札幌駅`,`さっぽろ駅`,`札幌駅前`]},{id:`tanukikoji`,label:`狸小路`,city:`札幌市`,center:{lat:43.0577,lng:141.3508},synonyms:[`狸小路`,`たぬきこうじ`]},{id:`maruyama`,label:`円山`,city:`札幌市`,center:{lat:43.0546,lng:141.3195},synonyms:[`円山`,`まるやま`,`円山公園`,`裏参道`]},{id:`kotoni`,label:`琴似`,city:`札幌市`,center:{lat:43.0812,lng:141.3065},synonyms:[`琴似`,`ことに`]},{id:`shin-sapporo`,label:`新札幌`,city:`札幌市`,center:{lat:43.0386,lng:141.4727},synonyms:[`新札幌`,`しんさっぽろ`]},{id:`otaru`,label:`小樽`,city:`小樽市`,center:{lat:43.1907,lng:140.9947},synonyms:[`小樽`,`おたる`,`小樽運河`]},{id:`hakodate`,label:`函館`,city:`函館市`,center:{lat:41.7738,lng:140.7261},synonyms:[`函館`,`はこだて`,`函館駅`,`ベイエリア`]},{id:`asahikawa`,label:`旭川`,city:`旭川市`,center:{lat:43.7631,lng:142.3582},synonyms:[`旭川`,`あさひかわ`]}],r={札幌市:[`札幌市`,`札幌`,`さっぽろ`],小樽市:[],函館市:[],旭川市:[]},i=[{id:`yakiniku`,label:`焼肉`,synonyms:[`焼肉`,`焼き肉`,`やきにく`,`ホルモン`,`和牛`],related:[`jingisukan`]},{id:`jingisukan`,label:`ジンギスカン`,synonyms:[`ジンギスカン`,`じんぎすかん`,`ラム肉`,`羊肉`],related:[`yakiniku`]},{id:`sushi`,label:`寿司`,synonyms:[`寿司`,`すし`,`鮨`,`お寿司`,`回転寿司`],related:[`kaisen`,`washoku`]},{id:`kaisen`,label:`海鮮`,synonyms:[`海鮮`,`魚介`,`海鮮丼`,`刺身`,`カニ`,`蟹`,`かに`,`ウニ`,`うに`,`いくら`],related:[`sushi`,`washoku`]},{id:`ramen`,label:`ラーメン`,synonyms:[`ラーメン`,`らーめん`,`拉麺`,`味噌ラーメン`,`つけ麺`],related:[]},{id:`soup-curry`,label:`スープカレー`,synonyms:[`スープカレー`,`スープカリー`,`カレー`],related:[]},{id:`italian`,label:`イタリアン`,synonyms:[`イタリアン`,`イタリア料理`,`パスタ`,`ピザ`,`ピッツァ`],related:[`french`,`bar`]},{id:`french`,label:`フレンチ`,synonyms:[`フレンチ`,`フランス料理`,`ビストロ`],related:[`italian`]},{id:`izakaya`,label:`居酒屋`,synonyms:[`居酒屋`,`飲み屋`,`大衆酒場`],related:[`yakitori`,`kaisen`]},{id:`yakitori`,label:`焼き鳥`,synonyms:[`焼き鳥`,`焼鳥`,`やきとり`],related:[`izakaya`]},{id:`washoku`,label:`和食`,synonyms:[`和食`,`日本料理`,`割烹`,`そば`,`蕎麦`,`うどん`,`天ぷら`],related:[`sushi`,`kaisen`]},{id:`chinese`,label:`中華`,synonyms:[`中華`,`中華料理`,`餃子`,`ぎょうざ`,`四川`],related:[]},{id:`cafe`,label:`カフェ`,synonyms:[`カフェ`,`喫茶`,`喫茶店`,`コーヒー`,`珈琲`],related:[`sweets`]},{id:`sweets`,label:`スイーツ`,synonyms:[`スイーツ`,`パフェ`,`ケーキ`,`甘いもの`,`デザート`,`シメパフェ`],related:[`cafe`]},{id:`bar`,label:`バー`,synonyms:[`バー`,`BAR`,`ワインバー`,`カクテル`],related:[`italian`]}],a=[{id:`date`,label:`デート`,synonyms:[`デート`,`カップル`,`恋人`,`彼女と`,`彼氏と`]},{id:`anniversary`,label:`記念日`,synonyms:[`記念日`,`誕生日`,`お祝い`,`プロポーズ`]},{id:`family`,label:`家族`,synonyms:[`家族`,`ファミリー`,`親と`,`両親`]},{id:`business`,label:`接待・会食`,synonyms:[`接待`,`会食`,`ビジネス`,`取引先`,`商談`]},{id:`party`,label:`宴会・飲み会`,synonyms:[`宴会`,`飲み会`,`歓迎会`,`送別会`,`歓送迎会`,`忘年会`,`新年会`,`打ち上げ`]},{id:`solo`,label:`ひとり`,synonyms:[`ひとり`,`一人`,`1人で`,`おひとりさま`,`おひとり様`,`ソロ`]},{id:`girls`,label:`女子会`,synonyms:[`女子会`,`ママ友`]},{id:`tourist`,label:`観光`,synonyms:[`観光`,`旅行`,`出張`,`お土産`]},{id:`lunch`,label:`ランチ`,synonyms:[`ランチ`,`昼ごはん`,`昼ご飯`,`お昼`,`昼食`]}],o=[{id:`private_room`,label:`個室あり`,synonyms:[`個室`,`半個室`,`完全個室`]},{id:`non_smoking`,label:`禁煙`,synonyms:[`禁煙`,`全席禁煙`,`たばこNG`,`タバコNG`]},{id:`kids_friendly`,label:`子連れOK`,synonyms:[`子連れ`,`子ども連れ`,`子供連れ`,`キッズ`,`赤ちゃん`,`ベビーカー`,`子ども`,`子供`]},{id:`parking`,label:`駐車場あり`,synonyms:[`駐車場`,`車で`,`パーキング`]},{id:`late_night`,label:`深夜営業`,synonyms:[`深夜`,`遅くまで`,`朝まで`,`終電後`]},{id:`counter`,label:`カウンター席`,synonyms:[`カウンター`]},{id:`all_you_can_drink`,label:`飲み放題`,synonyms:[`飲み放題`,`のみほ`]},{id:`takeout`,label:`テイクアウト`,synonyms:[`テイクアウト`,`持ち帰り`,`お持ち帰り`]}],s=[{id:`under-1000`,label:`〜1,000円`,min:0,max:1e3},{id:`1000-2000`,label:`1,000〜2,000円`,min:1001,max:2e3},{id:`2000-4000`,label:`2,000〜4,000円`,min:2001,max:4e3},{id:`4000-7000`,label:`4,000〜7,000円`,min:4001,max:7e3},{id:`7000-10000`,label:`7,000〜10,000円`,min:7001,max:1e4},{id:`over-10000`,label:`10,000円〜`,min:10001,max:1/0}],c=e=>new Map(e.map(e=>[e.id,e])),l=c(n),u=c(i),d=c(a),f=c(o),p=c(s),m=e=>l.get(e)?.label??e,h=e=>u.get(e)?.label??e,g=e=>d.get(e)?.label??e,_=e=>f.get(e)?.label??e,v=e=>p.get(e)?.label??e,y=e=>l.get(e),b=e=>u.get(e);function x(e){return s.find(t=>e>=t.min&&e<=t.max)?.id??`over-10000`}let S=[...n.flatMap(e=>e.synonyms.map(t=>({kind:`area`,id:e.id,word:t}))),...Object.entries(r).flatMap(([e,t])=>t.map(t=>({kind:`city`,id:e,word:t}))),...i.flatMap(e=>e.synonyms.map(t=>({kind:`genre`,id:e.id,word:t}))),...a.flatMap(e=>e.synonyms.map(t=>({kind:`scene`,id:e.id,word:t}))),...o.flatMap(e=>e.synonyms.map(t=>({kind:`feature`,id:e.id,word:t})))].map(e=>({...e,word:T(e.word)})).sort((e,t)=>t.word.length-e.word.length),C={一:`1`,二:`2`,三:`3`,四:`4`,五:`5`,六:`6`,七:`7`,八:`8`,九:`9`},w=/* @__PURE__ */ new Set(/* @__PURE__ */ `お店.店.おすすめ.オススメ.教えて.探して.向け.行ける.あり.希望.予算.近く.周辺.付近.エリア.美味しい.おいしい.いい.良い.安い.人気.ところ.場所.ごはん.ご飯.食事.料理.お願い.したい.ください.できる.大丈夫.以内.くらい`.split(`.`));function T(e){return e.normalize(`NFKC`).replace(/[〜～]/g,`~`).replace(/[‐－―ー](?=\d)/g,`-`).replace(/\s+/g,` `).trim()}function E(e,t){let n=Number(e.replace(/,/g,``));return Math.round(t===`万`?n*1e4:t===`千`?n*1e3:n)}function D(e){let t=e.replace(/([一二三四五六七八九])(千|万)/g,(e,t,n)=>`${C[t]}${n}`),n=String.raw`(\d+(?:[.,]\d+)*)\s*(万|千)?`,r=new RegExp(String.raw`(?:予算\s*)?${n}\s*円?\s*(?:~|-|から)\s*${n}\s*円`),i=t.match(r);if(i&&i[1]&&i[3]){let e=E(i[1],i[2]),n=E(i[3],i[4]);return t=t.replace(i[0],` `),{value:{min:Math.min(e,n),max:Math.max(e,n),target:null,strict:!0},rest:t}}let a=new RegExp(String.raw`(?:予算\s*|1人\s*|ひとり\s*)?${n}\s*(?:円|えん)\s*(以内|以下|まで|未満|以上|から|くらい|ぐらい|程度|前後|位)?`),o=t.match(a),s=o?null:t.match(new RegExp(String.raw`予算\s*${n}`)),c=o??s;if(c&&c[1]){let e=E(c[1],c[2]),n=o?o[3]:void 0;return t=t.replace(c[0],` `),e<100||e>1e5?{value:null,rest:t}:n===`以内`||n===`以下`||n===`まで`||n===`未満`?{value:{min:null,max:e,target:null,strict:!0},rest:t}:n===`以上`||n===`から`?{value:{min:e,max:null,target:null,strict:!1},rest:t}:{value:{min:null,max:null,target:e,strict:!1},rest:t}}return{value:null,rest:t}}function ee(e){for(let[t,n]of Object.entries({ふたり:2,二人:2,三人:3,四人:4,五人:5,六人:6}))if(e.includes(t))return{value:n,rest:e.replace(t,` `)};let t=e.match(/(\d{1,2})\s*(人|名)(?:で|様)?/);if(t&&t[1]){let n=Number(t[1]);if(n>=1&&n<=50)return{value:n,rest:e.replace(t[0],` `)}}return{value:null,rest:e}}function te(e){let t=e,n=null,r=null,i=t.match(/(今日|明日|明後日|あさって|今夜|今晩|今週末|週末|来週|(?:月|火|水|木|金|土|日)曜日?|\d{1,2}月\d{1,2}日|\d{1,2}\/\d{1,2})/);i&&(n=i[0],t=t.replace(i[0],` `));let a=t.match(/(\d{1,2})\s*(?::\s*(\d{2})|時(?:\s*(\d{1,2})\s*分|半)?)(?:頃|ごろ|から|~)?/);if(a&&a[1]&&Number(a[1])<=29){let e=a[2]??a[3]??(a[0].includes(`半`)?`30`:`00`);r=`${a[1]}:${e.padStart(2,`0`)}`,t=t.replace(a[0],` `)}return{dateText:n,timeText:r,rest:t}}function O(e,t,n){if(/ランチ|昼ごはん|昼ご飯|昼食|お昼|(?<!真)昼/.test(e))return`lunch`;if(/ディナー|夕食|晩ごはん|晩ご飯|夜ごはん|夜ご飯|飲み|(?<!深)夜(?!景)/.test(e)||t===`今夜`||t===`今晩`)return`dinner`;if(n){let e=Number(n.split(`:`)[0]);if(e>=10&&e<15)return`lunch`;if(e>=17||e<5)return`dinner`}return null}function ne(e){let t=e.split(/[\s、。,.!?！？・/()（）「」]+|(?:で|の|が|を|に|は|と|へ|や|も|な|ある|あり|向け|行ける)/).map(e=>e.trim()).filter(e=>e.length>=2).filter(e=>!w.has(e)).filter(e=>!/^[ぁ-んー]+$/.test(e)).filter(e=>!/^\d+$/.test(e));return[...new Set(t)].slice(0,5)}let k=e=>[...new Set(e)];function re(e){let t=k(e.areaIds),n=t.length>0?[]:k(e.cities),r=e.budget;r&&r.min!==null&&r.max!==null&&r.min>r.max&&(r={...r,min:r.max,max:r.min});let i=k(e.scenes),a=e.mealTime??(i.includes(`lunch`)?`lunch`:null);return{...e,areaIds:t,cities:n,genreIds:k(e.genreIds),budget:r,mealTime:a,scenes:i,features:k(e.features),keywords:k(e.keywords)}}function ie(){return{areaIds:[],cities:[],genreIds:[],budget:null,mealTime:null,scenes:[],features:[],partySize:null,dateText:null,timeText:null,keywords:[]}}function A(e){return e.areaIds.length>0||e.cities.length>0||e.genreIds.length>0||e.budget!==null||e.scenes.length>0||e.features.length>0||e.keywords.length>0||e.mealTime!==null}function j(e){let t=[],n=ie(),r=T(e).slice(0,200),i=D(r);n.budget=i.value,r=i.rest;let a=ee(r);n.partySize=a.value,r=a.rest;let o=te(r);n.dateText=o.dateText,n.timeText=o.timeText,r=o.rest,n.mealTime=O(r,o.dateText,o.timeText);for(let e of S)r.includes(e.word)&&(r=r.split(e.word).join(` `),e.kind===`area`?n.areaIds.push(e.id):e.kind===`city`?n.cities.push(e.id):e.kind===`genre`?n.genreIds.push(e.id):e.kind===`scene`?n.scenes.push(e.id):n.features.push(e.id));n.partySize===1&&!n.scenes.includes(`solo`)&&n.scenes.push(`solo`),r=r.replace(/ランチ|ディナー|昼ごはん|昼ご飯|昼食|お昼|夕食|晩ごはん|晩ご飯|夜ごはん|夜ご飯|飲み|昼|夜(?!景)/g,` `),n.keywords=ne(r);let s=re(n);return A(s)?(s.areaIds.length===0&&s.cities.length===0&&t.push(`エリアの指定がないため、北海道内のサンプル店舗全体から探しました。`),s.budget&&s.partySize&&s.partySize>1&&t.push(`予算は1人あたりの金額として扱っています。`)):t.push(`条件を読み取れませんでした。「すすきの 焼肉 予算5000円」のように、エリア・ジャンル・予算を入れてみてください。`),(s.dateText||s.timeText)&&t.push(`日時は参考情報です。空席状況は確認していないため、予約リンク先でご確認ください。`),{conditions:s,parser:`rule`,notes:t}}let M=1.2,N=e=>`${e.toLocaleString(`ja-JP`)}円`;function P(e,t){return t===`lunch`?e.budget.lunch?{range:e.budget.lunch,label:`昼`}:null:e.budget.dinner?{range:e.budget.dinner,label:`夜`}:e.budget.lunch?{range:e.budget.lunch,label:`昼`}:null}function F(e,t){let n=P(e,t);return!n||!e.budget.basis?{text:`不明`,basis:`価格情報を確認できていません`}:{text:`${n.label} ${N(n.range.min)}〜${N(n.range.max)}（1人あたり目安）`,basis:e.budget.basis}}function I(e,t){return Math.floor((t.getTime()-(/* @__PURE__ */ new Date(`${e}T00:00:00Z`)).getTime())/864e5)}function L(e,t){if(!t.budget)return`fit`;let n=P(e,t.mealTime);if(!n||!e.budget.basis)return`unknown`;let{min:r,max:i}=n.range,a=t.budget;return a.max===null?a.min===null?a.target===null||r<=a.target&&i<=a.target*M?`fit`:r<=a.target*M&&i>=a.target*.5?`near`:`out`:i>=a.min?`fit`:`out`:i<=a.max?`fit`:r<=a.max?`near`:`out`}function R(e,t){if(!e.published||e.verification.status!==`verified`||t.areaIds.length>0&&!t.areaIds.includes(e.areaId)||t.areaIds.length===0&&t.cities.length>0&&!t.cities.includes(e.city)||t.genreIds.length>0&&!e.genreIds.some(e=>t.genreIds.includes(e))||!t.features.every(t=>e.features.includes(t))||t.mealTime===`lunch`&&e.budget.lunch===null)return!1;let n=L(e,t);return n!==`out`&&n!==`unknown`}function z(e,t,n){let r=[],i=[],a=e.genreIds[0];if(t.genreIds.length>0){let n=e.genreIds.find(e=>t.genreIds.includes(e));n&&n===a?r.push({code:`genre_exact`,label:`ジャンル「${h(n)}」が一致`,points:30}):n&&r.push({code:`genre_related`,label:`「${h(n)}」も提供`,points:20})}if(t.areaIds.includes(e.areaId)?r.push({code:`area_exact`,label:`エリア「${m(e.areaId)}」`,points:20}):t.cities.includes(e.city)&&r.push({code:`city_match`,label:`${e.city}内（${m(e.areaId)}）`,points:10}),t.budget){let n=L(e,t),i=t.budget.max??t.budget.target??t.budget.min,a=i?N(i):``;n===`fit`?r.push({code:`budget_fit`,label:`予算${a}${t.budget.min!==null&&t.budget.max===null?`以上`:``}に収まる目安`,points:20}):n===`near`&&r.push({code:`budget_near`,label:`予算${a}で選べるメニューあり（上限を超える場合あり）`,points:8})}let o=t.scenes.filter(e=>e!==`lunch`).filter(t=>e.scenes.includes(t));for(let e of o.slice(0,2))r.push({code:`scene_match`,label:`${g(e)}向き`,points:10});for(let n of t.features)e.features.includes(n)&&r.push({code:`feature_match`,label:_(n),points:5});for(let n of t.keywords){let t=e.tags.find(e=>e.includes(n)||n.includes(e))??(e.name.includes(n)?n:null);t&&r.push({code:`keyword_match`,label:`「${t}」`,points:8})}let s=e.verification.verifiedAt;if(s){let e=I(s,n);e<=90?r.push({code:`fresh_info`,label:`${s}に情報確認済み`,points:5}):e>180&&(r.push({code:`stale_info`,label:`情報確認から6か月以上経過`,points:-10}),i.push(`掲載情報の確認日は${s}です。最新情報は店舗にご確認ください。`))}return e.hours||i.push(`営業時間は不明です。`),{score:r.reduce((e,t)=>e+t.points,0),reasons:r,warnings:i}}function ae(e,t){return t.areaIds.length>0||t.cities.length>0||t.genreIds.length>0||t.features.length>0||t.budget!==null||t.mealTime===`lunch`||e.some(e=>e.code===`scene_match`||e.code===`keyword_match`)}function B(e,t,n=/* @__PURE__ */ new Date){if(!A(t))return{results:[],totalCandidates:0};let r=e.filter(e=>R(e,t)).map(e=>({store:e,...z(e,t,n)})).filter(e=>ae(e.reasons,t)).sort((e,t)=>t.score-e.score||(t.store.verification.verifiedAt??``).localeCompare(e.store.verification.verifiedAt??``)||e.store.id.localeCompare(t.store.id));return{results:r.slice(0,5).map((e,n)=>{let r=F(e.store,t.mealTime);return{store:e.store,rank:n+1,score:e.score,reasons:e.reasons,budgetText:r.text,budgetBasis:r.basis,warnings:e.warnings}}),totalCandidates:r.length}}function oe(e,t,n,r=/* @__PURE__ */ new Date){if(n>=5||!A(t))return[];let i=[],a=(t,a)=>{let o=B(e,a,r).totalCandidates;o>n&&i.push(`${t}と${o}件見つかります。`)};for(let e of t.features)a(`「${_(e)}」の条件を外す`,{...t,features:t.features.filter(t=>t!==e)});if(t.budget&&a(`予算の条件を外す`,{...t,budget:null}),t.areaIds.length>0){let n=e.find(e=>e.areaId===t.areaIds[0])?.city;n&&a(`エリアを${n}全体に広げる`,{...t,areaIds:[],cities:[n]})}return t.genreIds.length>0&&a(`ジャンルを指定しない`,{...t,genreIds:[]}),i.slice(0,3)}let se=e=>e.toISOString().slice(0,10);function ce(e,t){return Math.max(0,e.budgetYen-t)}function le(e,t,n){let r=se(n);return e.status===`approved`&&e.startDate<=r&&r<=e.endDate&&ce(e,t)>=e.cpcYen}function ue(e){let{conditions:t,now:n}=e;if(t.areaIds.length===0&&t.genreIds.length===0)return null;let r=new Map(e.stores.map(e=>[e.id,e])),i=[];for(let a of e.campaigns){let o=e.spentByCampaign.get(a.id)??0;if(!le(a,o,n))continue;let s=r.get(a.storeId);if(!s||e.organicStoreIds.includes(s.id)||!R(s,t))continue;let c=[];if(t.areaIds.length>0){let e=a.targeting.areaIds.find(e=>t.areaIds.includes(e));if(!e)continue;c.push(`エリア「${m(e)}」の検索`)}if(t.genreIds.length>0){let e=a.targeting.genreIds.find(e=>t.genreIds.includes(e));if(!e)continue;c.push(`ジャンル「${h(e)}」の検索`)}t.budget&&c.push(`ご希望の予算に合う目安`);let{score:l}=z(s,t,n);i.push({campaign:a,store:s,matchReasons:c,score:l,spentRatio:o/a.budgetYen})}i.sort((e,t)=>t.score-e.score||e.spentRatio-t.spentRatio||e.campaign.id.localeCompare(t.campaign.id));let a=i[0];return a?{campaign:a.campaign,store:a.store,matchReasons:a.matchReasons}:null}function V(e){let t=e>>>0,n=()=>{t=t+1831565813>>>0;let e=t;return e=Math.imul(e^e>>>15,e|1),e^=e+Math.imul(e^e>>>7,e|61),((e^e>>>14)>>>0)/4294967296};return{next:n,int(e,t){return e+Math.floor(n()*(t-e+1))},pick(e){let t=e[Math.floor(n()*e.length)];if(t===void 0)throw Error(`pick: empty list`);return t}}}let H={yakiniku:{words:[`焼肉`,`炭火焼肉`,`ホルモン`],lunch:{min:1200,max:2e3},lunchRate:.4,dinner:{min:4e3,max:8e3},scenes:[`date`,`family`,`party`,`business`],features:{private_room:.5,non_smoking:.5,kids_friendly:.5,parking:.3,all_you_can_drink:.5},tags:[`和牛`,`道産牛`,`厚切りタン`,`食べ放題`]},jingisukan:{words:[`ジンギスカン`,`成吉思汗`],lunch:{min:1200,max:1800},lunchRate:.3,dinner:{min:2800,max:5e3},scenes:[`tourist`,`party`,`solo`],features:{counter:.7,non_smoking:.3,late_night:.4,all_you_can_drink:.4},tags:[`生ラム`,`道産ラム`,`七輪`]},sushi:{words:[`鮨`,`寿司`,`すし処`],lunch:{min:1800,max:4e3},lunchRate:.6,dinner:{min:5e3,max:15e3},scenes:[`date`,`anniversary`,`business`,`tourist`],features:{counter:.9,private_room:.4,non_smoking:.8},tags:[`おまかせ`,`地酒`,`道産ネタ`,`ウニ`]},kaisen:{words:[`海鮮`,`海鮮酒場`,`浜焼き`],lunch:{min:1500,max:3e3},lunchRate:.8,dinner:{min:3e3,max:7e3},scenes:[`tourist`,`family`,`party`],features:{kids_friendly:.6,private_room:.4,non_smoking:.6,all_you_can_drink:.4,parking:.3},tags:[`海鮮丼`,`カニ`,`炉端焼き`,`朝獲れ`]},ramen:{words:[`らーめん`,`麺屋`,`中華そば`],lunch:{min:900,max:1400},lunchRate:1,dinner:{min:900,max:1500},scenes:[`solo`,`lunch`,`tourist`],features:{counter:.9,late_night:.5,kids_friendly:.4,non_smoking:.9},tags:[`味噌`,`醤油`,`塩`,`シメのラーメン`]},"soup-curry":{words:[`スープカレー`,`カリー食堂`],lunch:{min:1200,max:1900},lunchRate:1,dinner:{min:1300,max:2200},scenes:[`lunch`,`solo`,`date`,`tourist`],features:{non_smoking:1,kids_friendly:.6,parking:.3,takeout:.5},tags:[`野菜たっぷり`,`辛さ調整`,`チキンレッグ`]},italian:{words:[`トラットリア`,`イタリアン食堂`,`ピッツェリア`],lunch:{min:1300,max:2500},lunchRate:.8,dinner:{min:3500,max:8e3},scenes:[`date`,`anniversary`,`girls`,`lunch`],features:{non_smoking:.9,private_room:.55,kids_friendly:.3,all_you_can_drink:.3},tags:[`ワイン`,`窯焼きピッツァ`,`道産チーズ`,`夜景`]},french:{words:[`ビストロ`,`レストラン`],lunch:{min:2500,max:5e3},lunchRate:.5,dinner:{min:7e3,max:15e3},scenes:[`date`,`anniversary`,`business`],features:{non_smoking:1,private_room:.6},tags:[`コース`,`ワイン`,`記念日プレート`,`夜景`]},izakaya:{words:[`居酒屋`,`酒場`,`炉端`],lunch:null,lunchRate:0,dinner:{min:3e3,max:5e3},scenes:[`party`,`business`,`girls`],features:{private_room:.6,all_you_can_drink:.8,late_night:.5,non_smoking:.3},tags:[`地酒`,`道産食材`,`宴会コース`]},yakitori:{words:[`焼き鳥`,`串焼き`],lunch:null,lunchRate:0,dinner:{min:2500,max:4500},scenes:[`solo`,`party`,`date`],features:{counter:.8,late_night:.4,all_you_can_drink:.3},tags:[`備長炭`,`地鶏`,`日本酒`]},washoku:{words:[`和食`,`割烹`,`蕎麦`],lunch:{min:1200,max:3e3},lunchRate:.7,dinner:{min:4e3,max:1e4},scenes:[`business`,`family`,`anniversary`],features:{private_room:.7,non_smoking:.8,kids_friendly:.3,parking:.3},tags:[`季節の会席`,`手打ち`,`地酒`]},chinese:{words:[`中華`,`餃子`,`飯店`],lunch:{min:900,max:1500},lunchRate:.9,dinner:{min:1800,max:4e3},scenes:[`family`,`party`,`lunch`],features:{kids_friendly:.7,private_room:.4,parking:.3,takeout:.5},tags:[`麻婆豆腐`,`焼き餃子`,`円卓`]},cafe:{words:[`カフェ`,`珈琲店`,`喫茶`],lunch:{min:900,max:1600},lunchRate:.9,dinner:{min:1e3,max:2e3},scenes:[`solo`,`girls`,`date`,`lunch`],features:{non_smoking:1,kids_friendly:.6,takeout:.6},tags:[`自家焙煎`,`ワークスペース`,`ケーキ`]},sweets:{words:[`パフェ`,`スイーツ`],lunch:null,lunchRate:0,dinner:{min:1200,max:2200},scenes:[`girls`,`date`,`solo`],features:{non_smoking:1,late_night:.6,takeout:.4},tags:[`シメパフェ`,`季節のフルーツ`]},bar:{words:[`バー`,`ワインバー`],lunch:null,lunchRate:0,dinner:{min:3e3,max:7e3},scenes:[`date`,`solo`],features:{counter:.9,late_night:.9},tags:[`カクテル`,`ウイスキー`,`夜景`]}},U=[`ゆきあかり`,`しらかば`,`ほしぞら`,`はまなす`,`きたかぜ`,`こもれび`,`ゆめぴりか`,`つきみ`,`あおば`,`すずらん`,`なないろ`,`ひだまり`,`みなと`,`やまびこ`,`ふゆごもり`,`かぜのね`],de={susukino:38,odori:28,"sapporo-station":28,tanukikoji:12,maruyama:12,kotoni:7,"shin-sapporo":7,otaru:12,hakodate:12,asahikawa:8},fe={susukino:[`yakiniku`,`yakiniku`,`jingisukan`,`izakaya`,`ramen`,`sweets`,`bar`,`sushi`,`yakitori`,`kaisen`],odori:[`italian`,`italian`,`cafe`,`french`,`washoku`,`soup-curry`,`kaisen`],"sapporo-station":[`kaisen`,`sushi`,`ramen`,`izakaya`,`chinese`,`cafe`,`soup-curry`,`italian`],maruyama:[`cafe`,`french`,`italian`,`sweets`,`soup-curry`],otaru:[`sushi`,`kaisen`,`cafe`,`sweets`],hakodate:[`kaisen`,`sushi`,`ramen`,`cafe`],asahikawa:[`ramen`,`yakiniku`,`jingisukan`,`izakaya`]},W=Object.keys(H),G=`2026-10-01`;function K(e){return Math.round(e/100)*100}function q(e,t){let n=/* @__PURE__ */ new Date(`${e}T00:00:00Z`);return n.setUTCDate(n.getUTCDate()+t),n.toISOString().slice(0,10)}function pe(){let e=q(G,-50),t={isSample:!0,published:!0,websiteUrl:null,photo:null,verification:{status:`verified`,verifiedAt:e,source:`sample`},updatedAt:e};return[{...t,id:`store-001`,name:`炭火焼肉 ゆきあかり すすきの本店（架空）`,areaId:`susukino`,city:`札幌市`,address:`札幌市（すすきの周辺・架空の住所）`,genreIds:[`yakiniku`],scenes:[`date`,`party`,`business`,`family`],features:[`private_room`,`non_smoking`,`all_you_can_drink`,`kids_friendly`],tags:[`道産牛`,`厚切りタン`],budget:{lunch:null,dinner:{min:5e3,max:7500},basis:`店舗提供メニュー表（架空データ）`},hours:`17:00〜23:30（架空）`,reservationUrl:`https://example.com/reserve/store-001`,location:{lat:43.0551,lng:141.3541,approximate:!0},organizationId:`org-demo-1`},{...t,id:`store-002`,name:`海鮮酒場 しらかば 札幌駅前店（架空）`,areaId:`sapporo-station`,city:`札幌市`,address:`札幌市（札幌駅周辺・架空の住所）`,genreIds:[`kaisen`,`izakaya`],scenes:[`party`,`tourist`,`family`,`lunch`],features:[`private_room`,`kids_friendly`,`all_you_can_drink`],tags:[`海鮮丼`,`炉端焼き`,`地酒`],budget:{lunch:{min:1300,max:2200},dinner:{min:3500,max:5500},basis:`店舗提供メニュー表（架空データ）`},hours:`11:30〜14:00 / 17:00〜23:00（架空）`,reservationUrl:`https://example.com/reserve/store-002`,location:{lat:43.0682,lng:141.3513,approximate:!0},organizationId:`org-demo-1`},{...t,id:`store-003`,name:`トラットリア はまなす 大通店（架空）`,areaId:`odori`,city:`札幌市`,address:`札幌市（大通周辺・架空の住所）`,genreIds:[`italian`],scenes:[`date`,`anniversary`,`girls`,`lunch`],features:[`non_smoking`,`private_room`],tags:[`窯焼きピッツァ`,`ワイン`,`道産チーズ`],budget:{lunch:{min:1500,max:2400},dinner:{min:4e3,max:6500},basis:`店舗提供メニュー表（架空データ）`},hours:null,reservationUrl:null,location:{lat:43.0601,lng:141.3552,approximate:!0},organizationId:`org-demo-2`}]}function me(){let e=V(20261022),t=pe(),r=new Set(t.map(e=>e.name)),i=t.length+1;for(let a of n){let n=de[a.id],o=fe[a.id]??W;for(let s=0;s<n;s+=1){let n=e.next()<.7?e.pick(o):e.pick(W),s=H[n],c=e.next()<.25?he[n]:void 0,l=c?[n,c]:[n],u=``;for(let t=0;t<20&&(!u||r.has(u));t+=1)u=`${e.pick(s.words)} ${e.pick(U)} ${a.label}店（架空）`;r.has(u)&&(u=`${e.pick(s.words)} ${e.pick(U)} ${a.label}${i}号店（架空）`),r.add(u);let d=.8+e.next()*.5,f=K(s.dinner.min*d),p={min:f,max:Math.max(f+500,K(s.dinner.max*d))},m=s.lunch!==null&&e.next()<s.lunchRate,h=m&&s.lunch?{min:K(s.lunch.min*d),max:K(s.lunch.max*d)}:null,g=Object.entries(s.features).filter(([,t])=>e.next()<t).map(([e])=>e),_=s.scenes.filter(()=>e.next()<.7);m&&!_.includes(`lunch`)&&_.push(`lunch`),g.includes(`kids_friendly`)&&!_.includes(`family`)&&_.push(`family`);let v=s.tags.filter(()=>e.next()<.5),y=`store-${String(i).padStart(3,`0`)}`,b=e.next()<.08,x=e.next()<.15,S=e.next()<.1?200+e.int(0,150):e.int(3,120),C=e.next()<.04,w=e.next()<.03;t.push({id:y,name:u,isSample:!0,published:!w,areaId:a.id,city:a.city,address:`${a.city}（${a.label}周辺・架空の住所）`,genreIds:l,scenes:_,features:g,tags:v,budget:{lunch:b?null:h,dinner:b?null:p,basis:b?null:`店舗提供メニュー表（架空データ）`},hours:x?null:m?`11:30〜14:30 / 17:00〜22:00（架空）`:`17:00〜23:00（架空）`,reservationUrl:e.next()<.5?`https://example.com/reserve/${y}`:null,websiteUrl:null,photo:null,location:{lat:Number((a.center.lat+(e.next()-.5)*.006).toFixed(5)),lng:Number((a.center.lng+(e.next()-.5)*.006).toFixed(5)),approximate:!0},verification:{status:C?`unverified`:`verified`,verifiedAt:C?null:q(G,-S),source:`sample`},organizationId:null,updatedAt:q(G,-S)}),i+=1}}return t}let he={sushi:`kaisen`,kaisen:`izakaya`,izakaya:`yakitori`,yakiniku:`izakaya`,cafe:`sweets`,italian:`bar`,washoku:`sushi`},ge=me(),_e={susukino:30,"sapporo-station":22,odori:18,tanukikoji:6,maruyama:6,otaru:6,hakodate:6,kotoni:2,"shin-sapporo":2,asahikawa:2},ve={yakiniku:14,kaisen:12,sushi:10,ramen:10,"soup-curry":8,jingisukan:8,izakaya:10,italian:7,cafe:6,sweets:4,yakitori:4,washoku:3,french:2,chinese:2};function J(e,t){let n=Object.entries(t),r=n.reduce((e,[,t])=>e+t,0),i=e.next()*r;for(let[e,t]of n)if(i-=t,i<=0)return e;let a=n[n.length-1];if(!a)throw Error(`weightedPick: empty`);return a[0]}function ye(e,t,r=60){let a=V(4242),o=[],s=[],c=Array.from({length:700},(e,t)=>`syn-${t.toString(36)}`),l=t.getUTCMonth();for(let u=r;u>=1;--u){let r=/* @__PURE__ */ new Date(t.getTime()-u*864e5),d=r.getUTCMonth()===l,f=r.getUTCDay()===5||r.getUTCDay()===6,p=35+a.int(0,15)+(f?15:0)+(d?8:0);for(let t=0;t<p;t+=1){let t=n.find(e=>e.id===J(a,_e)),l=i.find(e=>e.id===J(a,ve)),u=[];t&&a.next()<.85&&u.push(a.pick(t.synonyms)),l&&a.next()<.9&&u.push(a.pick(l.synonyms));let f=a.next()<.25;if(f&&u.push(`ランチ`),a.next()<.55){let e=f?a.pick([1e3,1200,1500,2e3]):a.pick([3e3,4e3,5e3,6e3,8e3,1e4]);u.push(a.next()<.5?`予算${e}円`:`${e}円以内`)}a.next()<(d?.22:.1)&&u.push(`個室`),a.next()<(d?.15:.06)&&u.push(`宴会`),a.next()<.1&&u.push(`デート`),a.next()<.08&&u.push(`子連れ`),a.next()<.05&&u.push(`禁煙`);let p=j(u.join(` `)),m=B(e,p.conditions,r),h=new Date(r.getTime()+a.int(32400,82800)*1e3).toISOString(),g=a.pick(c),_=`syn-search-${o.length}`,v=p.conditions,y=v.budget?.max??v.budget?.target??v.budget?.min??null;if(o.push({id:_,sessionId:g,channel:a.next()<.7?`line`:`web`,rawText:null,conditions:v,budgetBand:y===null?null:x(y),resultCount:m.results.length,shownStoreIds:m.results.map(e=>e.store.id),createdAt:h,synthetic:!0}),m.results.length===0)s.push({type:`no_result`,sessionId:g,searchId:_,storeId:null,position:null,createdAt:h});else for(let e of m.results){s.push({type:`recommendation_shown`,sessionId:g,searchId:_,storeId:e.store.id,position:e.rank,createdAt:h});let t=1/e.rank;a.next()<.3*t&&(s.push({type:`store_detail_clicked`,sessionId:g,searchId:_,storeId:e.store.id,position:e.rank,createdAt:h}),a.next()<.35&&s.push({type:`map_clicked`,sessionId:g,searchId:_,storeId:e.store.id,position:e.rank,createdAt:h}),e.store.reservationUrl&&a.next()<.2&&s.push({type:`reservation_link_clicked`,sessionId:g,searchId:_,storeId:e.store.id,position:e.rank,createdAt:h}),a.next()<.1&&s.push({type:`store_saved`,sessionId:g,searchId:_,storeId:e.store.id,position:e.rank,createdAt:h}))}}}return{logs:o,events:s}}let Y={5:[`料理がとても美味しく、スタッフの方も親切でした。また来ます。`,`記念日に利用しました。雰囲気が良く大満足です。`,`素材の良さが伝わる料理でした。`],4:[`味は満足。週末は少し待ちました。`,`コスパが良いと思います。席がやや狭いのが残念。`,`美味しかったです。駐車場が分かりにくかった。`],3:[`普通でした。提供までに時間がかかりました。`,`料理は良いが、価格がもう少し分かりやすいと助かります。`],2:[`予約していたのに席の案内まで待たされました。`,`味が少し濃いと感じました。`],1:[`接客の対応が残念でした。`]};function be(e,t){let n=V(777),r=[];for(let i of e){let e=n.int(40,90);for(let a=0;a<e;a+=1){let e=n.next(),o=e<.45?5:e<.75?4:e<.88?3:e<.96?2:1,s=(/* @__PURE__ */ new Date(t.getTime()-n.int(1,180)*864e5)).toISOString(),c=n.next()<.6,l=!c&&n.next()<.4;r.push({id:`review-${i}-${a}`,storeId:i,source:`google_mock`,rating:o,text:n.pick(Y[o]??Y[3]??[]),authorLabel:`デモ投稿者${a+1}`,createdAt:s,reply:c?{text:`ご来店ありがとうございました。（デモ返信）`,publishedAt:s}:null,draft:l?{text:`ご来店いただきありがとうございます。いただいたご意見を今後の改善に活かします。（AI返信案・モック）`,status:`ai_draft`}:null})}}return r.sort((e,t)=>t.createdAt.localeCompare(e.createdAt))}let X=e=>Math.round(e/5)*5;function xe(e,t,n){let r=t.from.getTime(),i=t.to.getTime();return e.filter(e=>{let t=new Date(e.createdAt).getTime();return t<r||t>=i?!1:n&&n.length>0?e.conditions.areaIds.some(e=>n.includes(e)):!0})}function Z(e,t,n){let r=/* @__PURE__ */ new Map,i=/* @__PURE__ */ new Map;for(let n of e)for(let e of new Set(t(n))){r.set(e,(r.get(e)??0)+1);let t=i.get(e)??/* @__PURE__ */ new Set;t.add(n.sessionId),i.set(e,t)}let a=[],o=0,s=/* @__PURE__ */ new Set;for(let{id:e,label:t}of n){let n=r.get(e)??0;if(n===0)continue;let c=i.get(e)??/* @__PURE__ */ new Set;c.size<5?(o+=n,c.forEach(e=>s.add(e)),a.push({key:e,label:t,searches:null,suppressed:!0})):a.push({key:e,label:t,searches:X(n),suppressed:!1})}return a.sort((e,t)=>(t.searches??-1)-(e.searches??-1)),{cells:a,otherSearches:o>0&&s.size>=5?X(o):null}}function Se(e){let t=new Set(e.map(e=>e.sessionId)).size>=20,r={cells:[],otherSearches:null};return t?{sufficient:t,totalSearches:X(e.length),byArea:Z(e,e=>e.conditions.areaIds,n),byGenre:Z(e,e=>e.conditions.genreIds,i),byBudget:Z(e,e=>e.budgetBand?[e.budgetBand]:[],s),byScene:Z(e,e=>e.conditions.scenes,a),byFeature:Z(e,e=>e.conditions.features,o),synthetic:e.some(e=>e.synthetic)}:{sufficient:t,totalSearches:null,byArea:r,byGenre:r,byBudget:r,byScene:r,byFeature:r,synthetic:e.some(e=>e.synthetic)}}function Ce(e,t){let n=new Map(t.cells.map(e=>[e.key,e]));return e.cells.map(e=>{let t=n.get(e.key),r=t&&!t.suppressed?t.searches:null,i=e.searches!==null&&r!==null&&r>0?Math.round((e.searches-r)/r*100):null;return{key:e.key,label:e.label,current:e.searches,previous:r,changePct:i}})}function we(e,t=3){let n=/* @__PURE__ */ new Map;for(let t of e)for(let e of t.conditions.areaIds)for(let r of t.conditions.genreIds){let i=`${e}:${r}`,a=n.get(i)??{searches:0,results:0,sessions:/* @__PURE__ */ new Set,label:`${m(e)} × ${h(r)}`};a.searches+=1,a.results+=t.resultCount,a.sessions.add(t.sessionId),n.set(i,a)}return[...n.values()].filter(e=>e.sessions.size>=5).map(e=>({label:e.label,searches:X(e.searches),avgResults:Math.round(e.results/e.searches*10)/10})).filter(e=>e.avgResults<t).sort((e,t)=>t.searches-e.searches).slice(0,5)}function Q(e,t=0){return{from:new Date(Date.UTC(e.getUTCFullYear(),e.getUTCMonth()+t,1)),to:new Date(Date.UTC(e.getUTCFullYear(),e.getUTCMonth()+t+1,1))}}function Te(e){let t={from:Q(e).from,to:e},n=Q(e,-1).from,r=e.getTime()-t.from.getTime();return{current:t,previous:{from:n,to:new Date(Math.min(n.getTime()+r,Q(e).from.getTime()))}}}let $={高:0,中:1,低:2};function Ee(e){let t=[],{store:n}=e,r=[...e.featureTrend.map(e=>({...e,kind:`feature`})),...e.sceneTrend.map(e=>({...e,kind:`scene`}))].filter(e=>e.changePct!==null&&e.changePct>=20&&(e.current??0)>=10).sort((e,t)=>(t.changePct??0)-(e.changePct??0));for(let e of r.slice(0,2)){let r=e.kind===`feature`?n.features.includes(e.key):n.scenes.includes(e.key),i=e.kind===`feature`?_(e.key):g(e.key);t.push({id:`trend-${e.key}`,title:r?`「${i}」を打ち出した投稿・プランを用意する`:`「${i}」への対応可否を店舗情報に明記する`,priority:`高`,evidence:[`エリア内の「${i}」を含む検索が前月同期間比 +${e.changePct}%（約${e.current}回）`,r?`貴店は「${i}」に対応済みとして登録されています`:`貴店は「${i}」未対応として登録されています（対応できる場合は情報更新で表示対象になります）`,`※検索回数は来店数ではありません`],owner:`店長`,dueInDays:7})}return e.unrepliedReviews>=3&&t.push({id:`reply-reviews`,title:`未返信の口コミ${e.unrepliedReviews}件に返信する`,priority:e.unrepliedReviews>=10?`高`:`中`,evidence:[`未返信の口コミが${e.unrepliedReviews}件あります（口コミデータはモック）`,`返信はAI返信案を参考に、必ず人が確認してから投稿します`],owner:`ホール責任者`,dueInDays:3}),e.lowRatingShare30d!==null&&e.lowRatingShare30d>=.15&&t.push({id:`low-rating`,title:`低評価の口コミで多い指摘（待ち時間・接客）を朝礼で共有する`,priority:`中`,evidence:[`直近30日の★1〜2の割合：${Math.round(e.lowRatingShare30d*100)}%（モック口コミ）`],owner:`店長`,dueInDays:7}),e.detailRate!==null&&e.areaDetailRate!==null&&e.detailRate<e.areaDetailRate&&t.push({id:`detail-rate`,title:`店舗写真とおすすめメニューの情報を追加する`,priority:`中`,evidence:[`検索表示からの詳細クリック率：${e.detailRate}%（同エリア平均 ${e.areaDetailRate}%）`,`写真は利用許可と出典表記があるものだけ掲載できます`],owner:`広報担当`,dueInDays:14}),t.length<3&&t.push({id:`survey`,title:`QRアンケート（NAMARA VOICE）で料理・接客の満足度を集める`,priority:`低`,evidence:[`改善の根拠になる来店客の声がまだ少ない状態です`,`アンケートは評価に関係なく全員にお願いし、口コミ投稿を条件にした特典は付けません`],owner:`店長`,dueInDays:30}),t.sort((e,t)=>$[e.priority]-$[t.priority]).slice(0,3)}globalThis.NAMARA={parseSearchText:j,rankStores:B,buildSuggestions:oe,formatBudget:F,selectSponsored:ue,SAMPLE_STORES:ge,generateSyntheticSearches:ye,generateSyntheticReviews:be,summarizeDemand:Se,filterLogs:xe,comparablePeriods:Te,compareBreakdowns:Ce,findUnderservedThemes:we,buildActionSuggestions:Ee,dict:t,PLANS:[{id:`free`,name:`無料店舗登録`,priceYen:0,unit:`月`,from:!1,features:[`店舗情報の掲載`,`自店の表示回数`],limits:{stores:1,aiReplyDrafts:0,demandScope:`none`}},{id:`starter`,name:`SaaS STARTER`,priceYen:5980,unit:`月`,from:!1,features:[`口コミ管理`,`AI返信案`,`自店エリアの検索需要`],limits:{stores:1,aiReplyDrafts:30,demandScope:`area`}},{id:`growth`,name:`SaaS GROWTH`,priceYen:14800,unit:`月`,from:!1,features:[`STARTERの全機能`,`NAMARA VOICE`,`NAMARA ACTION`,`全エリアの検索需要`],limits:{stores:3,aiReplyDrafts:150,demandScope:`all`}},{id:`pro`,name:`SaaS PRO`,priceYen:29800,unit:`月`,from:!1,features:[`GROWTHの全機能`,`NAMARA BOOST`,`週次LINEレポート`,`優先サポート`],limits:{stores:10,aiReplyDrafts:null,demandScope:`all`}},{id:`sponsored_search`,name:`スポンサー検索広告`,priceYen:9800,unit:`月`,from:!0,features:[`検索結果内の広告枠（最大1件・広告表記あり）`],limits:{stores:null,aiReplyDrafts:null,demandScope:`none`}},{id:`consumer_research`,name:`消費者リサーチ`,priceYen:39800,unit:`件`,from:!0,features:[`匿名集計による需要レポート`],limits:{stores:null,aiReplyDrafts:null,demandScope:`all`}}]}})();</script>
+<script>(function () {
+  const N = window.NAMARA;
+  const D = N.dict;
+  const now = new Date();
+  const $app = document.getElementById("app");
+  const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
+  const fmt = (n) => Number(n).toLocaleString("ja-JP");
+  const pct = (a, b) => (b > 0 ? Math.round(((a - b) / b) * 100) : null);
+  const iso = (d) => d.toISOString().slice(0, 10);
+  function toast(msg) {
+    const t = document.createElement("div");
+    t.className = "toast"; t.textContent = msg; document.body.appendChild(t);
+    setTimeout(() => t.remove(), 2200);
+  }
+
+  /* ---------------- データ準備（アプリの db.ts と同じ手順） ---------------- */
+  const stores = N.SAMPLE_STORES.map((s) => JSON.parse(JSON.stringify(s)));
+  const storeById = new Map(stores.map((s) => [s.id, s]));
+  const syn = N.generateSyntheticSearches(stores, now);
+  const logs = syn.logs;
+  const events = syn.events.map((e) => ({ ...e, sponsored: false }));
+  const start = iso(new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - 1, 1)));
+  const end = iso(new Date(now.getTime() + 60 * 864e5));
+  const mk = (sid, status, name) => {
+    const s = storeById.get(sid);
+    return { id: "camp-" + sid, storeId: sid, organizationId: s.organizationId, name, targeting: { areaIds: [s.areaId], genreIds: [...s.genreIds] }, startDate: start, endDate: end, status, budgetYen: 9800, cpcYen: 40, reviewNote: status === "approved" ? "審査OK（デモ）" : null };
+  };
+  const campaigns = [mk("store-001", "approved", "秋の検索スポンサー（デモ）"), mk("store-002", "pending_review", "忘年会シーズン（デモ）"), mk("store-003", "approved", "週末ランチ訴求（デモ）")];
+  const impressions = [], clicks = [];
+  const spent = new Map();
+  let seed = 99; const rnd = () => ((seed = (seed * 1103515245 + 12345) % 2147483648) / 2147483648);
+  for (const log of logs) {
+    const pick = N.selectSponsored({ campaigns, stores, conditions: log.conditions, organicStoreIds: log.shownStoreIds, spentByCampaign: spent, now: new Date(log.createdAt) });
+    if (!pick) continue;
+    impressions.push({ campaignId: pick.campaign.id, createdAt: log.createdAt });
+    if (rnd() < 0.06) { clicks.push({ campaignId: pick.campaign.id, valid: true }); spent.set(pick.campaign.id, (spent.get(pick.campaign.id) || 0) + 40); }
+  }
+  const reviews = N.generateSyntheticReviews(["store-001", "store-002", "store-003"], now);
+  const audit = [];
+  const liveLog = [];
+
+  /* ---------------- 共通部品 ---------------- */
+  const kpi = (l, v, unit, sub) => `<div class="kpi"><div class="l">${esc(l)}</div><div class="v">${v}${unit ? `<small>${unit}</small>` : ""}</div>${sub ? `<div class="s">${sub}</div>` : ""}</div>`;
+  const delta = (d) => (d === null ? "<span>—</span>" : `<span class="${d > 0 ? "up" : d < 0 ? "down" : ""}">${d > 0 ? "▲" : d < 0 ? "▼" : "±"}${Math.abs(d)}%</span>`);
+  function bars(items, unit = "回") {
+    if (!items.length) return `<div class="empty">データがありません</div>`;
+    const max = Math.max(1, ...items.map((i) => i.value || 0));
+    return `<ul class="bars">${items.map((i) => `<li title="${esc(i.hint || "")}"><span>${esc(i.label)}</span><span class="track">${i.value === null ? '<span class="hatch"></span>' : `<span class="fill" style="width:${Math.max(2, (i.value / max) * 100)}%"></span>`}</span><span class="num">${i.value === null ? '<span class="meta">少数のため非表示</span>' : fmt(i.value) + unit}${i.delta != null ? ` <small class="${i.delta > 0 ? "up" : i.delta < 0 ? "down" : "meta"}">${i.delta > 0 ? "+" : ""}${i.delta}%</small>` : ""}</span></li>`).join("")}</ul>`;
+  }
+  function lineChart(series, id) {
+    const W = 640, H = 180, p = { t: 12, r: 12, b: 24, l: 36 };
+    const max = Math.max(5, Math.ceil(Math.max(...series.map((s) => s.value)) / 5) * 5);
+    const x = (i) => p.l + (i / (series.length - 1)) * (W - p.l - p.r);
+    const y = (v) => p.t + (1 - v / max) * (H - p.t - p.b);
+    const path = series.map((s, i) => `${i ? "L" : "M"}${x(i).toFixed(1)},${y(s.value).toFixed(1)}`).join("");
+    const grid = [0, 0.5, 1].map((t) => `<line x1="${p.l}" x2="${W - p.r}" y1="${y(max * t)}" y2="${y(max * t)}" stroke="#e2e8f0"/><text x="${p.l - 6}" y="${y(max * t) + 4}" text-anchor="end">${fmt(Math.round(max * t))}</text>`).join("");
+    const labels = series.map((s, i) => (i % 7 === 0 ? `<text x="${x(i)}" y="${H - 6}" text-anchor="middle">${s.date.slice(5).replace("-", "/")}</text>` : "")).join("");
+    setTimeout(() => {
+      const svg = document.getElementById(id); if (!svg) return;
+      const tip = svg.parentElement.querySelector(".tip"); const g = svg.querySelector(".hov");
+      svg.addEventListener("mousemove", (e) => {
+        const r = svg.getBoundingClientRect(); const px = ((e.clientX - r.left) / r.width) * W;
+        const i = Math.min(series.length - 1, Math.max(0, Math.round(((px - p.l) / (W - p.l - p.r)) * (series.length - 1))));
+        g.innerHTML = `<line x1="${x(i)}" x2="${x(i)}" y1="${p.t}" y2="${H - p.b}" stroke="#94a3b8" stroke-dasharray="3 3"/><circle cx="${x(i)}" cy="${y(series[i].value)}" r="4" fill="#1e3a8a" stroke="#fff" stroke-width="2"/>`;
+        tip.style.display = "block"; tip.textContent = `${series[i].date}：${fmt(series[i].value)}回`;
+      });
+      svg.addEventListener("mouseleave", () => { g.innerHTML = ""; tip.style.display = "none"; });
+    });
+    return `<div style="position:relative"><svg id="${id}" viewBox="0 0 ${W} ${H}" style="width:100%;height:auto" role="img" aria-label="日別推移">${grid}${labels}<path d="${path}" fill="none" stroke="#1e3a8a" stroke-width="2" stroke-linejoin="round"/><g class="hov"></g></svg><div class="tip" style="display:none"></div></div>`;
+  }
+  const statusPill = (s) => ({ pending_review: '<span class="pill ad">審査待ち</span>', approved: '<span class="pill good">配信中（承認済み）</span>', rejected: '<span class="pill bad">否認</span>', stopped: '<span class="pill mute">配信停止</span>', budget_exhausted: '<span class="pill bad">予算上限で停止</span>' })[s] || s;
+
+  /* ---------------- なまらAI ---------------- */
+  const chat = [];
+  let lastSearchId = null;
+  const EXAMPLES = ["すすきの 焼肉 予算8000円", "札幌駅でランチ 1500円以内", "大通でデート向けのイタリアン、個室あり", "子連れで行ける海鮮のお店", "札幌 イタリアン", "旭川 フレンチ 個室 3000円以内"];
+  function record(type, searchId, storeId, extra) {
+    liveLog.unshift({ t: new Date().toLocaleTimeString("ja-JP"), type, searchId, storeId, extra });
+    const el = document.getElementById("evlog"); if (el) el.innerHTML = renderLog();
+  }
+  function renderLog() {
+    if (!liveLog.length) return '<div style="color:#64748b">まだイベントはありません。検索してみてください。</div>';
+    return liveLog.slice(0, 80).map((l) => `<div><span class="t">${l.t}</span> ${esc(l.type)}${l.storeId ? " store=" + esc(l.storeId) : ""}${l.extra ? " " + esc(l.extra) : ""}</div>`).join("");
+  }
+  function describe(c) {
+    const out = [];
+    const yen = (n) => fmt(n) + "円";
+    if (c.areaIds.length) out.push(["エリア", c.areaIds.map(D.areaLabel).join("・")]); else if (c.cities.length) out.push(["エリア", c.cities.join("・")]);
+    if (c.genreIds.length) out.push(["ジャンル", c.genreIds.map(D.genreLabel).join("・")]);
+    if (c.budget) { const b = c.budget; out.push(["予算", (b.min != null && b.max != null ? `${yen(b.min)}〜${yen(b.max)}` : b.max != null ? `${yen(b.max)}以内` : b.min != null ? `${yen(b.min)}以上` : `${yen(b.target)}前後`) + "（1人）"]); }
+    if (c.mealTime) out.push(["時間帯", c.mealTime === "lunch" ? "ランチ" : "夜"]);
+    const sc = c.scenes.filter((s) => s !== "lunch"); if (sc.length) out.push(["シーン", sc.map(D.sceneLabel).join("・")]);
+    if (c.features.length) out.push(["希望", c.features.map(D.featureLabel).join("・")]);
+    if (c.partySize) out.push(["人数", c.partySize + "人"]);
+    if (c.dateText || c.timeText) out.push(["日時", [c.dateText, c.timeText].filter(Boolean).join(" ")]);
+    if (c.keywords.length) out.push(["その他", c.keywords.join("・")]);
+    return out;
+  }
+  function search(text) {
+    const searchId = "s" + Date.now().toString(36);
+    record("search_submitted", searchId);
+    if (lastSearchId) record("search_refined", searchId);
+    const parse = N.parseSearchText(text);
+    record("search_parsed", searchId, null, "parser=rule");
+    const c = parse.conditions;
+    const { results, totalCandidates } = N.rankStores(stores, c, now);
+    const suggestions = N.buildSuggestions(stores, c, results.length, now);
+    const pick = N.selectSponsored({ campaigns, stores, conditions: c, organicStoreIds: results.map((r) => r.store.id), spentByCampaign: spent, now });
+    results.forEach((r) => record("recommendation_shown", searchId, r.store.id, "pos=" + r.rank));
+    if (pick) { impressions.push({ campaignId: pick.campaign.id, createdAt: now.toISOString() }); record("recommendation_shown", searchId, pick.store.id, "pos=0 sponsored（ad_impression）"); }
+    if (!results.length) record("no_result", searchId);
+    lastSearchId = searchId;
+    return { searchId, parse, results, totalCandidates, suggestions, sponsored: pick && { campaign: pick.campaign, store: pick.store, matchReasons: pick.matchReasons, budgetText: N.formatBudget(pick.store, c.mealTime).text } };
+  }
+  function storeCard(r, sid) {
+    const s = r.store; const reasons = r.reasons.filter((x) => x.points > 0);
+    return `<div class="store"><div class="head"><div class="ph"><span>🍽</span><span>写真未登録</span></div><div><div class="meta">おすすめ ${r.rank}</div><h4>${esc(s.name)}</h4><div class="meta">${esc(D.areaLabel(s.areaId))}｜${esc(s.genreIds.map(D.genreLabel).join("・"))}</div></div></div>
+    <dl class="dl"><dt>予算目安</dt><dd>${esc(r.budgetText)}<div class="meta">根拠：${esc(r.budgetBasis)}</div></dd><dt>営業時間</dt><dd>${esc(s.hours ?? "不明")}</dd><dt>予約</dt><dd>${s.reservationUrl ? "予約ページあり（空席は未確認）" : "不明"}</dd></dl>
+    ${reasons.length ? `<div class="why"><b>条件に合う理由</b><br>${reasons.map((x) => `<span>${esc(x.label)}</span>`).join("")}</div>` : ""}
+    ${r.warnings.length ? `<div class="warn">※ ${esc(r.warnings.join(" "))}</div>` : ""}
+    <div class="acts"><button class="btn pri sm" data-act="detail" data-s="${sid}" data-store="${s.id}" data-pos="${r.rank}">詳細を見る</button><button class="btn sm" data-act="map" data-s="${sid}" data-store="${s.id}" data-pos="${r.rank}">📍 地図</button>${s.reservationUrl ? `<button class="btn sm" data-act="reservation" data-s="${sid}" data-store="${s.id}" data-pos="${r.rank}">📅 予約ページ</button>` : ""}<button class="btn sm" data-act="save" data-s="${sid}" data-store="${s.id}">🔖 保存</button></div></div>`;
+  }
+  function botAnswer(o) {
+    const cond = describe(o.parse.conditions);
+    return `${cond.length ? `<div class="cond"><b>読み取った条件：</b>${cond.map(([k, v]) => `${esc(k)} <strong>${esc(v)}</strong>`).join("　")}</div>` : ""}
+    <div>${o.results.length ? `条件に合うお店を${o.results.length}件見つけました。${o.totalCandidates > o.results.length ? `（候補${o.totalCandidates}件から上位を表示）` : ""}` : "条件に合うお店が見つかりませんでした。"}</div>
+    ${o.parse.notes.map((n) => `<div class="meta">${esc(n)}</div>`).join("")}
+    ${o.results.map((r) => storeCard(r, o.searchId)).join("")}
+    ${o.sponsored ? `<div class="sponsor"><span class="lab">広告（スポンサー）</span><div class="meta" style="color:#78350f;margin-top:4px">掲載料を受け取って表示している枠です。上のおすすめ順位には影響しません。</div><div class="head" style="display:flex;gap:10px;margin-top:6px"><div class="ph"><span>🍽</span><span>写真未登録</span></div><div><h4>${esc(o.sponsored.store.name)}</h4><div class="meta">${esc(D.areaLabel(o.sponsored.store.areaId))}｜${esc(o.sponsored.store.genreIds.map(D.genreLabel).join("・"))}</div><div style="font-size:12px">予算目安：${esc(o.sponsored.budgetText)}</div><div class="meta">表示理由：${esc(o.sponsored.matchReasons.join("／"))}</div></div></div><div class="acts"><button class="btn sm" style="border-color:#f59e0b;color:#b45309;font-weight:700" data-act="ad" data-camp="${o.sponsored.campaign.id}" data-store="${o.sponsored.store.id}">詳細を見る（広告）</button></div></div>` : ""}
+    ${o.suggestions.length ? `<div class="cond"><b>条件を変えると見つかるかもしれません</b><br>${o.suggestions.map((s) => "・" + esc(s)).join("<br>")}</div>` : ""}`;
+  }
+  function renderChat() {
+    return chat.map((m) => (m.me ? `<div class="bub me">${esc(m.text)}</div>` : `<div style="display:flex;flex-direction:column;gap:10px">${botAnswer(m.o)}</div>`)).join("");
+  }
+  function viewAI() {
+    $app.innerHTML = `<div class="notice">デモ版：表示される店舗はすべて<strong>架空</strong>です（全${stores.length}店）。価格・営業時間は架空データで、空席状況は確認していません。外部サイトには移動しません。</div>
+    <div class="ai-wrap">
+      <div class="phone"><div class="phone-h"><div class="avatar">な</div><div><b>なまらAI</b><div class="meta" style="font-size:10px">by なまらグルメ ｜ Web版デモ（本番はLINE）</div></div></div>
+        <div class="chat" id="chat"><div class="bub bot">なまらAIです🍜 エリア・食べたいもの・予算などを、話すように送ってください。<div class="chips">${EXAMPLES.map((e) => `<button class="chip" data-ex="${esc(e)}">${esc(e)}</button>`).join("")}</div></div>${renderChat()}</div>
+        <div class="composer"><form id="f"><input id="q" maxlength="200" placeholder="例：すすきの 焼肉 予算8000円" aria-label="検索したい内容"><button class="btn pri">送信</button></form><p>検索内容はサービス改善と、個人を特定できない形での飲食店向け統計に利用します。</p></div>
+      </div>
+      <div class="grid">
+        <div class="card"><h3>このデモで確認できること</h3><ul style="margin:6px 0 0;padding-left:18px;font-size:13px">
+          <li>自然文から <b>エリア・ジャンル・予算・シーン・希望条件</b> を読み取る（AI不使用の辞書方式）</li>
+          <li>条件を満たす店だけを <b>最大5件</b>。足りないときは無理に埋めず「〇〇を外すと N 件」と提案</li>
+          <li>「<b>札幌 イタリアン</b>」で <b>広告（スポンサー）枠</b> が別枠で1件出る（通常順位は不変）</li>
+          <li>価格・営業時間が不明な店は「不明」と表示</li>
+          <li>運営タブで広告を承認・停止すると、ここの広告表示も変わる</li></ul></div>
+        <div class="card"><h3>計測イベント（リアルタイム）</h3><p class="desc">検索・表示・クリック・保存の記録。店舗にはこの生ログではなく匿名集計だけを渡します。</p><div class="log" id="evlog">${renderLog()}</div></div>
+      </div>
+    </div>`;
+    const box = document.getElementById("chat"); box.scrollTop = box.scrollHeight;
+    const send = (t) => { t = t.trim(); if (!t) return; chat.push({ me: true, text: t }); chat.push({ o: search(t) }); viewAI(); };
+    document.getElementById("f").onsubmit = (e) => { e.preventDefault(); send(document.getElementById("q").value); };
+    $app.querySelectorAll("[data-ex]").forEach((b) => (b.onclick = () => send(b.dataset.ex)));
+    $app.querySelectorAll("[data-act]").forEach((b) => (b.onclick = () => onAct(b)));
+  }
+  const clicked = new Set();
+  function onAct(b) {
+    const { act, s, store, pos } = b.dataset; const st = storeById.get(store);
+    if (act === "save") { record("store_saved", s, store); b.textContent = "✓ 保存しました"; b.disabled = true; return; }
+    if (act === "ad") {
+      const camp = campaigns.find((c) => c.id === b.dataset.camp); const key = "ad:" + camp.id;
+      if (clicked.has(key)) { record("ad_click", null, store, "無効（30分以内の重複）→ 課金なし"); }
+      else { clicked.add(key); clicks.push({ campaignId: camp.id, valid: true }); spent.set(camp.id, (spent.get(camp.id) || 0) + camp.cpcYen); record("ad_click", null, store, `有効 → ad_billing_event ${camp.cpcYen}円`); }
+      return showStore(st, true);
+    }
+    const type = { detail: "store_detail_clicked", map: "map_clicked", reservation: "reservation_link_clicked" }[act];
+    const key = `${act}:${s}:${store}`;
+    if (!clicked.has(key)) { clicked.add(key); record(type, s, store, "pos=" + pos); } else record(type, s, store, "重複のため記録しない");
+    if (act === "detail") showStore(st, false);
+    else toast(act === "map" ? "本番では Google マップ（エリアの概略位置）を開きます" : "本番では予約ページを開きます（デモ用リンク）");
+  }
+  function showStore(s, fromAd) {
+    const lunch = N.formatBudget(s, "lunch"), dinner = N.formatBudget(s, "dinner");
+    const m = document.createElement("div"); m.className = "modal";
+    m.innerHTML = `<div class="card" role="dialog" aria-modal="true"><div class="row"><span class="pill ad">架空のサンプル店舗</span>${fromAd ? '<span class="pill ad">広告から表示</span>' : ""}</div><h3 style="margin-top:8px">${esc(s.name)}</h3><div class="meta">${esc(D.areaLabel(s.areaId))}｜${esc(s.genreIds.map(D.genreLabel).join("・"))}</div>
+    <dl class="dl" style="grid-template-columns:96px 1fr;font-size:13px"><dt>予算（昼）</dt><dd>${s.budget.lunch ? esc(lunch.text) : "不明（ランチ営業の情報なし）"}</dd><dt>予算（夜）</dt><dd>${s.budget.dinner ? esc(dinner.text) : "不明"}</dd><dt>価格の根拠</dt><dd>${esc(s.budget.basis ?? "価格情報を確認できていません")}</dd><dt>営業時間</dt><dd>${esc(s.hours ?? "不明")}</dd><dt>住所</dt><dd>${esc(s.address)}</dd><dt>特徴</dt><dd>${s.features.length ? s.features.map((f) => `<span class="pill info">${esc(D.featureLabel(f))}</span>`).join(" ") : "不明"}</dd><dt>向いている場面</dt><dd>${esc(s.scenes.map(D.sceneLabel).join("・") || "不明")}</dd><dt>情報確認日</dt><dd>${esc(s.verification.verifiedAt ?? "未確認")}</dd></dl>
+    <p class="meta">空席状況は確認していません。写真は利用許可と出典を確認できたものだけ掲載します。</p><button class="btn pri">閉じる</button></div>`;
+    m.onclick = (e) => { if (e.target === m || e.target.tagName === "BUTTON") m.remove(); };
+    document.body.appendChild(m);
+  }
+
+  /* ---------------- NAMARA REVIEW ---------------- */
+  const ACCOUNTS = [
+    { key: "o1", label: "店舗オーナー（架空フードサービス）", stores: ["store-001", "store-002"], owner: true },
+    { key: "s1", label: "店舗スタッフ（閲覧のみ）", stores: ["store-001"], owner: false },
+    { key: "o2", label: "店舗オーナー（架空ダイニング）", stores: ["store-003"], owner: true },
+  ];
+  let acct = ACCOUNTS[0], curStore = "store-001", rtab = "dash", scope = "area";
+  const inP = (iso_, p) => { const t = new Date(iso_).getTime(); return t >= p.from.getTime() && t < p.to.getTime(); };
+  function exposure(sid, p) {
+    const x = { impressions: 0, detail: 0, map: 0, reservation: 0 };
+    for (const e of events) { if (e.storeId !== sid || !inP(e.createdAt, p)) continue; if (e.type === "recommendation_shown") x.impressions++; else if (e.type === "store_detail_clicked") x.detail++; else if (e.type === "map_clicked") x.map++; else if (e.type === "reservation_link_clicked") x.reservation++; }
+    return x;
+  }
+  function viewReview() {
+    if (!acct.stores.includes(curStore)) curStore = acct.stores[0];
+    const s = storeById.get(curStore);
+    const head = `<div class="row" style="justify-content:space-between;margin-bottom:14px"><div class="row"><label class="f">デモアカウント<select id="acct">${ACCOUNTS.map((a) => `<option value="${a.key}" ${a === acct ? "selected" : ""}>${esc(a.label)}</option>`).join("")}</select></label>${acct.stores.length > 1 ? `<label class="f">店舗<select id="st">${acct.stores.map((id) => `<option value="${id}" ${id === curStore ? "selected" : ""}>${esc(storeById.get(id).name)}</option>`).join("")}</select></label>` : ""}</div>
+    <div class="subtabs" role="tablist" style="margin:0">${[["dash", "ダッシュボード"], ["demand", "NAMARA DEMAND（検索需要）"], ["ads", "スポンサー広告"]].map(([k, l]) => `<button data-rt="${k}" aria-selected="${rtab === k}">${l}</button>`).join("")}</div></div>
+    <div class="notice"><strong>デモ用合成データ：</strong>数値は架空店舗と自動生成した検索ログによるものです。実際の計測値ではありません。検索回数は<strong>来店数ではありません</strong>。</div>`;
+    $app.innerHTML = head + (rtab === "dash" ? dash(s) : rtab === "demand" ? demand(s) : ads(s));
+    document.getElementById("acct").onchange = (e) => { acct = ACCOUNTS.find((a) => a.key === e.target.value); viewReview(); };
+    const st = document.getElementById("st"); if (st) st.onchange = (e) => { curStore = e.target.value; viewReview(); };
+    $app.querySelectorAll("[data-rt]").forEach((b) => (b.onclick = () => { rtab = b.dataset.rt; viewReview(); }));
+    $app.querySelectorAll("[data-scope]").forEach((b) => (b.onclick = () => { scope = b.dataset.scope; viewReview(); }));
+    $app.querySelectorAll("[data-stop]").forEach((b) => (b.onclick = () => { const c = campaigns.find((x) => x.id === b.dataset.stop); c.status = "stopped"; audit.unshift(`${new Date().toLocaleTimeString("ja-JP")} campaign.stop_by_store ${c.id}`); viewReview(); }));
+    const f = document.getElementById("cf");
+    if (f) f.onsubmit = (e) => {
+      e.preventDefault(); const name = f.name.value.trim(); const budget = Number(f.budget.value); const msg = document.getElementById("cfm");
+      const genres = [...f.querySelectorAll("input[name=g]:checked")].map((i) => i.value);
+      if (!name) { msg.innerHTML = '<span class="down">キャンペーン名を入力してください</span>'; return; }
+      if (!genres.length) { msg.innerHTML = '<span class="down">対象ジャンルを1つ以上選んでください</span>'; return; }
+      if (!(budget >= 9800)) { msg.innerHTML = '<span class="down">予算は9,800円以上で設定してください</span>'; return; }
+      if (f.end.value < f.start.value) { msg.innerHTML = '<span class="down">終了日は開始日以降にしてください</span>'; return; }
+      campaigns.push({ id: "camp-new-" + Date.now().toString(36), storeId: s.id, organizationId: s.organizationId, name, targeting: { areaIds: [s.areaId], genreIds: genres }, startDate: f.start.value, endDate: f.end.value, status: "pending_review", budgetYen: budget, cpcYen: 40, reviewNote: null });
+      audit.unshift(`${new Date().toLocaleTimeString("ja-JP")} campaign.create ${name}`);
+      rtab = "ads"; viewReview(); toast("審査を申請しました。「運営管理」タブで承認できます");
+    };
+  }
+  function dash(s) {
+    const { current, previous } = N.comparablePeriods(now);
+    const rv = reviews.filter((r) => r.storeId === s.id);
+    const monthStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1)).getTime();
+    const recent = rv.filter((r) => new Date(r.createdAt).getTime() >= now.getTime() - 30 * 864e5);
+    const avg = rv.length ? (rv.reduce((a, r) => a + r.rating, 0) / rv.length).toFixed(1) : "—";
+    const unreplied = rv.filter((r) => !r.reply).length;
+    const exN = exposure(s.id, current), exP = exposure(s.id, previous);
+    const areaNow = N.summarizeDemand(N.filterLogs(logs, current, [s.areaId])), areaPrev = N.summarizeDemand(N.filterLogs(logs, previous, [s.areaId]));
+    const actions = N.buildActionSuggestions({ store: s, featureTrend: N.compareBreakdowns(areaNow.byFeature, areaPrev.byFeature), sceneTrend: N.compareBreakdowns(areaNow.byScene, areaPrev.byScene), unrepliedReviews: unreplied, lowRatingShare30d: recent.length >= 5 ? recent.filter((r) => r.rating <= 2).length / recent.length : null, detailRate: exN.impressions >= 20 ? Math.round((exN.detail / exN.impressions) * 1000) / 10 : null, areaDetailRate: null });
+    const counts = new Map(); for (const e of events) if (e.storeId === s.id && e.type === "recommendation_shown") { const d = e.createdAt.slice(0, 10); counts.set(d, (counts.get(d) || 0) + 1); }
+    const series = Array.from({ length: 30 }, (_, i) => { const d = iso(new Date(now.getTime() - (29 - i) * 864e5)); return { date: d, value: counts.get(d) || 0 }; });
+    return `<h1 class="page">${esc(s.name)}</h1><p class="sub">今月（${iso(current.from)}〜本日）。前月比は前月の同じ日数との比較です。</p>
+    <h2 class="sec">口コミ（Google口コミ連携はモック）</h2><div class="grid k5">${kpi("総口コミ数", fmt(rv.length), "件")}${kpi("平均評価", avg, "", "★ 5点満点")}${kpi("今月の新規口コミ", fmt(rv.filter((r) => new Date(r.createdAt).getTime() >= monthStart).length), "件")}${kpi("未返信", fmt(unreplied), "件")}${kpi("AI返信案（承認待ち）", fmt(rv.filter((r) => r.draft).length), "件", "投稿には人の承認が必要")}</div>
+    <h2 class="sec">なまらAIでの表示・クリック</h2><div class="grid k4">${kpi("検索結果への表示回数", fmt(exN.impressions), "回", delta(pct(exN.impressions, exP.impressions)) + " 前月比")}${kpi("詳細の閲覧回数", fmt(exN.detail), "回", delta(pct(exN.detail, exP.detail)) + " 前月比")}${kpi("地図クリック", fmt(exN.map), "回", delta(pct(exN.map, exP.map)) + " 前月比")}${kpi("予約リンククリック", fmt(exN.reservation), "回", delta(pct(exN.reservation, exP.reservation)) + " 前月比")}</div>
+    <div class="grid c3" style="margin-top:14px"><div class="card"><h3>検索結果への表示回数（直近30日）</h3><p class="desc">グラフにカーソルを合わせると日別の値が見られます</p>${lineChart(series, "lc1")}</div>
+    <div class="card"><h3>${esc(D.areaLabel(s.areaId))}エリアの検索需要</h3><p class="desc">今月・ジャンル別（匿名集計・5単位で丸め）</p>${areaNow.sufficient ? bars(areaNow.byGenre.cells.slice(0, 6).map((c) => ({ label: c.label, value: c.searches }))) : '<div class="empty">分析に必要なデータが不足しています</div>'}</div></div>
+    <div class="grid c3" style="margin-top:14px"><div class="card"><h3>AI店長の改善提案</h3><p class="desc">今週の改善アクション（モック：ルールベース。根拠の数値はすべて集計値）</p>${actions.map((a, i) => `<div class="action"><div><span class="n">${i + 1}</span><b>${esc(a.title)}</b> <span class="pill ${a.priority === "高" ? "bad" : a.priority === "中" ? "info" : "mute"}">優先度：${a.priority}</span></div><ul>${a.evidence.map((e) => `<li>${esc(e)}</li>`).join("")}</ul><div class="foot">担当（案）：${esc(a.owner)}｜期限（案）：${a.dueInDays}日以内｜状況：未着手</div></div>`).join("")}</div>
+    <div class="card"><h3>最近の口コミ</h3><p class="desc">モックデータ（架空の投稿）</p>${rv.slice(0, 5).map((r) => `<div style="border-bottom:1px solid var(--line);padding:8px 0"><div class="row" style="justify-content:space-between"><span class="stars">${"★".repeat(r.rating)}<i>${"★".repeat(5 - r.rating)}</i></span><span class="meta">${r.createdAt.slice(0, 10)}</span></div><div>${esc(r.text)}</div><div style="margin-top:3px">${r.reply ? '<span class="pill good">返信済み</span>' : r.draft ? '<span class="pill info">AI返信案あり（未承認）</span>' : '<span class="pill bad">未返信</span>'}</div></div>`).join("")}</div></div>`;
+  }
+  function demand(s) {
+    const { current, previous } = N.comparablePeriods(now);
+    const area = scope === "area" ? [s.areaId] : undefined;
+    const ln = N.filterLogs(logs, current, area), lp = N.filterLogs(logs, previous, area);
+    const a = N.summarizeDemand(ln), b = N.summarizeDemand(lp);
+    const cmp = (k) => N.compareBreakdowns(a[k], b[k]).map((r) => ({ label: r.label, value: r.current, delta: r.changePct, hint: r.previous != null ? `前月同期間：約${fmt(r.previous)}回` : "前月：少数または0件" }));
+    const ex = exposure(s.id, current);
+    const rising = [...N.compareBreakdowns(a.byFeature, b.byFeature), ...N.compareBreakdowns(a.byScene, b.byScene), ...N.compareBreakdowns(a.byGenre, b.byGenre)].filter((r) => r.changePct != null && r.changePct >= 20 && (r.current || 0) >= 10).sort((x, y) => y.changePct - x.changePct).slice(0, 3);
+    const under = N.findUnderservedThemes(ln);
+    const label = scope === "area" ? `${D.areaLabel(s.areaId)}エリア` : "全エリア";
+    if (!a.sufficient) return `<div class="empty">分析に必要なデータが不足しています</div>`;
+    return `<div class="row" style="justify-content:space-between"><div><h1 class="page">NAMARA DEMAND｜検索需要分析</h1><p class="sub">なまらAIで「${label}」のお店を探した人の条件を、個人を特定できない形で集計しています。</p></div><div class="subtabs">${[["area", "自店のエリア"], ["all", "全エリア"]].map(([k, l]) => `<button data-scope="${k}" aria-selected="${scope === k}">${l}</button>`).join("")}</div></div>
+    <div class="notice info">利用者数が5人未満の区分は「少数のため非表示」とし、件数は5単位で丸めています。生の検索文や利用者IDは店舗に提供しません。</div>
+    <div class="grid k4">${kpi(label + "の検索回数（今月）", "約" + fmt(a.totalSearches), "回")}${kpi("自店の表示回数", fmt(ex.impressions), "回")}${kpi("自店の詳細閲覧", fmt(ex.detail), "回")}${kpi("表示→詳細の割合", ex.impressions >= 20 ? (Math.round((ex.detail / ex.impressions) * 1000) / 10).toFixed(1) : "—", ex.impressions >= 20 ? "%" : "")}</div>
+    <div class="grid c2" style="margin-top:14px"><div class="card"><h3>集客機会のAI分析</h3><p class="desc">モック：ルールベース。根拠は下の集計値</p>${rising.length ? rising.map((r) => `<div class="cond" style="margin-bottom:8px;background:var(--soft)"><b>「${esc(r.label)}」</b>を含む検索が前月同期間比 <b>+${r.changePct}%</b>（約${fmt(r.current)}回）。対応できる場合は店舗情報やSNS投稿でアピールする余地があります。</div>`).join("") : '<div class="empty">目立って伸びている条件はありません</div>'}</div>
+    <div class="card"><h3>条件に合う店が少ない検索テーマ</h3><p class="desc">検索はあるのに、表示できる店舗が平均3件未満の組み合わせ</p>${under.length ? `<table>${under.map((u) => `<tr><td>${esc(u.label)}</td><td class="num meta">約${fmt(u.searches)}回／平均${u.avgResults}件</td></tr>`).join("")}</table>` : '<div class="empty">該当なし</div>'}</div></div>
+    <div class="grid c2" style="margin-top:14px">${[["ジャンル別", "byGenre"], ["予算帯別（1人あたり）", "byBudget"], ["利用シーン別", "byScene"], ["人気の希望条件", "byFeature"]].concat(scope === "all" ? [["エリア別", "byArea"]] : []).map(([t, k]) => `<div class="card"><h3>${t}</h3><p class="desc">今月の検索回数と前月比（行にカーソルで前月値）</p>${bars(cmp(k))}</div>`).join("")}</div>`;
+  }
+  function campStats(c) {
+    const imp = impressions.filter((i) => i.campaignId === c.id).length, cl = clicks.filter((x) => x.campaignId === c.id && x.valid).length, sp = spent.get(c.id) || 0;
+    return { imp, cl, ctr: imp ? (Math.round((cl / imp) * 1000) / 10).toFixed(1) + "%" : "—", sp, rem: Math.max(0, c.budgetYen - sp) };
+  }
+  function ads(s) {
+    const mine = campaigns.filter((c) => c.storeId === s.id);
+    const t = iso(now), e30 = iso(new Date(now.getTime() + 30 * 864e5));
+    return `<h1 class="page">スポンサー検索広告</h1><p class="sub">なまらAIの検索結果に「広告」と明示した枠（最大1件）で表示されます。通常のおすすめ順位は変わりません。</p>
+    <div class="notice info">広告は、利用者の検索条件（エリア・ジャンル・予算・希望条件）に合うときだけ表示されます。請求・決済は行いません（モック）。</div>
+    ${mine.length ? mine.map((c) => { const st = campStats(c); return `<div class="card" style="margin-bottom:12px"><div class="row" style="justify-content:space-between"><div><h3>${esc(c.name)}</h3><p class="desc">${c.startDate}〜${c.endDate}｜対象：${esc(c.targeting.areaIds.map(D.areaLabel).join("・"))} × ${esc(c.targeting.genreIds.map(D.genreLabel).join("・"))}</p></div>${statusPill(c.status)}</div>
+      <div class="grid k5">${kpi("表示回数", fmt(st.imp), "回")}${kpi("クリック数（有効）", fmt(st.cl), "回")}${kpi("クリック率", st.ctr)}${kpi("使用金額（モック）", fmt(st.sp), "円")}${kpi("予算残高", fmt(st.rem), "円")}</div>
+      ${c.reviewNote ? `<p class="meta">審査メモ：${esc(c.reviewNote)}</p>` : ""}${acct.owner && ["approved", "pending_review"].includes(c.status) ? `<button class="btn sm" style="margin-top:8px" data-stop="${c.id}">配信を停止する</button>` : ""}</div>`; }).join("") : '<div class="empty">まだキャンペーンがありません</div>'}
+    <div class="card" style="margin-top:14px"><h3>新しいキャンペーンを申請</h3><p class="desc">作成後は運営の審査を経て配信されます</p>
+    ${acct.owner ? `<form id="cf" class="grid" style="gap:10px"><label class="f">キャンペーン名<input name="name" maxlength="60" placeholder="例：忘年会シーズンの個室プラン"></label>
+      <div class="f" style="font-size:12px;color:var(--muted)">対象エリア：<b style="color:var(--ink)">${esc(D.areaLabel(s.areaId))}</b>（店舗の所在エリアのみ選べます）</div>
+      <div class="row" style="font-size:13px">対象ジャンル：${s.genreIds.map((g) => `<label><input type="checkbox" name="g" value="${g}" checked> ${esc(D.genreLabel(g))}</label>`).join(" ")}</div>
+      <div class="grid k4" style="grid-template-columns:repeat(3,minmax(0,1fr))"><label class="f">開始日<input type="date" name="start" value="${t}"></label><label class="f">終了日<input type="date" name="end" value="${e30}"></label><label class="f">予算（円）<input type="number" name="budget" min="9800" step="100" value="9800"></label></div>
+      <p class="meta" style="margin:0">クリック課金（仮：1クリック40円）。予算に達すると自動停止します。</p><div class="row"><button class="btn pri">審査を申請する</button><span id="cfm"></span></div></form>` : '<p class="meta">スタッフ権限では広告を作成・変更できません。店舗オーナーにご依頼ください。</p>'}</div>`;
+  }
+
+  /* ---------------- 運営 ---------------- */
+  let atab = "overview", storeFilter = "attention";
+  function viewAdmin() {
+    $app.innerHTML = `<div class="row" style="justify-content:space-between;margin-bottom:14px"><span class="pill info">デモアカウント：なまらグルメ運営</span><div class="subtabs" style="margin:0">${[["overview", "概要・検索需要"], ["ads", "広告審査・配信"], ["stores", "店舗マスター"], ["plans", "料金プラン・連携状況"]].map(([k, l]) => `<button data-at="${k}" aria-selected="${atab === k}">${l}</button>`).join("")}</div></div>
+    <div class="notice"><strong>デモ用合成データ：</strong>運営画面では少数セル抑制をかけない内部集計を表示します（店舗には提供しません）。</div>` + (atab === "overview" ? adminOverview() : atab === "ads" ? adminAds() : atab === "stores" ? adminStores() : adminPlans());
+    $app.querySelectorAll("[data-at]").forEach((b) => (b.onclick = () => { atab = b.dataset.at; viewAdmin(); }));
+    $app.querySelectorAll("[data-rv]").forEach((b) => (b.onclick = () => {
+      const c = campaigns.find((x) => x.id === b.dataset.id); const d = b.dataset.rv;
+      c.status = d === "approve" ? "approved" : d === "reject" ? "rejected" : "stopped"; c.reviewNote = d === "approve" ? "審査OK" : d === "reject" ? "条件不一致（デモ）" : "運営により停止";
+      audit.unshift(`${new Date().toLocaleTimeString("ja-JP")} campaign.${d} ${c.id}`); viewAdmin(); toast(d === "approve" ? "承認しました。なまらAIで条件に合う検索に表示されます" : "更新しました");
+    }));
+    const sf = document.getElementById("sf"); if (sf) sf.onchange = (e) => { storeFilter = e.target.value; viewAdmin(); };
+    $app.querySelectorAll("[data-pub]").forEach((b) => (b.onclick = () => { const st = storeById.get(b.dataset.pub); st.published = !st.published; audit.unshift(`${new Date().toLocaleTimeString("ja-JP")} store.${st.published ? "publish" : "unpublish"} ${st.id}`); viewAdmin(); }));
+  }
+  function adminOverview() {
+    const { current } = N.comparablePeriods(now);
+    const ln = N.filterLogs(logs, current);
+    const zero = ln.filter((l) => l.resultCount === 0);
+    const top = new Map(); const add = (k) => top.set(k, (top.get(k) || 0) + 1);
+    ln.forEach((l) => { l.conditions.areaIds.forEach((a) => add("エリア：" + D.areaLabel(a))); l.conditions.genreIds.forEach((g) => add("ジャンル：" + D.genreLabel(g))); l.conditions.scenes.forEach((s) => add("シーン：" + D.sceneLabel(s))); l.conditions.features.forEach((f) => add("条件：" + D.featureLabel(f))); });
+    const zc = new Map(); zero.forEach((l) => { const c = l.conditions; const k = [...c.areaIds.map(D.areaLabel), ...c.genreIds.map(D.genreLabel), ...c.features.map(D.featureLabel), c.budget ? "予算" + fmt(c.budget.max ?? c.budget.target ?? c.budget.min) + "円" : "", c.mealTime === "lunch" ? "ランチ" : ""].filter(Boolean).join(" × ") || "（条件なし）"; zc.set(k, (zc.get(k) || 0) + 1); });
+    const daily = new Map(); logs.forEach((l) => { const d = l.createdAt.slice(0, 10); daily.set(d, (daily.get(d) || 0) + 1); });
+    const series = Array.from({ length: 30 }, (_, i) => { const d = iso(new Date(now.getTime() - (29 - i) * 864e5)); return { date: d, value: daily.get(d) || 0 }; });
+    const shown = events.filter((e) => e.type === "recommendation_shown" && inP(e.createdAt, current)).length;
+    const sorted = (m, n) => [...m.entries()].sort((a, b) => b[1] - a[1]).slice(0, n).map(([label, value]) => ({ label, value }));
+    return `<h1 class="page">運営ダッシュボード</h1><p class="sub">今月（${iso(current.from)}〜本日）</p>
+    <div class="grid k6">${kpi("利用者数（仮名ID）", fmt(new Set(ln.map((l) => l.sessionId)).size), "人")}${kpi("検索回数", fmt(ln.length), "回", `LINE ${fmt(ln.filter((l) => l.channel === "line").length)}／Web ${fmt(ln.filter((l) => l.channel === "web").length)}`)}${kpi("ゼロ件の割合", ln.length ? (Math.round((zero.length / ln.length) * 1000) / 10).toFixed(1) : "—", "%")}${kpi("おすすめ表示回数", fmt(shown), "回")}${kpi("広告表示／クリック", `${fmt(impressions.length)}／${fmt(clicks.length)}`)}${kpi("広告審査待ち", fmt(campaigns.filter((c) => c.status === "pending_review").length), "件")}</div>
+    <div class="grid c3" style="margin-top:14px"><div class="card"><h3>検索回数（直近30日）</h3>${lineChart(series, "lc2")}</div><div class="card"><h3>エリア別の需要</h3><p class="desc">今月</p>${bars(N.summarizeDemand(ln).byArea.cells.map((c) => ({ label: c.label, value: c.searches })))}</div></div>
+    <div class="grid c2" style="margin-top:14px"><div class="card"><h3>人気の検索条件</h3><p class="desc">辞書で正規化した条件（生の入力文ではありません）</p>${bars(sorted(top, 10))}</div><div class="card"><h3>検索結果ゼロ件の分析</h3><p class="desc">店舗開拓・掲載情報追加の優先度づけに使います</p>${bars(sorted(zc, 8))}</div></div>
+    <div class="card" style="margin-top:14px"><h3>監査ログ（このページでの操作）</h3>${audit.length ? `<div class="log">${audit.map((a) => `<div>${esc(a)}</div>`).join("")}</div>` : '<p class="meta">まだ操作はありません。広告の承認や店舗の公開切替をすると記録されます。</p>'}</div>`;
+  }
+  function adminAds() {
+    const pend = campaigns.filter((c) => c.status === "pending_review");
+    return `<h1 class="page">広告審査・配信状況</h1><p class="sub">審査基準：店舗情報が検証済み、誇大・虚偽表現なし、口コミ投稿を条件とした特典なし。操作は監査ログに記録。</p>
+    <h2 class="sec">審査待ち（${pend.length}件）</h2>${pend.length ? pend.map((c) => `<div class="card" style="margin-bottom:10px"><div class="row" style="justify-content:space-between"><div><h3>${esc(c.name)}</h3><p class="desc">${esc(storeById.get(c.storeId).name)}｜${c.startDate}〜${c.endDate}｜予算 ${fmt(c.budgetYen)}円｜対象 ${esc(c.targeting.areaIds.map(D.areaLabel).join("・"))} × ${esc(c.targeting.genreIds.map(D.genreLabel).join("・"))}</p></div><div class="row"><button class="btn pri sm" data-rv="approve" data-id="${c.id}">承認</button><button class="btn sm" data-rv="reject" data-id="${c.id}">否認</button></div></div></div>`).join("") : '<p class="meta">審査待ちはありません。</p>'}
+    <h2 class="sec">全キャンペーン</h2><div class="card scroll" style="padding:0"><table style="min-width:760px"><tr><th>キャンペーン／店舗</th><th>対象</th><th>状態</th><th class="num">表示</th><th class="num">有効クリック</th><th class="num">請求見込み（モック）</th><th>操作</th></tr>
+    ${campaigns.map((c) => { const st = campStats(c); return `<tr><td>${esc(c.name)}<div class="meta">${esc(storeById.get(c.storeId).name)}</div></td><td class="meta">${esc(c.targeting.areaIds.map(D.areaLabel).join("・"))} × ${esc(c.targeting.genreIds.map(D.genreLabel).join("・"))}</td><td>${statusPill(c.status)}</td><td class="num">${fmt(st.imp)}</td><td class="num">${fmt(st.cl)}</td><td class="num">${fmt(st.sp)}円 / ${fmt(c.budgetYen)}円</td><td>${c.status === "approved" ? `<button class="btn sm" data-rv="stop" data-id="${c.id}">配信停止</button>` : ""}</td></tr>`; }).join("")}</table></div>`;
+  }
+  function adminStores() {
+    const list = stores.filter((s) => storeFilter === "all" || !s.published || s.verification.status !== "verified" || !s.budget.basis || !s.hours);
+    return `<div class="row" style="justify-content:space-between"><div><h1 class="page">店舗マスター</h1><p class="sub">共通の store_id でなまらAIとNAMARA REVIEWを紐づけています。表示中 ${list.length} / ${stores.length} 店舗。</p></div>
+    <label class="f">絞り込み<select id="sf"><option value="attention" ${storeFilter === "attention" ? "selected" : ""}>要確認（非公開・未検証・価格不明・営業時間不明）</option><option value="all" ${storeFilter === "all" ? "selected" : ""}>すべて</option></select></label></div>
+    <div class="card scroll" style="padding:0"><table style="min-width:820px"><tr><th>ID</th><th>店舗名</th><th>エリア／ジャンル</th><th>データソース・確認日</th><th>状態</th><th>操作</th></tr>
+    ${list.map((s) => `<tr><td class="meta">${s.id}</td><td>${esc(s.name)}${!s.budget.basis ? '<div class="meta">価格情報：不明</div>' : ""}${!s.hours ? '<div class="meta">営業時間：不明</div>' : ""}</td><td class="meta">${esc(D.areaLabel(s.areaId))}／${esc(s.genreIds.map(D.genreLabel).join("・"))}</td><td class="meta">サンプル（架空）<br>確認日：${esc(s.verification.verifiedAt ?? "未確認")}</td><td>${s.published ? '<span class="pill good">公開</span>' : '<span class="pill mute">非公開</span>'} ${s.verification.status === "verified" ? '<span class="pill info">検証済み</span>' : '<span class="pill bad">未検証</span>'} ${s.organizationId ? '<span class="pill ad">契約</span>' : ""}</td><td>${s.verification.status === "verified" || s.published ? `<button class="btn sm" data-pub="${s.id}">${s.published ? "非公開にする" : "公開する"}</button>` : '<span class="meta">未検証は公開不可</span>'}</td></tr>`).join("")}</table></div>`;
+  }
+  function adminPlans() {
+    return `<h1 class="page">料金プラン・外部連携状況</h1><p class="sub">料金はすべて仮設定です。課金・決済は未実装（Phase 10）。</p>
+    <div class="grid" style="grid-template-columns:repeat(auto-fill,minmax(240px,1fr))">${N.PLANS.map((p) => `<div class="card"><div class="row" style="justify-content:space-between"><h3>${esc(p.name)}</h3><span class="pill mute">仮設定</span></div><div style="font-size:22px;font-weight:700">${fmt(p.priceYen)}円<small class="meta">/${p.unit}${p.from ? "〜" : ""}</small></div><ul style="padding-left:18px;color:var(--muted);font-size:13px;margin:6px 0 0">${p.features.map((f) => `<li>${esc(f)}</li>`).join("")}</ul></div>`).join("")}</div>
+    <div class="card" style="margin-top:14px"><h3>外部連携の状況</h3><table>${[["Supabase（DB・認証）", "未接続（スキーマとRLSテストのみ完成）"], ["LINE Messaging API（なまらAI）", "未接続（署名検証・Flex Message はテスト済み）"], ["LINE（店舗通知・別チャネル）", "未接続（Phase 9）"], ["OpenAI API", "未接続（辞書ベースの解析を使用）"], ["Google Business Profile API", "未接続（利用申請・承認後に Phase 8）"], ["Google Places API", "採用保留（キャッシュ制限が設計と合わない）"]].map(([a, b]) => `<tr><td>${a}</td><td class="meta">${b}</td></tr>`).join("")}</table></div>`;
+  }
+
+  /* ---------------- タブ切り替え ---------------- */
+  const views = { ai: viewAI, review: viewReview, admin: viewAdmin };
+  document.querySelectorAll("[data-tab]").forEach((b) => (b.onclick = () => {
+    document.querySelectorAll("[data-tab]").forEach((x) => x.setAttribute("aria-selected", x === b));
+    views[b.dataset.tab](); window.scrollTo(0, 0);
+  }));
+  viewAI();
+})();
+</script>
+</body>
+</html>

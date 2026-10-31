@@ -39,6 +39,11 @@
 
 デモ操作の記録（検索・広告申請など）はサーバーを止めると消えます。
 
+### サーバー無しで見られる1ファイル版デモ
+
+`demo/namara-demo.html` をダウンロードして Chrome / Edge で開くだけで、上の3画面を操作できます（検索・推薦・広告・集計は本体と同じロジックを埋め込み）。
+ロジックや画面（`demo/ui.js`）を変えたら `npm run demo:build` で作り直してください。
+
 ## 3. よく使うコマンド
 
 | コマンド | 内容 |
@@ -49,6 +54,7 @@
 | `npm test` | 自動テスト（解析・推薦・広告・集計・権限分離・LINE） |
 | `npm run build` | 本番用ビルド |
 | `npm run check` | 上の4つをまとめて実行 |
+| `npm run demo:build` | 1ファイル版デモ `demo/namara-demo.html` を作り直す |
 | `bash supabase/tests/run-local.sh` | DB の RLS テスト（ローカルに PostgreSQL 16+ が必要。Windows では WSL 推奨） |
 
 ## 4. フォルダ構成
