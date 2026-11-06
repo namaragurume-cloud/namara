@@ -1,7 +1,9 @@
+import { SiteChrome } from "@/components/layout/SiteChrome";
 import { CTAButton } from "@/components/ui/CTAButton";
 
 export default function NotFound() {
   return (
+    <SiteChrome>
     <section className="flex min-h-[80svh] items-center bg-mist pt-[var(--header-h)]">
       <div className="container-x text-center">
         <p className="num text-8xl font-extrabold text-brand md:text-9xl">404</p>
@@ -14,5 +16,6 @@ export default function NotFound() {
         </div>
       </div>
     </section>
+    </SiteChrome>
   );
 }

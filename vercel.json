@@ -5,5 +5,6 @@
     "deploymentEnabled": {
       "claude/funny-pascal-p0s4et": false
     }
-  }
+  },
+  "crons": [{ "path": "/api/cron/daily", "schedule": "7 1 * * *" }]
 }

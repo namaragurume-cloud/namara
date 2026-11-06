@@ -206,7 +206,10 @@ npm run dev                  # http://localhost:3000
 
 ```text
 src/
-  app/                 各ページ（URL = フォルダ名）、API（api/contact, api/partner）、sitemap/robots/OGP
+  app/(site)/          公開サイトの各ページ（URL = フォルダ名）
+  app/(ops)/           キャスティング管理ツール（/admin・/m・/p）
+  app/api/             API（contact, partner, cron, line）
+  app/                 sitemap/robots/OGP
   components/
     layout/            Header / Footer / Analytics
     sections/          トップページの各セクション・共通セクション
@@ -215,10 +218,11 @@ src/
     animation/         スクロール表示・カウントアップ
   data/                サイトの内容（ここを編集）
   lib/                 入力検証・メール送信・スパム対策・計測
+  lib/ops/             管理ツールのデータ保存・LINE/メール送信・集計・レポート
 public/images/         画像
 ```
 
-URL を変更する場合は `src/app/` のフォルダ名を変更し、`src/data/site.ts` のメニューと `src/app/sitemap.ts` を合わせて修正してください。
+URL を変更する場合は `src/app/(site)/` のフォルダ名を変更し、`src/data/site.ts` のメニューと `src/app/sitemap.ts` を合わせて修正してください。
 
 ---
 
@@ -287,3 +291,54 @@ URL を変更する場合は `src/app/` のフォルダ名を変更し、`src/da
 - [ ] Lighthouse でパフォーマンス確認
 - [ ] アクセシビリティの基本確認
 - [ ] プライバシーポリシーを確定し `src/data/privacy.ts` の `finalized` を `true` に
+
+---
+
+## 9. キャスティング管理ツール（/admin）
+
+PR依頼から日程調整・飲食店への共有・インサイト回収・レポート作成までを1か所で行う業務ツールです。公開サイトとは別の画面で、検索エンジンにも載りません。
+
+### 流れ
+| | やること | 誰が |
+|---|---|---|
+| 1 | 案件（店舗・PR内容・報酬・撮影候補日・期限）を作成し、発信者を選んで**一括送信** | あなた |
+| 2 | 発信者が専用ページで参加可否・参加できる日時・投稿予定日を回答 | 発信者 |
+| – | 回答期限の前日に未回答者へ自動リマインド | 自動 |
+| 3 | 回答を自動集計し、撮影枠（人数上限つき）を自動で割り当て。確認して「確定」→ 発信者に撮影日時・住所・投稿条件が届く | 自動＋あなたが確認 |
+| 4 | 飲食店へ撮影日・投稿予定日を共有（メール送信 or 文面コピー） | あなた |
+| – | 撮影前日に発信者へリマインド | 自動 |
+| 5 | 月末に、投稿予定日を過ぎた人へインサイト提出のお願い。3日後に未提出なら1回リマインド | 自動 |
+| 6 | 提出されたインサイトから自動でレポート作成（合計・投稿別・エンゲージメント率、PDF保存・CSV）→ 飲食店へ送付 | 自動＋あなたが送付 |
+
+- 発信者への連絡は **公式LINE（連携済みの人）→ メール** の順に自動送信します。どちらも使えない人は「自動送信できなかった人」として表示され、文面コピー・「LINEで送る」から手動で送れます（送れていないのに送信済みとは表示しません）。
+- DMや電話で返事が来た場合は、案件ページの「詳細・代理入力」から回答やインサイトを入力できます。
+- 送ったメッセージはすべて「送信履歴」に残ります。
+- メッセージの文面は `src/data/ops-templates.ts` で変更できます。
+
+### URL
+| URL | 使う人 |
+|---|---|
+| `/admin` | あなた（パスワードでログイン） |
+| `/m/<発信者ごとのランダムURL>` | 発信者（依頼の一覧・回答・インサイト入力） |
+| `/p/<案件ごとのランダムURL>` | 飲食店（撮影日程・レポート。共有／送付済みにしたものだけ表示） |
+
+### 初期設定（Vercel）
+1. **データ保存先**：Vercel のプロジェクト → Storage → Marketplace から **Upstash Redis** を追加してプロジェクトに接続（無料枠で足ります）
+2. 環境変数 `ADMIN_PASSWORD`（8文字以上）・`ADMIN_SESSION_SECRET`（ランダムな長い文字列）・`CRON_SECRET`（ランダムな文字列）を設定
+3. **公式LINE**（推奨）：[LINE Developers](https://developers.line.biz/) で公式アカウントの Messaging API チャネルを作成し、
+   - `LINE_CHANNEL_ACCESS_TOKEN`（長期）・`LINE_CHANNEL_SECRET`・`LINE_BOT_BASIC_ID`（@から始まるID）を設定
+   - Webhook URL を `https://<ドメイン>/api/line/webhook` にして「Webhookの利用」をオン
+   - LINE Official Account Manager の応答設定で「応答メッセージ」をオフ（自動返信がツールの返信と重ならないように）
+   - 無料プランは月200通までです。発信者が多い場合はライトプラン以上を検討してください
+4. **メール**（LINE未連携の発信者・飲食店への送付）：フォームと同じ Resend の設定（`MAIL_PROVIDER=resend`・`RESEND_API_KEY`・`MAIL_FROM`）を使います。返信先は `MAIL_TO` の1件目です
+5. 再デプロイ後、`/admin/settings` で各連携が「設定済み」になっていることを確認
+
+毎日の自動処理は `vercel.json` の `crons` で毎日10時ごろ（日本時間）に `/api/cron/daily` を呼び出します。インサイト依頼の日は `OPS_INSIGHT_DAY`（`last`＝月末、または日にち）で変更できます。
+
+### 発信者の登録とLINE連携
+1. 「発信者」で登録（1人ずつ、またはスプレッドシートから貼り付けてまとめて登録）
+2. 発信者ページの「最初の案内文」をコピーしてDMで1回送る（連携コード・連携ボタン・専用ページURL入り）
+3. 発信者が公式LINEに連携コードを送ると自動で紐づき、以降の連絡はすべてLINEで自動送信されます
+
+### ローカルで試す
+`.env.local` に `ADMIN_PASSWORD=` と `MAIL_PROVIDER=console` を設定して `npm run dev` → http://localhost:3000/admin 。データは `.data/ops.json`（Git 管理外）に保存され、メールはターミナルに表示されます。

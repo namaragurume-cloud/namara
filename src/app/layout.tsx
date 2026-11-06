@@ -1,11 +1,5 @@
 import type { Metadata, Viewport } from "next";
 import { Inter, Noto_Sans_JP } from "next/font/google";
-import { Analytics } from "@/components/layout/Analytics";
-import { Footer } from "@/components/layout/Footer";
-import { Header } from "@/components/layout/Header";
-import { StickyCTA } from "@/components/layout/StickyCTA";
-import { MotionProvider } from "@/components/animation/MotionProvider";
-import { JsonLd } from "@/components/ui/JsonLd";
 import { site } from "@/data/site";
 import "./globals.css";
 
@@ -61,44 +55,7 @@ export const viewport: Viewport = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="ja" className={`${noto.variable} ${inter.variable}`}>
-      <body>
-        <MotionProvider>
-          <Header />
-          <main id="main">{children}</main>
-          <Footer />
-          <StickyCTA />
-        </MotionProvider>
-        <JsonLd
-          data={{
-            "@context": "https://schema.org",
-            "@graph": [
-              {
-                "@type": "Organization",
-                "@id": `${site.url}/#organization`,
-                name: site.company.name,
-                url: site.url,
-                address: {
-                  "@type": "PostalAddress",
-                  addressCountry: "JP",
-                  addressRegion: "北海道",
-                  addressLocality: "札幌市中央区",
-                  streetAddress: "南2条西7丁目4-1 2-A",
-                },
-                sameAs: [site.instagram.url],
-              },
-              {
-                "@type": "WebSite",
-                "@id": `${site.url}/#website`,
-                name: site.title,
-                url: site.url,
-                inLanguage: "ja",
-                publisher: { "@id": `${site.url}/#organization` },
-              },
-            ],
-          }}
-        />
-        <Analytics />
-      </body>
+      <body>{children}</body>
     </html>
   );
 }
