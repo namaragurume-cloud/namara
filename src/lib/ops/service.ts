@@ -3,7 +3,10 @@ import { opsTemplates } from "@/data/ops-templates";
 import { addDays, fmtDate, fmtDateLong, fmtNum, fmtSlot, isLastDayOfMonth, jstDate } from "./dates";
 import { db } from "./db";
 import { sendToCreator, sendToRestaurant, type SendResult } from "./notify";
-import type { Assignment, Campaign, Creator, Insight, Restaurant, Slot } from "./types";
+import { needsInsight } from "./insights";
+import { fieldLabel, isComplete, platformLabel, screenshotGuide } from "./insight-fields";
+import { buildReport, pct, pct1 } from "./report";
+import type { Assignment, Campaign, Creator, Platform, Restaurant, Slot } from "./types";
 import { assignmentUrl, creatorPortalUrl, restaurantPortalUrl } from "./urls";
 import { newToken, nowIso } from "./util";
 
@@ -80,7 +83,7 @@ export function phaseOf(b: Pick<Bundle, "campaign" | "rows">, today = jstDate())
   const confirmed = accepted.filter((r) => r.a.confirmedNotifiedAt);
   if (confirmed.length === 0) return waiting.length > 0 && campaign.replyDeadline >= today ? "recruiting" : "confirming";
   if (accepted.some((r) => !r.a.confirmedNotifiedAt)) return "confirming";
-  if (confirmed.every((r) => r.a.insight)) return "report";
+  if (confirmed.every((r) => isComplete(r.a.insight))) return "report";
   if (confirmed.some((r) => r.a.insightRequestedAt || r.a.insight)) return "insight";
   return "scheduled";
 }
@@ -204,9 +207,6 @@ export async function recordResponse(
   });
 }
 
-export async function recordInsight(a: Assignment, postUrl: string, insight: Omit<Insight, "submittedAt">): Promise<void> {
-  await db.update("assignments", a.id, (x) => ({ ...x, postUrl, insight: { ...insight, submittedAt: nowIso() } }));
-}
 
 /* ------------------------------------------------------------------ */
 /* 日程確定 → 発信者へ通知 / 飲食店へ共有                                  */
@@ -291,71 +291,6 @@ export async function shareScheduleWithRestaurant(campaignId: string, manual = f
 /* レポート                                                            */
 /* ------------------------------------------------------------------ */
 
-export type ReportRow = {
-  creator: Creator;
-  slot?: Slot;
-  postDate?: string;
-  postUrl?: string;
-  insight?: Insight;
-  engagement?: number;
-  rate?: number;
-};
-
-export type Report = {
-  rows: ReportRow[];
-  submitted: number;
-  total: number;
-  sum: { views: number; reach: number; likes: number; comments: number; saves: number; shares: number; profileVisits: number; follows: number; engagement: number };
-  rate?: number;
-  followers: number;
-};
-
-export function engagementOf(i: Insight): number {
-  return i.likes + i.comments + i.saves + i.shares;
-}
-
-export function buildReport(b: Bundle): Report {
-  const rows: ReportRow[] = b.rows
-    .filter((r) => r.a.status === "accepted" && r.a.confirmedSlotId)
-    .map(({ a, creator }) => {
-      const insight = a.insight;
-      const engagement = insight ? engagementOf(insight) : undefined;
-      return {
-        creator,
-        slot: slotById(b.campaign, a.confirmedSlotId),
-        postDate: a.plannedPostDate,
-        postUrl: a.postUrl,
-        insight,
-        engagement,
-        rate: insight && insight.reach > 0 ? engagement! / insight.reach : undefined,
-      };
-    })
-    .sort((x, y) => (y.insight?.views ?? -1) - (x.insight?.views ?? -1));
-  const sum = { views: 0, reach: 0, likes: 0, comments: 0, saves: 0, shares: 0, profileVisits: 0, follows: 0, engagement: 0 };
-  for (const r of rows) {
-    if (!r.insight) continue;
-    sum.views += r.insight.views;
-    sum.reach += r.insight.reach;
-    sum.likes += r.insight.likes;
-    sum.comments += r.insight.comments;
-    sum.saves += r.insight.saves;
-    sum.shares += r.insight.shares;
-    sum.profileVisits += r.insight.profileVisits ?? 0;
-    sum.follows += r.insight.follows ?? 0;
-    sum.engagement += r.engagement ?? 0;
-  }
-  return {
-    rows,
-    submitted: rows.filter((r) => r.insight).length,
-    total: rows.length,
-    sum,
-    rate: sum.reach > 0 ? sum.engagement / sum.reach : undefined,
-    followers: rows.reduce((n, r) => n + (r.creator.followers ?? 0), 0),
-  };
-}
-
-export const pct = (n?: number) => (n === undefined ? "-" : `${(n * 100).toFixed(1)}%`);
-
 export function restaurantReportMsg(b: Bundle) {
   const r = buildReport(b);
   return opsTemplates.restaurantReport({
@@ -364,9 +299,9 @@ export function restaurantReportMsg(b: Bundle) {
     title: b.campaign.title,
     summary: [
       `■ 投稿数：${r.submitted}件`,
-      `■ 合計再生数：${fmtNum(r.sum.views)}回`,
-      `■ 合計リーチ：${fmtNum(r.sum.reach)}人`,
-      `■ いいね・コメント・保存・シェア：${fmtNum(r.sum.engagement)}件（エンゲージメント率 ${pct(r.rate)}）`,
+      `■ 合計閲覧数・再生数：${fmtNum(r.views)}回`,
+      ...(r.reactions ? [`■ いいね・コメント・保存・シェア：${fmtNum(r.reactions)}件（エンゲージメント率 ${pct(r.er)}）`] : []),
+      ...(r.nonFollowerPct !== undefined ? [`■ フォロワー以外への到達：${pct1(r.nonFollowerPct)}`] : []),
     ],
     url: restaurantPortalUrl(b.campaign),
   });
@@ -405,7 +340,7 @@ async function loadAll(): Promise<Ctx> {
 function insightDue(ctx: Ctx, today: string, campaignId?: string) {
   return ctx.assignments.filter((a) => {
     if (campaignId && a.campaignId !== campaignId) return false;
-    if (a.status !== "accepted" || !a.confirmedSlotId || a.insight || a.insightRequestedAt) return false;
+    if (!needsInsight(a) || a.insightRequestedAt) return false;
     const c = ctx.campaigns.get(a.campaignId);
     const slot = c && slotById(c, a.confirmedSlotId);
     const due = a.plannedPostDate ?? slot?.date;
@@ -432,7 +367,7 @@ export async function sendInsightRequests(opts: { today?: string; campaignId?: s
     });
     const result = await sendToCreator(
       creator,
-      opsTemplates.insightRequest({ creator: creator.name, posts, url: creatorPortalUrl(creator) }),
+      opsTemplates.insightRequest({ creator: creator.name, posts, guide: guideLines(list, creator), url: creatorPortalUrl(creator), viaLine: Boolean(creator.lineUserId) }),
       "インサイト提出のお願い",
     );
     if (result.ok) {
@@ -441,6 +376,14 @@ export async function sendInsightRequests(opts: { today?: string; campaignId?: s
     out.push({ name: creator.name, result });
   }
   return out;
+}
+
+/** 依頼文に入れるスクショの撮り方（媒体が分からなければ両方） */
+function guideLines(list: Assignment[], creator: Creator): string[] {
+  const fromCreator: Platform | undefined = /tiktok/i.test(creator.platform) ? "tiktok" : /instagram/i.test(creator.platform) ? "instagram" : undefined;
+  const ps = new Set<Platform>(list.map((a) => a.platform ?? fromCreator).filter((p): p is Platform => Boolean(p)));
+  const use: Platform[] = ps.size ? [...ps] : ["instagram", "tiktok"];
+  return use.flatMap((p) => [`【${platformLabel[p]}】`, ...screenshotGuide[p].map((g) => `・${g}`)]);
 }
 
 const daysSince = (iso: string, today: string) =>
@@ -481,18 +424,19 @@ export async function runReminders(today = jstDate()): Promise<BulkResult> {
     }
   }
 
-  // インサイト未提出（依頼から3日後に1回）
+  // インサイト未提出・不足（依頼から3日後に1回）
   const late = ctx.assignments.filter(
-    (a) => a.insightRequestedAt && !a.insight && !a.insightRemindedAt && daysSince(a.insightRequestedAt, today) >= 3 && !ctx.campaigns.get(a.campaignId)?.reportSentAt,
+    (a) => a.insightRequestedAt && needsInsight(a) && !a.insightRemindedAt && daysSince(a.insightRequestedAt, today) >= 3 && !ctx.campaigns.get(a.campaignId)?.reportSentAt,
   );
   for (const [creatorId, list] of groupByCreator(late)) {
     const creator = ctx.creators.get(creatorId);
     if (!creator) continue;
-    const result = await sendToCreator(
-      creator,
-      opsTemplates.insightReminder({ creator: creator.name, count: list.length, url: creatorPortalUrl(creator) }),
-      "インサイト提出リマインド",
-    );
+    const lines = list.map((a) => {
+      const c = ctx.campaigns.get(a.campaignId)!;
+      const name = ctx.restaurants.get(c.restaurantId)?.name ?? c.title;
+      return a.insight ? `・${name}：${a.insight.missing.map((k) => fieldLabel(a.insight!.platform, k)).join("、")}が足りません` : `・${name}：未提出`;
+    });
+    const result = await sendToCreator(creator, opsTemplates.insightReminder({ creator: creator.name, lines, url: creatorPortalUrl(creator) }), "インサイト提出リマインド");
     if (result.ok) for (const a of list) await db.update("assignments", a.id, (x) => ({ ...x, insightRemindedAt: nowIso() }));
     out.push({ name: creator.name, result });
   }

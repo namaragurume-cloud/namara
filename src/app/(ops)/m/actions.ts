@@ -3,7 +3,7 @@
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { db } from "@/lib/ops/db";
-import { findCreatorByToken, recordInsight, recordResponse } from "@/lib/ops/service";
+import { findCreatorByToken, recordResponse } from "@/lib/ops/service";
 
 const ymd = /^\d{4}-\d{2}-\d{2}$/;
 
@@ -34,31 +34,11 @@ export async function respond(token: string, id: string, fd: FormData) {
   back(token, id, accept ? "回答ありがとうございます！撮影日が決まったらお知らせします。" : "ご回答ありがとうございました。またよろしくお願いします！");
 }
 
-const insightSchema = z.object({
-  postUrl: z.url({ error: "投稿のURLを入力してください" }).max(500),
-  views: z.coerce.number().int().min(0).max(1e9),
-  reach: z.coerce.number().int().min(0).max(1e9),
-  likes: z.coerce.number().int().min(0).max(1e9),
-  comments: z.coerce.number().int().min(0).max(1e9),
-  saves: z.coerce.number().int().min(0).max(1e9),
-  shares: z.coerce.number().int().min(0).max(1e9),
-  profileVisits: z.coerce.number().int().min(0).max(1e9).optional(),
-  follows: z.coerce.number().int().min(0).max(1e9).optional(),
-});
-
-export async function submitInsight(token: string, id: string, fd: FormData) {
-  const { a, campaign } = await load(token, id);
-  if (a.status !== "accepted" || !a.confirmedSlotId) back(token, id, "!撮影日の確定後に入力できます");
-  if (campaign.reportSentAt && a.insight) back(token, id, "!レポート送付後のため変更できません。担当者にご連絡ください");
-  const raw: Record<string, string | undefined> = {};
-  for (const k of Object.keys(insightSchema.shape)) {
-    const v = String(fd.get(k) ?? "").replace(/[,，\s]/g, "");
-    raw[k] = v === "" ? undefined : v;
-  }
-  raw.postUrl = String(fd.get("postUrl") ?? "").trim();
-  const parsed = insightSchema.safeParse(raw);
-  if (!parsed.success) back(token, id, "!未入力の項目があります。数字は半角でご入力ください（0の場合は0）");
-  const { postUrl, ...insight } = parsed.data;
-  await recordInsight(a, postUrl, insight);
-  redirect(`/m/${token}?flash=${encodeURIComponent("インサイトを提出しました。ありがとうございました！")}`);
+/** 投稿URL（任意） */
+export async function savePostUrl(token: string, id: string, fd: FormData) {
+  const { a } = await load(token, id);
+  const url = String(fd.get("postUrl") ?? "").trim();
+  if (url && !z.url().safeParse(url).success) back(token, id, "!URLの形式が正しくありません");
+  await db.update("assignments", a.id, (x) => ({ ...x, postUrl: url || undefined }));
+  back(token, id, "投稿URLを保存しました");
 }

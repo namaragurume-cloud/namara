@@ -2,30 +2,32 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { CopyButton, SubmitButton } from "@/components/ops/client";
 import { statusLabel } from "@/components/ops/phase";
-import { Card, Field, inputClass } from "@/components/ops/ui";
+import { Badge, Card, Field, Flash, inputClass } from "@/components/ops/ui";
 import { fmtDateTime, fmtSlot } from "@/lib/ops/dates";
 import { db } from "@/lib/ops/db";
 import { assignmentUrl } from "@/lib/ops/urls";
-import { saveAssignment } from "../../../actions";
+import { ShotUploader } from "@/components/ops/ShotUploader";
+import { insightFields, isComplete } from "@/lib/ops/insight-fields";
+import { listShots } from "@/lib/ops/insights";
+import type { DistKey, MetricKey, Platform } from "@/lib/ops/types";
+import { isAiConfigured } from "@/lib/ops/vision";
+import { notifyMissingAction, saveAssignment, saveInsightManual } from "../../../actions";
 
 export const metadata = { title: "依頼の詳細" };
 
-const num = (name: string, label: string, v?: number) => (
-  <Field label={label}>
-    <input name={name} inputMode="numeric" defaultValue={v ?? ""} className={inputClass} />
-  </Field>
-);
-
-export default async function AssignmentPage({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = await params;
+export default async function AssignmentPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ flash?: string }> }) {
+  const [{ id }, { flash }] = await Promise.all([params, searchParams]);
   const a = await db.get("assignments", id);
   if (!a) notFound();
   const [c, creator] = await Promise.all([db.get("campaigns", a.campaignId), db.get("creators", a.creatorId)]);
   if (!c || !creator) notFound();
   const url = assignmentUrl(creator, a);
   const i = a.insight;
+  const shots = await listShots(a.id);
+  const platform: Platform = i?.platform ?? a.platform ?? (/tiktok/i.test(creator.platform) ? "tiktok" : "instagram");
   return (
     <>
+      <Flash text={flash} />
       <div className="flex flex-wrap items-center gap-3">
         <Link href={`/admin/campaigns/${c.id}`} className="text-sm text-muted">
           ← {c.title}
@@ -82,23 +84,83 @@ export default async function AssignmentPage({ params }: { params: Promise<{ id:
             </Field>
           </div>
         </Card>
-        <Card title="投稿・インサイト（スクショで送られてきたときの代理入力）">
+        <Card title="投稿URL">
           <Field label="投稿URL">
             <input name="postUrl" type="url" defaultValue={a.postUrl} className={inputClass} />
           </Field>
-          <div className="mt-4 grid grid-cols-2 gap-3 md:grid-cols-4">
-            {num("views", "再生数", i?.views)}
-            {num("reach", "リーチ", i?.reach)}
-            {num("likes", "いいね", i?.likes)}
-            {num("comments", "コメント", i?.comments)}
-            {num("saves", "保存", i?.saves)}
-            {num("shares", "シェア", i?.shares)}
-            {num("profileVisits", "プロフィールアクセス", i?.profileVisits)}
-            {num("follows", "フォロー", i?.follows)}
-          </div>
         </Card>
-        <SubmitButton>保存</SubmitButton>
+        <SubmitButton>回答・URLを保存</SubmitButton>
       </form>
+
+      <Card
+        title="インサイト（スクショ）"
+        actions={i ? i.missing.length ? <Badge tone="red">足りない項目 {i.missing.length}件</Badge> : <Badge tone="green">そろっています</Badge> : <Badge>未提出</Badge>}
+      >
+        <p className="mb-3 text-xs text-muted">
+          DMなどで受け取ったスクショはここから追加できます。{isAiConfigured() ? "追加すると自動で読み取ります。" : "（AIの読み取りが未設定のため、下の欄に手入力してください）"}
+          画像は{180}日後に自動で削除されます（数値は残ります）。
+        </p>
+        <ShotUploader assignmentId={a.id} shots={shots.map((s) => ({ id: s.id, url: `/api/ops/shots/${s.id}` }))} canAnalyze={isAiConfigured()} />
+        {shots.length > 0 && (
+          <p className="mt-2 text-xs text-muted">送信元：{shots.map((s) => ({ web: "ページ", line: "LINE", admin: "管理画面" })[s.via]).join("・")}</p>
+        )}
+        {i?.aiNote && <p className="mt-3 rounded-xl bg-amber-50 px-3 py-2 text-xs text-amber-900">AIのメモ：{i.aiNote}</p>}
+        <div className="mt-4 flex flex-wrap gap-2">
+
+          {!isComplete(i) && a.status === "accepted" && (
+            <form action={notifyMissingAction.bind(null, a.id)}>
+              <SubmitButton variant="outline" size="sm" confirm="発信者に不足している項目を連絡します。よろしいですか？">
+                {i ? "足りない項目を発信者に連絡" : "提出をお願いする"}
+              </SubmitButton>
+            </form>
+          )}
+          {a.missingNotifiedAt && <span className="self-center text-xs text-muted">不足の連絡：{fmtDateTime(a.missingNotifiedAt)}（{a.missingNotifiedFor || "未提出"}）</span>}
+        </div>
+
+        <form action={saveInsightManual} className="mt-6 space-y-3 border-t border-line pt-4">
+          <input type="hidden" name="id" value={a.id} />
+          <p className="text-sm font-bold">数値の確認・修正</p>
+          <div className="grid grid-cols-2 gap-3">
+            <Field label="媒体" hint="変えたら一度保存すると入力欄が切り替わります">
+              <select name="platform" defaultValue={platform} className={inputClass}>
+                <option value="instagram">Instagram</option>
+                <option value="tiktok">TikTok</option>
+              </select>
+            </Field>
+            <Field label="投稿の種類">
+              <select name="isVideo" defaultValue={i?.isVideo === true ? "yes" : i?.isVideo === false ? "no" : ""} className={inputClass}>
+                <option value="">不明</option>
+                <option value="yes">動画（リール）</option>
+                <option value="no">写真・カルーセル</option>
+              </select>
+            </Field>
+          </div>
+          <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+            {insightFields[platform]
+              .filter((f) => f.kind !== "dist")
+              .map((f) => (
+                <Field key={f.key} label={`${f.label}${f.kind === "seconds" ? "（秒）" : f.kind === "percent" ? "（%）" : ""}`} required={f.required}>
+                  <input name={f.key} inputMode="decimal" defaultValue={i?.platform === platform ? (i.metrics[f.key as MetricKey] ?? "") : ""} className={inputClass} />
+                </Field>
+              ))}
+          </div>
+          <div className="grid gap-3 md:grid-cols-3">
+            {insightFields[platform]
+              .filter((f) => f.kind === "dist")
+              .map((f) => (
+                <Field key={f.key} label={f.label} required={f.required} hint="1行に「項目 数値」（例：フィード 72.7）">
+                  <textarea
+                    name={f.key}
+                    rows={6}
+                    defaultValue={i?.platform === platform ? (i.dists[f.key as DistKey] ?? []).map((d) => `${d.label} ${d.pct}`).join("\n") : ""}
+                    className={inputClass}
+                  />
+                </Field>
+              ))}
+          </div>
+          <SubmitButton>インサイトを保存</SubmitButton>
+        </form>
+      </Card>
     </>
   );
 }

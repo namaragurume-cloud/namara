@@ -3,6 +3,7 @@ import { Badge, Card, Flash } from "@/components/ops/ui";
 import { dbMode } from "@/lib/ops/db";
 import { isEmailConfigured } from "@/lib/ops/email";
 import { isLineConfigured, lineBasicId } from "@/lib/ops/line";
+import { isAiConfigured } from "@/lib/ops/vision";
 import { absoluteUrl } from "@/lib/utils";
 import { runDailyNow } from "../../actions";
 
@@ -38,6 +39,13 @@ export default async function SettingsPage({ searchParams }: { searchParams: Pro
           </Row>
           <Row ok={isEmailConfigured()} title="メール送信（Resend）">
             LINE未連携の発信者と、飲食店への送付に使います。サイトのフォームと同じ <code>RESEND_API_KEY</code>・<code>MAIL_FROM</code> を使います。
+          </Row>
+          <Row ok={isAiConfigured()} title="スクショの自動読み取り（Claude API）">
+            インサイトのスクショから数値を読み取り、足りない項目を判定します。レポート文章の下書きにも使います。<code>ANTHROPIC_API_KEY</code> を設定してください（
+            <a href="https://console.anthropic.com" target="_blank" rel="noopener" className="underline">
+              console.anthropic.com
+            </a>
+            で発行。1投稿の読み取りあたり数円程度）。未設定でもスクショの受け取りはでき、数値は管理画面で手入力できます。
           </Row>
           <Row ok={Boolean(process.env.CRON_SECRET)} title="毎日の自動処理">
             毎日10時ごろにリマインド、月末{process.env.OPS_INSIGHT_DAY && process.env.OPS_INSIGHT_DAY !== "last" ? `（設定：毎月${process.env.OPS_INSIGHT_DAY}日）` : ""}にインサイト提出のお願いを自動送信します。Vercel に <code>CRON_SECRET</code>（ランダムな文字列）を設定してください。

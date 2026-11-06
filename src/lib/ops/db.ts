@@ -17,6 +17,9 @@ import type { CollectionName, Collections } from "./types";
 const PREFIX = "ops:";
 
 type Backend = {
+  blobSet(key: string, base64: string, ttlSec: number): Promise<void>;
+  blobGet(key: string): Promise<string | null>;
+  blobDel(key: string): Promise<void>;
   all(collection: CollectionName): Promise<Record<string, string>>;
   get(collection: CollectionName, id: string): Promise<string | null>;
   set(collection: CollectionName, id: string, value: string): Promise<void>;
@@ -53,6 +56,13 @@ function redisBackend(cfg: { url: string; token: string }): Backend {
     return body.result as T;
   }
   return {
+    async blobSet(k, v, ttl) {
+      await cmd(["SET", `${PREFIX}blob:${k}`, v, "EX", ttl]);
+    },
+    blobGet: (k) => cmd<string | null>(["GET", `${PREFIX}blob:${k}`]),
+    async blobDel(k) {
+      await cmd(["DEL", `${PREFIX}blob:${k}`]);
+    },
     async all(c) {
       const flat = await cmd<string[]>(["HGETALL", PREFIX + c]);
       const out: Record<string, string> = {};
@@ -93,7 +103,16 @@ function fileBackend(): Backend {
     queue = run.catch(() => {});
     return run;
   }
+  const blobFile = (k: string) => path.join(process.cwd(), ".data", "blobs", k.replace(/[^\w-]/g, "_"));
   return {
+    async blobSet(k, v) {
+      await fs.mkdir(path.dirname(blobFile(k)), { recursive: true });
+      await fs.writeFile(blobFile(k), v);
+    },
+    blobGet: (k) => fs.readFile(blobFile(k), "utf8").catch(() => null),
+    async blobDel(k) {
+      await fs.rm(blobFile(k), { force: true });
+    },
     all: async (c) => (await read())[c] ?? {},
     get: async (c, id) => (await read())[c]?.[id] ?? null,
     set: (c, id, v) =>
@@ -117,6 +136,15 @@ function backend(): Backend {
   else throw new DbNotConfiguredError("Database is not configured");
   return cached;
 }
+
+/** スクショ画像の保存期間（日）。これを過ぎると画像は自動で消えます（読み取った数値は残ります） */
+const BLOB_TTL_DAYS = 180;
+
+export const blobs = {
+  set: (key: string, base64: string) => backend().blobSet(key, base64, BLOB_TTL_DAYS * 86_400),
+  get: (key: string) => backend().blobGet(key),
+  del: (key: string) => backend().blobDel(key),
+};
 
 export const db = {
   async list<C extends CollectionName>(c: C): Promise<Collections[C][]> {

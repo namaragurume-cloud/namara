@@ -4,6 +4,8 @@ import { Badge, Card, Flash, buttonClass } from "@/components/ops/ui";
 import { fmtDate, jstDate } from "@/lib/ops/dates";
 import { db } from "@/lib/ops/db";
 import { lineOaMessageUrl } from "@/lib/ops/line";
+import { isComplete } from "@/lib/ops/insight-fields";
+import { needsInsight } from "@/lib/ops/insights";
 import { findCreatorByToken, slotLabel } from "@/lib/ops/service";
 import type { Assignment, Campaign } from "@/lib/ops/types";
 
@@ -23,8 +25,8 @@ export default async function CreatorHome({ params, searchParams }: { params: Pr
     .sort((x, y) => y.a.createdAt.localeCompare(x.a.createdAt));
 
   const answer = mine.filter(({ a, c }) => a.status === "sent" && !c.reportSentAt);
-  const insight = mine.filter(({ a, c }) => a.status === "accepted" && a.confirmedSlotId && !a.insight && !c.reportSentAt && (a.insightRequestedAt || (a.plannedPostDate ?? "9999") <= today));
-  const upcoming = mine.filter(({ a, c }) => a.status === "accepted" && !a.insight && !c.reportSentAt && !insight.some((x) => x.a.id === a.id));
+  const insight = mine.filter(({ a, c }) => needsInsight(a) && !c.reportSentAt && (a.insightRequestedAt || a.insight || (a.plannedPostDate ?? "9999") <= today));
+  const upcoming = mine.filter(({ a, c }) => a.status === "accepted" && !isComplete(a.insight) && !c.reportSentAt && !insight.some((x) => x.a.id === a.id));
   const done = mine.filter((x) => !answer.includes(x) && !insight.includes(x) && !upcoming.includes(x)).slice(0, 10);
   const lineUrl = !creator.lineUserId ? lineOaMessageUrl(`連携 ${creator.lineLinkCode}`) : undefined;
 
@@ -70,7 +72,7 @@ export default async function CreatorHome({ params, searchParams }: { params: Pr
         )}
       </Card>
       {insight.length > 0 && (
-        <Card title="インサイトの入力をお願いします">
+        <Card title="インサイトのスクショをお願いします">
           <ul className="divide-y divide-line">
             {insight.map((x) => item(x, <Badge tone="amber">未入力</Badge>))}
           </ul>

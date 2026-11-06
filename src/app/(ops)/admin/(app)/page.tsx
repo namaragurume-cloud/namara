@@ -3,6 +3,7 @@ import { phaseTone } from "@/components/ops/phase";
 import { Badge, ButtonLink, Card, Empty, Flash } from "@/components/ops/ui";
 import { fmtDate, jstDate } from "@/lib/ops/dates";
 import { db } from "@/lib/ops/db";
+import { isComplete } from "@/lib/ops/insight-fields";
 import { phaseLabel, phaseOf, type Row } from "@/lib/ops/service";
 
 export const metadata = { title: "ホーム" };
@@ -31,6 +32,8 @@ export default async function AdminHome({ searchParams }: { searchParams: Promis
       if (unsent) todo.push(`手動送信が必要な依頼 ${unsent}件`);
       if (phase === "confirming") todo.push("回答が集まりました → 日程を確定");
       if (accepted.some((r) => r.a.confirmedNotifiedAt) && !campaign.scheduleSharedAt) todo.push("飲食店へ撮影日を共有");
+      const lacking = accepted.filter((r) => r.a.insight && r.a.insight.missing.length > 0 && !r.a.missingNotifiedAt).length;
+      if (lacking) todo.push(`スクショ不足で本人に連絡できていない ${lacking}件`);
       if (phase === "report") todo.push("インサイトがそろいました → レポート送付");
       return {
         campaign,
@@ -39,7 +42,7 @@ export default async function AdminHome({ searchParams }: { searchParams: Promis
         total: rows.filter((r) => r.a.status !== "unsent").length,
         waiting: rows.filter((r) => r.a.status === "sent").length,
         accepted: accepted.length,
-        insights: accepted.filter((r) => r.a.insight).length,
+        insights: accepted.filter((r) => isComplete(r.a.insight)).length,
         confirmed: accepted.filter((r) => r.a.confirmedSlotId).length,
       };
     })

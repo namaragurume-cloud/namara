@@ -9,5 +9,5 @@ export const metadata: Metadata = {
 };
 
 export default function OpsLayout({ children }: { children: React.ReactNode }) {
-  return <div className="min-h-svh bg-mist text-[15px] leading-relaxed">{children}</div>;
+  return <div className="min-h-svh bg-mist text-[15px] leading-relaxed print:bg-white">{children}</div>;
 }

@@ -95,29 +95,70 @@ export const opsTemplates = {
   }),
 
   /** 月末のインサイト提出のお願い */
-  insightRequest: (p: { creator: string; posts: string[]; url: string }): Msg => ({
+  insightRequest: (p: { creator: string; posts: string[]; guide: string[]; url: string; viaLine: boolean }): Msg => ({
     subject: "【インサイト提出のお願い】今月のPR投稿",
     text: [
       `${p.creator}さん`,
       "",
       "今月もPR投稿ありがとうございました！",
-      "以下の投稿のインサイト（再生数・リーチ・いいね等）の入力をお願いします。",
+      "以下の投稿のインサイト画面のスクリーンショットを送ってください。",
       ...p.posts.map((s) => `・${s}`),
       "",
-      "入力はこちら（投稿のインサイト画面の数字をそのまま入れてください）",
+      "■ 撮ってほしい画面",
+      ...p.guide,
+      "",
+      p.viaLine ? "このトークに画像を送るだけでOKです（数字は自動で読み取ります）。ページからも送れます。" : "こちらのページから画像を送ってください（数字は自動で読み取ります）。",
       p.url,
       "",
       SIGN,
     ].join("\n"),
   }),
 
-  /** インサイト未提出のリマインド */
-  insightReminder: (p: { creator: string; count: number; url: string }): Msg => ({
+  /** インサイト未提出・不足のリマインド */
+  insightReminder: (p: { creator: string; lines: string[]; url: string }): Msg => ({
     subject: "【リマインド】インサイトのご提出",
     text: [
       `${p.creator}さん`,
       "",
-      `インサイトが未提出の投稿が${p.count}件あります。お手すきの際にご入力をお願いします🙏`,
+      "インサイトのスクリーンショットがまだそろっていない投稿があります。お手すきの際にお願いします🙏",
+      ...p.lines,
+      "",
+      p.url,
+      "",
+      SIGN,
+    ].join("\n"),
+  }),
+
+  /** スクショに必要な項目が写っていなかったとき */
+  insightMissing: (p: { creator: string; post: string; missing: string[]; url: string; viaLine: boolean }): Msg => ({
+    subject: "【インサイト】足りない項目があります",
+    text: [
+      `${p.creator}さん`,
+      "",
+      `スクリーンショットありがとうございます！${p.post}の投稿で、次の項目が画像に写っていませんでした。`,
+      ...p.missing.map((m) => `・${m}`),
+      "",
+      `この項目が写っている画面のスクショを追加で${p.viaLine ? "このトークに" : "下のページから"}送ってください。`,
+      p.url,
+      "",
+      SIGN,
+    ].join("\n"),
+  }),
+
+  /** スクショがそろったとき */
+  insightComplete: (p: { creator: string; post: string }): Msg => ({
+    subject: "【インサイト】受け取りました",
+    text: [`${p.creator}さん`, "", `${p.post}の投稿のインサイトを受け取りました。ありがとうございました！`, "", SIGN].join("\n"),
+  }),
+
+  /** LINEで画像を受け取ったが、どの投稿か決められないとき */
+  insightWhichPost: (p: { creator: string; url: string }): Msg => ({
+    subject: "【インサイト】投稿ごとに送ってください",
+    text: [
+      `${p.creator}さん`,
+      "",
+      "画像ありがとうございます！インサイトをお願いしている投稿が複数あるため、どの投稿の画像か自動で判断できませんでした。",
+      "お手数ですが、下のページから投稿ごとに画像を送ってください。",
       p.url,
       "",
       SIGN,

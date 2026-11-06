@@ -2,16 +2,14 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { CheckAll, CopyButton, SubmitButton } from "@/components/ops/client";
 import { channelLabel, phaseTone } from "@/components/ops/phase";
-import { Badge, ButtonLink, Card, Empty, Flash, Stat, buttonClass, inputClass } from "@/components/ops/ui";
+import { Badge, ButtonLink, Card, Empty, Field, Flash, Stat, buttonClass, inputClass } from "@/components/ops/ui";
 import { fmtDate, fmtDateLong, fmtDateTime, fmtNum, fmtSlot, jstDate } from "@/lib/ops/dates";
 import { db } from "@/lib/ops/db";
 import { isEmailConfigured } from "@/lib/ops/email";
 import { lineShareUrl } from "@/lib/ops/line";
 import {
-  buildReport,
   confirmedMsg,
   loadBundle,
-  pct,
   phaseLabel,
   phaseOf,
   prRequestMsg,
@@ -21,8 +19,12 @@ import {
   slotLabel,
 } from "@/lib/ops/service";
 import { restaurantPortalUrl } from "@/lib/ops/urls";
+import { fieldLabel, isComplete, platformLabel } from "@/lib/ops/insight-fields";
+import { buildReport, pct, pct1 } from "@/lib/ops/report";
+import { isAiConfigured } from "@/lib/ops/vision";
 import {
   confirmScheduleAction,
+  draftReportAction,
   insightRequestAction,
   markConfirmedAction,
   markSentAction,
@@ -344,14 +346,14 @@ export default async function CampaignPage({ params, searchParams }: { params: P
       </Step>
 
       {/* ---------------- STEP 4 ---------------- */}
-      <Step n={4} title="投稿・インサイトの回収（自動）" done={report.total > 0 && report.submitted === report.total}>
+      <Step n={4} title="インサイトのスクショ回収（自動）" done={report.total > 0 && report.incomplete.length === 0}>
         {confirmed.length === 0 ? (
           <Empty>撮影日が確定するとここに表示されます。</Empty>
         ) : (
           <>
             <p className="text-sm text-muted">
               毎月{process.env.OPS_INSIGHT_DAY && process.env.OPS_INSIGHT_DAY !== "last" ? `${process.env.OPS_INSIGHT_DAY}日` : "末日"}
-              に、投稿予定日を過ぎた人へ提出のお願いが自動で届きます。3日たっても未提出なら1回リマインドします。
+              に、投稿予定日を過ぎた人へスクショ提出のお願いが自動で届きます。{isAiConfigured() ? "届いたスクショはAIが読み取り、足りない項目があれば本人に自動で連絡します。" : "（AIの読み取りが未設定のため、届いたスクショは各行から手入力してください）"}3日たってもそろわなければ1回リマインドします。
             </p>
             <div className="-mx-4 mt-3 overflow-x-auto md:mx-0">
               <table className="w-full min-w-[560px] text-sm">
@@ -384,8 +386,16 @@ export default async function CampaignPage({ params, searchParams }: { params: P
                         )}
                       </td>
                       <td className="px-2 py-2">
-                        {r.a.insight ? (
-                          <Badge tone="green">提出済 再生{fmtNum(r.a.insight.views)}</Badge>
+                        {isComplete(r.a.insight) ? (
+                          <Badge tone="green">
+                            {platformLabel[r.a.insight!.platform]} 閲覧{fmtNum(r.a.insight!.metrics.views)}
+                          </Badge>
+                        ) : r.a.insight ? (
+                          <span className="flex flex-col items-start gap-0.5">
+                            <Badge tone="red">足りない項目あり</Badge>
+                            <span className="text-xs text-rose-700">{r.a.insight.missing.map((k) => fieldLabel(r.a.insight!.platform, k)).join("、")}</span>
+                            <span className="text-xs text-muted">{r.a.missingNotifiedAt ? `本人に連絡済 ${fmtDateTime(r.a.missingNotifiedAt)}` : "未連絡"}</span>
+                          </span>
                         ) : r.a.insightRequestedAt ? (
                           <Badge tone="amber">依頼済 {fmtDateTime(r.a.insightRequestedAt)}</Badge>
                         ) : (
@@ -425,25 +435,43 @@ export default async function CampaignPage({ params, searchParams }: { params: P
         ) : (
           <>
             <div className="grid grid-cols-2 gap-2 md:grid-cols-4">
-              <Stat label="提出" value={`${report.submitted}/${report.total}`} />
-              <Stat label="合計再生数" value={fmtNum(report.sum.views)} />
-              <Stat label="合計リーチ" value={fmtNum(report.sum.reach)} />
-              <Stat label="エンゲージメント率" value={pct(report.rate)} sub={`反応 ${fmtNum(report.sum.engagement)}件`} />
+              <Stat label="そろった投稿" value={`${report.total - report.incomplete.length}/${report.total}`} />
+              <Stat label="合計閲覧数・再生数" value={fmtNum(report.views)} />
+              <Stat label="反応数" value={fmtNum(report.reactions)} sub={`ER ${pct(report.er)}`} />
+              <Stat label="フォロワー以外" value={pct1(report.nonFollowerPct)} sub="閲覧数で加重平均" />
             </div>
-            <form action={saveReportComment.bind(null, c.id)} className="mt-4 space-y-2">
-              <label className="block text-sm font-bold" htmlFor="reportComment">
-                レポートに載せるコメント（任意）
-              </label>
-              <textarea id="reportComment" name="reportComment" rows={3} defaultValue={c.reportComment} className={inputClass} placeholder="例：保存数が多く、来店検討につながる反応が多く見られました。" />
+            <form action={saveReportComment.bind(null, c.id)} className="mt-4 space-y-3">
+              <p className="text-sm font-bold">レポートに載せる文章（空欄の項目はレポートに表示されません）</p>
+              <div className="grid gap-3 md:grid-cols-2">
+                <Field label="対象期間" hint="空欄なら投稿日から自動で入ります">
+                  <input name="reportPeriod" defaultValue={c.reportPeriod} placeholder={report.period || "2026年11月1日〜11月30日"} className={inputClass} />
+                </Field>
+                <Field label="サマリー（表紙）">
+                  <textarea name="reportComment" rows={3} defaultValue={c.reportComment} className={inputClass} placeholder="例：5名の発信者による5投稿で、総閲覧数は12.4万回。フォロワー以外への到達が8割を超え、新規層に広く届きました。" />
+                </Field>
+                <Field label="考察" hint="1行に1つ">
+                  <textarea name="reportFindings" rows={5} defaultValue={c.reportFindings} className={inputClass} placeholder={"保存数が多く、来店検討につながる反応が多く見られました。\n閲覧者の約半数が25〜44歳でした。"} />
+                </Field>
+                <Field label="次回施策のご提案" hint="1行に1つ「見出し｜説明」">
+                  <textarea name="reportProposals" rows={5} defaultValue={c.reportProposals} className={inputClass} placeholder={"TikTokの起用を増やす｜1投稿あたりの再生数がInstagramの約2倍。認知目的ならTikTokの比重を高めるのが効率的です。"} />
+                </Field>
+              </div>
               <SubmitButton variant="outline" size="sm">
-                コメントを保存
+                文章を保存
               </SubmitButton>
             </form>
+            {isAiConfigured() && (
+              <form action={draftReportAction.bind(null, c.id)} className="mt-2">
+                <SubmitButton variant="outline" size="sm" confirm={c.reportComment || c.reportFindings ? "今の文章をAIの下書きで置き換えます。よろしいですか？" : undefined}>
+                  AIで文章の下書きを作る
+                </SubmitButton>
+              </form>
+            )}
             <div className="mt-4 flex flex-wrap gap-2">
               <ButtonLink href={`/p/${c.shareToken}#report`} target="_blank" variant="dark">
                 レポートを確認
               </ButtonLink>
-              {report.submitted < report.total && <p className="w-full text-xs text-amber-700">※ まだ未提出の人がいます（{report.total - report.submitted}人）。このまま送ることもできます。</p>}
+              {report.incomplete.length > 0 && <p className="w-full text-xs text-amber-700">※ インサイトがそろっていない人がいます（{report.incomplete.map((r) => r.creator.name).join("、")}）。このまま送ることもできます（足りない数値は「-」で表示されます）。</p>}
               {canEmail && (
                 <form action={sendReportAction.bind(null, c.id, false)}>
                   <SubmitButton confirm={`${restaurant?.email} にレポートを送ります。よろしいですか？`}>{c.reportSentAt ? "メールで再送" : "メールで飲食店に送る"}</SubmitButton>

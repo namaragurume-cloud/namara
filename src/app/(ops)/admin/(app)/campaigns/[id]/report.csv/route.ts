@@ -1,6 +1,8 @@
 import { isAdmin } from "@/lib/ops/auth";
 import { fmtSlot } from "@/lib/ops/dates";
-import { buildReport, loadBundle } from "@/lib/ops/service";
+import { missingLabels, platformLabel } from "@/lib/ops/insight-fields";
+import { buildReport } from "@/lib/ops/report";
+import { loadBundle } from "@/lib/ops/service";
 
 export const dynamic = "force-dynamic";
 
@@ -17,23 +19,25 @@ export async function GET(_req: Request, ctx: { params: Promise<{ id: string }> 
   const b = await loadBundle(id);
   if (!b) return new Response("Not found", { status: 404 });
   const r = buildReport(b);
-  const header = ["発信者", "アカウント", "フォロワー", "撮影日時", "投稿予定日", "投稿URL", "再生数", "リーチ", "いいね", "コメント", "保存", "シェア", "プロフィールアクセス", "フォロー", "エンゲージメント率"];
+  const metricKeys = ["views", "viewers", "avgWatchSec", "follows", "likes", "comments", "shares", "saves", "newViewerPct", "nonFollowerPct"] as const;
+  const metricLabels = ["閲覧数・視聴数", "閲覧者", "平均再生時間(秒)", "フォロー", "いいね", "コメント", "シェア", "保存", "新しい視聴者(%)", "フォロワー以外(%)"];
+  const dist = (d?: { label: string; pct: number }[]) => (d ?? []).map((x) => `${x.label} ${x.pct}%`).join(" / ");
+  const header = ["発信者", "アカウント", "フォロワー", "媒体", "撮影日時", "投稿日", "投稿URL", ...metricLabels, "反応数", "ER", "閲覧ソース", "年齢", "性別", "足りない項目"];
   const lines = r.rows.map((x) => [
     x.creator.name,
     x.creator.account,
     x.creator.followers,
+    x.platform ? platformLabel[x.platform] : "",
     x.slot ? fmtSlot(x.slot) : "",
-    x.postDate,
-    x.postUrl,
-    x.insight?.views,
-    x.insight?.reach,
-    x.insight?.likes,
-    x.insight?.comments,
-    x.insight?.saves,
-    x.insight?.shares,
-    x.insight?.profileVisits,
-    x.insight?.follows,
-    x.rate === undefined ? "" : `${(x.rate * 100).toFixed(1)}%`,
+    x.a.plannedPostDate,
+    x.a.postUrl,
+    ...metricKeys.map((k) => x.insight?.metrics[k]),
+    x.reactions,
+    x.er === undefined ? "" : `${(x.er * 100).toFixed(2)}%`,
+    dist(x.insight?.dists.sources),
+    dist(x.insight?.dists.age),
+    dist(x.insight?.dists.gender),
+    x.insight ? missingLabels(x.insight).join("・") : "未提出",
   ]);
   const csv = "﻿" + [header, ...lines].map((l) => l.map(cell).join(",")).join("\r\n");
   const name = encodeURIComponent(`${b.restaurant?.name ?? "report"}_${b.campaign.title}.csv`);

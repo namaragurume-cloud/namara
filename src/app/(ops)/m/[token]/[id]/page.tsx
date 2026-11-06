@@ -5,15 +5,15 @@ import { Badge, Card, Field, Flash, inputClass } from "@/components/ops/ui";
 import { fmtDateLong, fmtSlot, jstDate } from "@/lib/ops/dates";
 import { db } from "@/lib/ops/db";
 import { findCreatorByToken, slotLabel } from "@/lib/ops/service";
-import { respond, submitInsight } from "../../actions";
+import { InsightView } from "@/components/ops/InsightView";
+import { ShotUploader } from "@/components/ops/ShotUploader";
+import { isComplete, platformLabel, screenshotGuide } from "@/lib/ops/insight-fields";
+import { listShots } from "@/lib/ops/insights";
+import type { Platform } from "@/lib/ops/types";
+import { isAiConfigured } from "@/lib/ops/vision";
+import { respond, savePostUrl } from "../../actions";
 
 export const metadata = { title: "PRのご依頼" };
-
-const numField = (name: string, label: string, v: number | undefined, required = true, hint?: string) => (
-  <Field label={label} required={required} hint={hint}>
-    <input name={name} inputMode="numeric" pattern="[0-9,]*" required={required} defaultValue={v ?? ""} className={inputClass} />
-  </Field>
-);
 
 export default async function AssignmentPage({ params, searchParams }: { params: Promise<{ token: string; id: string }>; searchParams: Promise<{ flash?: string }> }) {
   const [{ token, id }, { flash }] = await Promise.all([params, searchParams]);
@@ -28,6 +28,9 @@ export default async function AssignmentPage({ params, searchParams }: { params:
   const closed = Boolean(c.reportSentAt);
   const confirmed = a.status === "accepted" && a.confirmedSlotId && locked;
   const i = a.insight;
+  const shots = confirmed ? await listShots(a.id) : [];
+  const fromCreator: Platform | undefined = /tiktok/i.test(creator.platform) ? "tiktok" : /instagram/i.test(creator.platform) ? "instagram" : undefined;
+  const guidePlatforms: Platform[] = a.platform ? [a.platform] : fromCreator ? [fromCreator] : ["instagram", "tiktok"];
 
   return (
     <div className="mx-auto max-w-xl space-y-4 px-4 py-6">
@@ -137,29 +140,39 @@ export default async function AssignmentPage({ params, searchParams }: { params:
         </Card>
       )}
 
-      {confirmed && !(closed && !i) && (
-        <Card title="投稿のインサイト" actions={i && <Badge tone="green">提出済み</Badge>}>
-          {closed ? (
-            <p className="text-sm text-muted">提出ありがとうございました。</p>
+      {confirmed && (
+        <Card title="投稿のインサイト" actions={i && (isComplete(i) ? <Badge tone="green">そろいました</Badge> : <Badge tone="red">足りない項目あり</Badge>)}>
+          {!closed && (
+            <div className="mb-4 rounded-xl bg-mist p-3 text-xs leading-relaxed">
+              <p className="font-bold">投稿後しばらくして（月末にお知らせします）、次の画面のスクショを送ってください</p>
+              {guidePlatforms.map((p) => (
+                <div key={p} className="mt-2">
+                  <p className="font-bold text-muted">{platformLabel[p]}</p>
+                  <ul className="mt-0.5 list-disc pl-5">
+                    {screenshotGuide[p].map((g) => (
+                      <li key={g}>{g}</li>
+                    ))}
+                  </ul>
+                </div>
+              ))}
+              {creator.lineUserId && <p className="mt-2 font-bold text-emerald-800">公式LINEのトークに画像を送るだけでもOKです。</p>}
+            </div>
+          )}
+          <ShotUploader assignmentId={a.id} token={token} shots={shots.map((s) => ({ id: s.id, url: `/api/ops/shots/${s.id}?token=${token}` }))} canAnalyze={isAiConfigured()} disabled={closed} />
+          {i ? (
+            <div className="mt-4">
+              <InsightView insight={i} />
+              {i.missing.length > 0 && !closed && <p className="mt-2 text-xs text-muted">足りない項目が写っている画面のスクショを追加してください。自動でもう一度読み取ります。</p>}
+            </div>
           ) : (
-            <form action={submitInsight.bind(null, token, a.id)} className="space-y-4">
-              <p className="text-xs leading-relaxed text-muted">
-                投稿後しばらくして（月末にお知らせします）、Instagramの投稿の「インサイトを見る」に表示される数字をそのまま入力してください。
-              </p>
-              <Field label="投稿のURL" required hint="投稿の「…」→「リンクをコピー」">
-                <input name="postUrl" type="url" required defaultValue={a.postUrl} placeholder="https://www.instagram.com/reel/..." className={inputClass} />
-              </Field>
-              <div className="grid grid-cols-2 gap-3">
-                {numField("views", "再生数（閲覧数）", i?.views)}
-                {numField("reach", "リーチ", i?.reach, true, "閲覧したアカウント数")}
-                {numField("likes", "いいね", i?.likes)}
-                {numField("comments", "コメント", i?.comments)}
-                {numField("saves", "保存", i?.saves)}
-                {numField("shares", "シェア", i?.shares)}
-                {numField("profileVisits", "プロフィールアクセス", i?.profileVisits, false)}
-                {numField("follows", "フォロー", i?.follows, false)}
-              </div>
-              <SubmitButton className="w-full">{i ? "インサイトを更新する" : "インサイトを提出する"}</SubmitButton>
+            shots.length > 0 && <p className="mt-3 text-sm text-muted">{isAiConfigured() ? "読み取りが終わるとここに数字が表示されます。" : "画像を受け取りました。担当者が確認します。"}</p>
+          )}
+          {!closed && (
+            <form action={savePostUrl.bind(null, token, a.id)} className="mt-4 flex gap-2">
+              <input name="postUrl" type="url" defaultValue={a.postUrl} placeholder="投稿のURL（任意）https://..." className={inputClass} />
+              <SubmitButton variant="outline" size="sm" className="shrink-0">
+                保存
+              </SubmitButton>
             </form>
           )}
         </Card>

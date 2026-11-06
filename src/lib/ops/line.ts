@@ -68,3 +68,13 @@ export function verifyLineSignature(rawBody: string, signature: string | null): 
   }
   return given.length === expected.length && timingSafeEqual(given, expected);
 }
+
+/** ユーザーが送った画像などを取得 */
+export async function lineGetContent(messageId: string): Promise<{ mediaType: string; data: Buffer }> {
+  const res = await fetch(`https://api-data.line.me/v2/bot/message/${encodeURIComponent(messageId)}/content`, {
+    headers: { Authorization: `Bearer ${process.env.LINE_CHANNEL_ACCESS_TOKEN}` },
+    signal: AbortSignal.timeout(20_000),
+  });
+  if (!res.ok) throw new Error(`LINE content ${res.status}`);
+  return { mediaType: (res.headers.get("content-type") ?? "image/jpeg").split(";")[0], data: Buffer.from(await res.arrayBuffer()) };
+}

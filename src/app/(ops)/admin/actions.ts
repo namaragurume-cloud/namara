@@ -6,6 +6,7 @@ import { checkPassword, endSession, requireAdmin, startSession } from "@/lib/ops
 import { db } from "@/lib/ops/db";
 import type { BulkResult } from "@/lib/ops/service";
 import {
+  loadBundle,
   confirmSchedule,
   markConfirmedManually,
   markSentManually,
@@ -15,7 +16,14 @@ import {
   sendRequests,
   shareScheduleWithRestaurant,
 } from "@/lib/ops/service";
-import type { Assignment, Campaign, Creator, Insight, Restaurant, Slot } from "@/lib/ops/types";
+import { opsTemplates } from "@/data/ops-templates";
+import { fieldLabel, insightFields, missingKeys, missingLabels, parseDistText } from "@/lib/ops/insight-fields";
+import { draftReportText } from "@/lib/ops/ai-report";
+import { buildReport } from "@/lib/ops/report";
+import { isAiConfigured } from "@/lib/ops/vision";
+import { sendToCreator } from "@/lib/ops/notify";
+import { assignmentUrl } from "@/lib/ops/urls";
+import type { Assignment, Campaign, Creator, Insight, Platform, Restaurant, Slot } from "@/lib/ops/types";
 import { newLinkCode, newToken, nowIso, shortId } from "@/lib/ops/util";
 import { isRateLimited } from "@/lib/spam";
 import { headers } from "next/headers";
@@ -287,8 +295,35 @@ export async function insightRequestAction(campaignId: string) {
 
 export async function saveReportComment(campaignId: string, fd: FormData) {
   await requireAdmin();
-  await db.update("campaigns", campaignId, (c) => ({ ...c, reportComment: str(fd, "reportComment") || undefined }));
-  back(`/admin/campaigns/${campaignId}`, "レポートのコメントを保存しました");
+  await db.update("campaigns", campaignId, (c) => ({
+    ...c,
+    reportComment: str(fd, "reportComment") || undefined,
+    reportPeriod: str(fd, "reportPeriod") || undefined,
+    reportFindings: str(fd, "reportFindings") || undefined,
+    reportProposals: str(fd, "reportProposals") || undefined,
+  }));
+  back(`/admin/campaigns/${campaignId}`, "レポートの文章を保存しました");
+}
+
+export async function draftReportAction(campaignId: string) {
+  await requireAdmin();
+  const b = await loadBundle(campaignId);
+  if (!b) back("/admin", "!案件が見つかりません");
+  if (!isAiConfigured()) back(`/admin/campaigns/${campaignId}`, "!AIが未設定です（ANTHROPIC_API_KEY）");
+  let d;
+  try {
+    d = await draftReportText(b.campaign, b.restaurant, buildReport(b));
+  } catch (e) {
+    console.error("[report draft]", e);
+    back(`/admin/campaigns/${campaignId}`, "!下書きを作れませんでした。時間をおいてお試しください");
+  }
+  await db.update("campaigns", campaignId, (c) => ({
+    ...c,
+    reportComment: d.summary,
+    reportFindings: d.findings.join("\n"),
+    reportProposals: d.proposals.map((p) => `${p.title}｜${p.body}`).join("\n"),
+  }));
+  back(`/admin/campaigns/${campaignId}`, "AIで下書きを作りました。内容を確認・修正してから送付してください");
 }
 
 export async function sendReportAction(campaignId: string, manual: boolean) {
@@ -314,21 +349,6 @@ export async function saveAssignment(fd: FormData) {
   const campaign = await db.get("campaigns", a.campaignId);
   const valid = new Set(campaign?.slots.map((s) => s.id));
   const status = str(fd, "status") as Assignment["status"];
-  const views = optNum(fd, "views");
-  const hasInsight = views !== undefined || optNum(fd, "reach") !== undefined;
-  const insight: Insight | undefined = hasInsight
-    ? {
-        views: views ?? 0,
-        reach: optNum(fd, "reach") ?? 0,
-        likes: optNum(fd, "likes") ?? 0,
-        comments: optNum(fd, "comments") ?? 0,
-        saves: optNum(fd, "saves") ?? 0,
-        shares: optNum(fd, "shares") ?? 0,
-        profileVisits: optNum(fd, "profileVisits"),
-        follows: optNum(fd, "follows"),
-        submittedAt: a.insight?.submittedAt ?? nowIso(),
-      }
-    : undefined;
   const confirmedSlotId = optStr(fd, "confirmedSlotId");
   const plannedPostDate = optStr(fd, "plannedPostDate");
   await db.put("assignments", {
@@ -339,10 +359,62 @@ export async function saveAssignment(fd: FormData) {
     plannedPostDate: plannedPostDate && ymd.safeParse(plannedPostDate).success ? plannedPostDate : undefined,
     postUrl: optStr(fd, "postUrl"),
     note: optStr(fd, "note"),
-    insight,
     respondedAt: a.respondedAt ?? (status === "accepted" || status === "declined" ? nowIso() : undefined),
   });
   back(`/admin/campaigns/${a.campaignId}`, "依頼の内容を保存しました");
+}
+
+/** インサイトの手入力・修正（スクショを見て担当者が入力） */
+export async function saveInsightManual(fd: FormData) {
+  await requireAdmin();
+  const id = str(fd, "id");
+  const a = await db.get("assignments", id);
+  if (!a) back("/admin", "!依頼が見つかりません");
+  const platform: Platform = str(fd, "platform") === "tiktok" ? "tiktok" : "instagram";
+  const metrics: Insight["metrics"] = {};
+  const dists: Insight["dists"] = {};
+  for (const f of insightFields[platform]) {
+    if (f.kind === "dist") {
+      const d = parseDistText(str(fd, f.key));
+      if (d.length) dists[f.key] = d;
+    } else {
+      const raw = str(fd, f.key).replace(/[,，\s%秒]/g, "");
+      const n = Number(raw);
+      if (raw !== "" && Number.isFinite(n) && n >= 0) metrics[f.key] = n;
+    }
+  }
+  const video = str(fd, "isVideo");
+  const insight: Insight = {
+    platform,
+    metrics,
+    dists,
+    isVideo: video === "yes" ? true : video === "no" ? false : undefined,
+    missing: [],
+    source: "manual",
+    analyzedShots: a.insight?.analyzedShots ?? 0,
+    submittedAt: nowIso(),
+  };
+  insight.missing = missingKeys(insight);
+  const empty = Object.keys(metrics).length === 0 && Object.keys(dists).length === 0;
+  await db.update("assignments", a.id, (x) => ({ ...x, platform, insight: empty ? undefined : insight }));
+  back(`/admin/assignments/${a.id}`, empty ? "インサイトを空にしました" : insight.missing.length ? `保存しました（足りない項目：${insight.missing.map((k) => fieldLabel(platform, k)).join("、")}）` : "保存しました。すべての項目がそろっています");
+}
+
+/** スクショ不足を発信者に連絡 */
+export async function notifyMissingAction(id: string) {
+  await requireAdmin();
+  const a = await db.get("assignments", id);
+  const creator = a && (await db.get("creators", a.creatorId));
+  if (!a || !creator) back("/admin", "!依頼が見つかりません");
+  const c = await db.get("campaigns", a.campaignId);
+  const r = c ? await db.get("restaurants", c.restaurantId) : null;
+  const missing = a.insight ? missingLabels(a.insight) : [];
+  const msg = a.insight
+    ? opsTemplates.insightMissing({ creator: creator.name, post: r?.name ?? c?.title ?? "PR", missing, url: assignmentUrl(creator, a), viaLine: Boolean(creator.lineUserId) })
+    : opsTemplates.insightReminder({ creator: creator.name, lines: [`・${r?.name ?? c?.title}：未提出`], url: assignmentUrl(creator, a) });
+  const res = await sendToCreator(creator, msg, "インサイト不足の連絡（手動）");
+  if (res.ok) await db.update("assignments", a.id, (x) => ({ ...x, missingNotifiedAt: nowIso(), missingNotifiedFor: missing.join(",") }));
+  back(`/admin/assignments/${a.id}`, res.ok ? "発信者に連絡しました" : `!自動で送れませんでした：${res.error}`);
 }
 
 /* ---------- 自動処理を今すぐ実行 ---------- */
