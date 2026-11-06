@@ -3,7 +3,8 @@
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { checkPassword, endSession, requireAdmin, startSession } from "@/lib/ops/auth";
-import { db } from "@/lib/ops/db";
+import { db, resetDemo } from "@/lib/ops/db";
+import { isDemo } from "@/lib/ops/demo-flag";
 import type { BulkResult } from "@/lib/ops/service";
 import {
   loadBundle,
@@ -52,6 +53,7 @@ function summarize(label: string, list: BulkResult): string {
   const mail = ok.filter((x) => x.result.channel === "email").length;
   const ng = list.filter((x) => !x.result.ok);
   const lines = [`${label}：${ok.length}件 送信しました（LINE ${line}・メール ${mail}）`];
+  if (isDemo() && ok.length) lines.push("※デモのため実際には送信していません（送信履歴に記録のみ）");
   if (ng.length) lines.push(`自動送信できなかった人：${ng.map((x) => x.name).join("、")}\n→ 表の「文面をコピー」から手動で送ってください`);
   return (ng.length && !ok.length ? "!" : "") + lines.join("\n");
 }
@@ -415,6 +417,13 @@ export async function notifyMissingAction(id: string) {
   const res = await sendToCreator(creator, msg, "インサイト不足の連絡（手動）");
   if (res.ok) await db.update("assignments", a.id, (x) => ({ ...x, missingNotifiedAt: nowIso(), missingNotifiedFor: missing.join(",") }));
   back(`/admin/assignments/${a.id}`, res.ok ? "発信者に連絡しました" : `!自動で送れませんでした：${res.error}`);
+}
+
+export async function resetDemoAction() {
+  await requireAdmin();
+  if (!isDemo()) back("/admin/settings", "!デモ環境ではありません");
+  resetDemo();
+  back("/admin", "デモを最初の状態に戻しました");
 }
 
 /* ---------- 自動処理を今すぐ実行 ---------- */

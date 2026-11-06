@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { SubmitButton } from "@/components/ops/client";
+import { DemoBanner } from "@/components/ops/DemoBanner";
 import { Badge, Card, Field, Flash, inputClass } from "@/components/ops/ui";
 import { fmtDateLong, fmtSlot, jstDate } from "@/lib/ops/dates";
 import { db } from "@/lib/ops/db";
@@ -33,6 +34,8 @@ export default async function AssignmentPage({ params, searchParams }: { params:
   const guidePlatforms: Platform[] = a.platform ? [a.platform] : fromCreator ? [fromCreator] : ["instagram", "tiktok"];
 
   return (
+    <>
+    <DemoBanner who="creator" />
     <div className="mx-auto max-w-xl space-y-4 px-4 py-6">
       <Link href={`/m/${token}`} className="text-sm text-muted">
         ← {creator.name}さんのページ
@@ -178,5 +181,6 @@ export default async function AssignmentPage({ params, searchParams }: { params:
         </Card>
       )}
     </div>
+    </>
   );
 }

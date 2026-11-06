@@ -2,6 +2,8 @@ import "server-only";
 import Anthropic from "@anthropic-ai/sdk";
 import { betaZodOutputFormat } from "@anthropic-ai/sdk/helpers/beta/zod";
 import { z } from "zod";
+import { demoExtract } from "./demo";
+import { isDemo } from "./demo-flag";
 import { insightFields } from "./insight-fields";
 import type { Dist, DistKey, MetricKey, Platform } from "./types";
 
@@ -11,7 +13,7 @@ import type { Dist, DistKey, MetricKey, Platform } from "./types";
  */
 
 export function isAiConfigured(): boolean {
-  return Boolean(process.env.ANTHROPIC_API_KEY);
+  return Boolean(process.env.ANTHROPIC_API_KEY) || isDemo();
 }
 
 const MODEL = "claude-opus-5-5";
@@ -69,6 +71,7 @@ export type Extracted = {
 type Img = { mediaType: string; base64: string };
 
 export async function extractInsight(images: Img[], hint?: Platform): Promise<Extracted> {
+  if (isDemo() && !process.env.ANTHROPIC_API_KEY) return demoExtract(images.length);
   const client = new Anthropic();
   const content: Anthropic.Beta.BetaContentBlockParam[] = images.map((im) => ({
     type: "image",

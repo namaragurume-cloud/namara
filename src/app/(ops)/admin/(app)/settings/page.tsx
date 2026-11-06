@@ -5,7 +5,7 @@ import { isEmailConfigured } from "@/lib/ops/email";
 import { isLineConfigured, lineBasicId } from "@/lib/ops/line";
 import { isAiConfigured } from "@/lib/ops/vision";
 import { absoluteUrl } from "@/lib/utils";
-import { runDailyNow } from "../../actions";
+import { resetDemoAction, runDailyNow } from "../../actions";
 
 export const metadata = { title: "設定" };
 
@@ -31,7 +31,7 @@ export default async function SettingsPage({ searchParams }: { searchParams: Pro
       <Card title="連携の状態">
         <ul className="divide-y divide-line">
           <Row ok={mode === "redis"} title="データの保存先（Upstash Redis）">
-            {mode === "file" ? "開発用：このパソコンの .data/ops.json に保存しています。" : "Vercel の Storage から Upstash Redis を追加してプロジェクトに接続してください。"}
+            {mode === "demo" ? "デモ：サンプルデータをメモリ上に保持しています（保存はされません）。" : mode === "file" ? "開発用：このパソコンの .data/ops.json に保存しています。" : "Vercel の Storage から Upstash Redis を追加してプロジェクトに接続してください。"}
           </Row>
           <Row ok={isLineConfigured()} title="公式LINE（Messaging API）">
             発信者への自動送信に使います。<code>LINE_CHANNEL_ACCESS_TOKEN</code>・<code>LINE_CHANNEL_SECRET</code>・<code>LINE_BOT_BASIC_ID</code>
@@ -52,6 +52,13 @@ export default async function SettingsPage({ searchParams }: { searchParams: Pro
           </Row>
         </ul>
       </Card>
+      {mode === "demo" && (
+        <Card title="デモを最初の状態に戻す">
+          <form action={resetDemoAction}>
+            <SubmitButton variant="outline">サンプルデータに戻す</SubmitButton>
+          </form>
+        </Card>
+      )}
       <Card title="自動処理を今すぐ実行">
         <p className="text-sm text-muted">毎日の自動処理（リマインド・月末ならインサイト依頼）を今すぐ1回実行します。送信済みの人には重ねて送りません。</p>
         <form action={runDailyNow} className="mt-3">

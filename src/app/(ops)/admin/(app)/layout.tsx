@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { requireAdmin } from "@/lib/ops/auth";
+import { DemoBanner } from "@/components/ops/DemoBanner";
 import { dbMode } from "@/lib/ops/db";
 import { logout } from "../actions";
 
@@ -17,6 +18,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   const mode = dbMode();
   return (
     <>
+      <DemoBanner />
       <header className="sticky top-0 z-30 border-b border-line bg-white/95 backdrop-blur print:hidden">
         <div className="mx-auto flex max-w-6xl items-center gap-4 px-4 py-2">
           <Link href="/admin" className="shrink-0 py-1 text-sm font-extrabold">

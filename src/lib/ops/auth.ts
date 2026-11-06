@@ -2,6 +2,7 @@ import "server-only";
 import { createHmac, timingSafeEqual } from "node:crypto";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
+import { DEMO_PASSWORD, isDemo } from "./demo-flag";
 
 /**
  * 管理画面のログイン（パスワード1つ）。
@@ -12,12 +13,18 @@ import { redirect } from "next/navigation";
 const COOKIE = "ops_session";
 const MAX_AGE = 60 * 60 * 24 * 30;
 
+/** デモではパスワード未設定でも demo1234 でログインできる */
+function password(): string | undefined {
+  return process.env.ADMIN_PASSWORD || (isDemo() ? DEMO_PASSWORD : undefined);
+}
+
 export function isAdminConfigured(): boolean {
-  return Boolean(process.env.ADMIN_PASSWORD && process.env.ADMIN_PASSWORD.length >= 8);
+  const pw = password();
+  return Boolean(pw && pw.length >= 8);
 }
 
 function secret(): string {
-  return process.env.ADMIN_SESSION_SECRET || `pw:${process.env.ADMIN_PASSWORD}`;
+  return process.env.ADMIN_SESSION_SECRET || `pw:${password()}`;
 }
 
 function sign(payload: string): string {
@@ -31,7 +38,7 @@ function safeEqual(a: string, b: string): boolean {
 }
 
 export function checkPassword(input: string): boolean {
-  const pw = process.env.ADMIN_PASSWORD;
+  const pw = password();
   if (!pw || !isAdminConfigured()) return false;
   // 長さの違いで比較時間が変わらないよう、ハッシュ同士を比較
   const h = (s: string) => createHmac("sha256", "pw-compare").update(s).digest("hex");

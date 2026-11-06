@@ -2,6 +2,8 @@ import "server-only";
 import Anthropic from "@anthropic-ai/sdk";
 import { betaZodOutputFormat } from "@anthropic-ai/sdk/helpers/beta/zod";
 import { z } from "zod";
+import { demoDraft } from "./demo";
+import { isDemo } from "./demo-flag";
 import type { Report } from "./report";
 import type { Campaign, Restaurant } from "./types";
 
@@ -24,6 +26,7 @@ const SYSTEM = `あなたは北海道の飲食店向けにSNSのPR（インフ�
 - proposals：次回施策の提案を3個。title は20字以内、body は1〜2文。データから言える範囲で具体的に。`;
 
 export async function draftReportText(c: Campaign, restaurant: Restaurant | null, r: Report) {
+  if (isDemo() && !process.env.ANTHROPIC_API_KEY) return demoDraft;
   const data = {
     店舗: restaurant?.name,
     案件: c.title,

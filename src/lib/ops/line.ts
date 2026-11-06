@@ -1,5 +1,6 @@
 import "server-only";
 import { createHmac, timingSafeEqual } from "node:crypto";
+import { isDemo } from "./demo-flag";
 
 /**
  * LINE 公式アカウント（Messaging API）
@@ -9,6 +10,7 @@ import { createHmac, timingSafeEqual } from "node:crypto";
  */
 
 export function isLineConfigured(): boolean {
+  if (isDemo()) return true;
   return Boolean(process.env.LINE_CHANNEL_ACCESS_TOKEN && process.env.LINE_CHANNEL_SECRET);
 }
 

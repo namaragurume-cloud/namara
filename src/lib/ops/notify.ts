@@ -1,6 +1,7 @@
 import "server-only";
 import type { Msg } from "@/data/ops-templates";
 import { db } from "./db";
+import { isDemo } from "./demo-flag";
 import { isEmailConfigured, sendEmail } from "./email";
 import { isLineConfigured, linePush } from "./line";
 import type { Channel, Creator, MessageLog, Restaurant } from "./types";
@@ -17,6 +18,14 @@ async function log(entry: Omit<MessageLog, "id" | "createdAt">) {
  * どちらも使えない場合は「手動」として記録し、管理画面からコピーして送れるようにします。
  */
 export async function sendToCreator(creator: Creator, msg: Msg, purpose: string): Promise<SendResult> {
+  if (isDemo()) {
+    // デモ：実際には送らず、送ったものとして履歴にだけ残す
+    const channel: Channel = creator.lineUserId ? "line" : creator.email ? "email" : "manual";
+    const ok = channel !== "manual";
+    const error = ok ? undefined : "LINE未連携・メール未登録のため自動送信できません";
+    await log({ toKind: "creator", toId: creator.id, toName: creator.name, channel, ok, purpose: `［デモ・実際には未送信］${purpose}`, text: msg.text, error });
+    return { ok, channel, error };
+  }
   const errors: string[] = [];
   if (creator.lineUserId && isLineConfigured()) {
     try {
@@ -43,6 +52,11 @@ export async function sendToCreator(creator: Creator, msg: Msg, purpose: string)
 
 /** 飲食店へメール送信（メールアドレス未登録なら手動扱い） */
 export async function sendToRestaurant(restaurant: Restaurant, msg: Msg, purpose: string): Promise<SendResult> {
+  if (isDemo()) {
+    const ok = Boolean(restaurant.email);
+    await log({ toKind: "restaurant", toId: restaurant.id, toName: restaurant.name, channel: ok ? "email" : "manual", ok, purpose: `［デモ・実際には未送信］${purpose}`, text: msg.text, error: ok ? undefined : "メールアドレス未登録" });
+    return ok ? { ok, channel: "email" } : { ok, channel: "manual", error: "メールアドレス未登録のため自動送信できません" };
+  }
   let error = "メールアドレス未登録、またはメール送信が未設定のため自動送信できません";
   if (restaurant.email && isEmailConfigured()) {
     try {

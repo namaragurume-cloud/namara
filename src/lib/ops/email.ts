@@ -7,7 +7,10 @@ import "server-only";
  * ローカル開発で MAIL_PROVIDER=console のときはターミナルに表示します（送信扱い）。
  */
 
+import { isDemo } from "./demo-flag";
+
 export function isEmailConfigured(): boolean {
+  if (isDemo()) return true;
   const p = (process.env.MAIL_PROVIDER || "").trim().toLowerCase();
   if (p === "console" && process.env.NODE_ENV !== "production") return true;
   return Boolean(process.env.RESEND_API_KEY && process.env.MAIL_FROM);

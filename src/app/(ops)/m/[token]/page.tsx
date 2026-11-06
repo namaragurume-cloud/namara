@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { DemoBanner } from "@/components/ops/DemoBanner";
 import { Badge, Card, Flash, buttonClass } from "@/components/ops/ui";
 import { fmtDate, jstDate } from "@/lib/ops/dates";
 import { db } from "@/lib/ops/db";
@@ -47,6 +48,8 @@ export default async function CreatorHome({ params, searchParams }: { params: Pr
   );
 
   return (
+    <>
+    <DemoBanner who="creator" />
     <div className="mx-auto max-w-xl space-y-4 px-4 py-6">
       <header>
         <p className="text-xs font-bold tracking-widest text-brand">MIRATSUMU</p>
@@ -95,5 +98,6 @@ export default async function CreatorHome({ params, searchParams }: { params: Pr
         </Card>
       )}
     </div>
+    </>
   );
 }

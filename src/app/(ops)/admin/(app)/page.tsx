@@ -3,6 +3,7 @@ import { phaseTone } from "@/components/ops/phase";
 import { Badge, ButtonLink, Card, Empty, Flash } from "@/components/ops/ui";
 import { fmtDate, jstDate } from "@/lib/ops/dates";
 import { db } from "@/lib/ops/db";
+import { isDemo } from "@/lib/ops/demo-flag";
 import { isComplete } from "@/lib/ops/insight-fields";
 import { phaseLabel, phaseOf, type Row } from "@/lib/ops/service";
 
@@ -57,6 +58,28 @@ export default async function AdminHome({ searchParams }: { searchParams: Promis
         <h1 className="text-xl font-extrabold md:text-2xl">ホーム</h1>
         <ButtonLink href="/admin/campaigns/new">＋ 新しい案件をつくる</ButtonLink>
       </div>
+
+      {isDemo() && (
+        <Card title="デモの見どころ" className="border-amber-300 bg-amber-50">
+          <ol className="grid gap-2 text-sm md:grid-cols-2">
+            {[
+              ["/admin/campaigns/k-kotori", "① 回答受付中の案件", "依頼の一括送信・回答の集計・撮影日の自動割り当て"],
+              ["/admin/campaigns/k-taiyo", "② インサイト回収中の案件", "スクショ不足の検出と本人への連絡状況"],
+              ["/p/demo-report-shiokaze", "③ 飲食店に送るレポート", "完了した案件の16:9レポート（PDF保存可）"],
+              ["/m/demo-creator-1", "④ 発信者に見えるページ", "回答・スクショ送信（はなこさんの画面）"],
+              ["/admin/campaigns/new", "⑤ 新しい案件をつくる", "店舗・PR内容・撮影候補日の入力"],
+              ["/admin/messages", "⑥ 送信履歴", "自動で送られる文面（デモでは記録のみ）"],
+            ].map(([href, title, sub]) => (
+              <li key={href}>
+                <Link href={href} target={href.startsWith("/admin") ? undefined : "_blank"} className="block rounded-xl border border-amber-200 bg-white px-4 py-3 hover:border-amber-400">
+                  <b className="block">{title}</b>
+                  <span className="text-xs text-muted">{sub}</span>
+                </Link>
+              </li>
+            ))}
+          </ol>
+        </Card>
+      )}
 
       <Card title="あなたがやること">
         {todos.length === 0 ? (

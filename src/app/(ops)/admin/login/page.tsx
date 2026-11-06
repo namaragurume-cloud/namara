@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { isAdmin, isAdminConfigured } from "@/lib/ops/auth";
+import { DEMO_PASSWORD, isDemo } from "@/lib/ops/demo-flag";
 import { LoginForm } from "./LoginForm";
 
 export const metadata = { title: "ログイン" };
@@ -11,6 +12,11 @@ export default async function LoginPage() {
       <div className="w-full max-w-sm rounded-2xl border border-line bg-white p-6 shadow-sm">
         <p className="text-xs font-bold tracking-widest text-brand">MIRATSUMU</p>
         <h1 className="mt-1 text-xl font-bold">キャスティング管理</h1>
+        {isDemo() && (
+          <p className="mt-4 rounded-xl bg-amber-100 px-3 py-2 text-sm text-amber-950">
+            デモ環境です。パスワード <b className="num tracking-wider">{DEMO_PASSWORD}</b> でログインできます。
+          </p>
+        )}
         {isAdminConfigured() ? (
           <LoginForm />
         ) : (

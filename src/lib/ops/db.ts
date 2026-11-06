@@ -1,6 +1,8 @@
 import "server-only";
 import { promises as fs } from "node:fs";
 import path from "node:path";
+import { demoSeed } from "./demo";
+import { isDemo } from "./demo-flag";
 import type { CollectionName, Collections } from "./types";
 
 /**
@@ -34,7 +36,8 @@ function redisConfig() {
   return url && token ? { url: url.replace(/\/$/, ""), token } : null;
 }
 
-export function dbMode(): "redis" | "file" | null {
+export function dbMode(): "redis" | "file" | "demo" | null {
+  if (isDemo()) return "demo";
   if (redisConfig()) return "redis";
   if (process.env.NODE_ENV !== "production" || process.env.OPS_FILE_DB === "true") return "file";
   return null;
@@ -126,12 +129,53 @@ function fileBackend(): Backend {
   };
 }
 
+/** デモ用：サンプルデータを入れたメモリ上の保存先（サーバーの再起動で元に戻る） */
+// ページとAPIで別々に読み込まれても同じデータを見るよう、globalThis に置く
+type DemoData = { rows: Map<CollectionName, Map<string, string>>; blobs: Map<string, string> };
+const g = globalThis as typeof globalThis & { __opsDemo?: DemoData };
+export function resetDemo() {
+  const seed = demoSeed();
+  g.__opsDemo = {
+    rows: new Map(Object.entries(seed).map(([k, list]) => [k as CollectionName, new Map(list.map((x) => [x.id, JSON.stringify(x)]))])),
+    blobs: new Map(),
+  };
+}
+function demoBackend(): Backend {
+  const data = () => {
+    if (!g.__opsDemo) resetDemo();
+    return g.__opsDemo!;
+  };
+  const col = (c: CollectionName) => {
+    const rows = data().rows;
+    if (!rows.has(c)) rows.set(c, new Map());
+    return rows.get(c)!;
+  };
+  return {
+    async blobSet(k, v) {
+      data().blobs.set(k, v);
+    },
+    blobGet: async (k) => data().blobs.get(k) ?? null,
+    async blobDel(k) {
+      data().blobs.delete(k);
+    },
+    all: async (c) => Object.fromEntries(col(c)),
+    get: async (c, id) => col(c).get(id) ?? null,
+    async set(c, id, v) {
+      col(c).set(id, v);
+    },
+    async del(c, id) {
+      col(c).delete(id);
+    },
+  };
+}
+
 let cached: Backend | null = null;
 function backend(): Backend {
   if (cached) return cached;
   const mode = dbMode();
   const cfg = redisConfig();
-  if (mode === "redis" && cfg) cached = redisBackend(cfg);
+  if (mode === "demo") cached = demoBackend();
+  else if (mode === "redis" && cfg) cached = redisBackend(cfg);
   else if (mode === "file") cached = fileBackend();
   else throw new DbNotConfiguredError("Database is not configured");
   return cached;

@@ -1,6 +1,7 @@
 import Image from "next/image";
 import { notFound } from "next/navigation";
 import { PrintButton } from "@/components/ops/client";
+import { DemoBanner } from "@/components/ops/DemoBanner";
 import { ReportSlides } from "@/components/ops/report/Report";
 import { Card } from "@/components/ops/ui";
 import { isAdmin } from "@/lib/ops/auth";
@@ -37,6 +38,8 @@ export default async function RestaurantPortal({ params }: { params: Promise<{ t
   const report = buildReport(b);
 
   return (
+    <>
+    <DemoBanner who="restaurant" />
     <div className="mx-auto max-w-[1148px] space-y-6 px-4 py-6 print:max-w-none print:space-y-0 print:p-0">
       <style>{PRINT_CSS}</style>
       {admin && (
@@ -101,5 +104,6 @@ export default async function RestaurantPortal({ params }: { params: Promise<{ t
       )}
       <footer className="pt-2 text-center text-xs text-muted print:hidden">MIRATSUMU（なまらグルメ）</footer>
     </div>
+    </>
   );
 }
