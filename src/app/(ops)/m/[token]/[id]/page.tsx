@@ -1,9 +1,10 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { SubmitButton } from "@/components/ops/client";
+import { DateCalendar } from "@/components/ops/DateCalendar";
 import { DemoBanner } from "@/components/ops/DemoBanner";
 import { Badge, Card, Field, Flash, inputClass } from "@/components/ops/ui";
-import { fmtDateLong, fmtSlot, jstDate } from "@/lib/ops/dates";
+import { fmtDateLong, fmtPostDates, fmtSlot, jstDate } from "@/lib/ops/dates";
 import { db } from "@/lib/ops/db";
 import { findCreatorByToken, slotLabel } from "@/lib/ops/service";
 import { InsightView } from "@/components/ops/InsightView";
@@ -51,7 +52,7 @@ export default async function AssignmentPage({ params, searchParams }: { params:
         <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4">
           <p className="text-xs font-bold text-emerald-800">撮影日が確定しました</p>
           <p className="mt-1 text-lg font-extrabold">{slotLabel(c, a.confirmedSlotId)}</p>
-          <p className="mt-1 text-sm">投稿予定日：{a.plannedPostDate ? fmtDateLong(a.plannedPostDate) : `${fmtDateLong(c.postDeadline)}まで`}</p>
+          <p className="mt-1 text-sm">投稿日：{a.plannedPostDate ? fmtDateLong(a.plannedPostDate) : `${fmtPostDates(c)}のいずれか`}</p>
           {r?.address && <p className="mt-1 text-sm">住所：{r.address}</p>}
           <p className="mt-2 text-xs text-muted">日程の変更が必要な場合は、担当者に直接ご連絡ください。</p>
         </div>
@@ -83,8 +84,8 @@ export default async function AssignmentPage({ params, searchParams }: { params:
               <dd>{fmtDateLong(c.replyDeadline)}</dd>
             </div>
             <div>
-              <dt className="text-xs font-bold text-muted">投稿期限</dt>
-              <dd>{fmtDateLong(c.postDeadline)}</dd>
+              <dt className="text-xs font-bold text-muted">投稿日</dt>
+              <dd>{fmtPostDates(c)}</dd>
             </div>
           </div>
           {r?.address && (
@@ -132,8 +133,10 @@ export default async function AssignmentPage({ params, searchParams }: { params:
                 </div>
               </fieldset>
             )}
-            <Field label="投稿予定日" hint={`${fmtDateLong(c.postDeadline)}までにお願いします。未定なら空欄でOK`}>
-              <input type="date" name="plannedPostDate" min={today} max={c.postDeadline} defaultValue={a.plannedPostDate} className={inputClass} />
+            <Field label="投稿日" required={Boolean(c.postDates?.length) && !locked} hint={c.postDates?.length ? "色のついた日から、投稿する日を1日選んでください（参加する場合）" : "投稿する日を選んでください"}>
+              <span className="block">
+                <DateCalendar name="plannedPostDate" mode="single" initial={a.plannedPostDate ? [a.plannedPostDate] : []} allowed={c.postDates?.length ? c.postDates : undefined} today={today} />
+              </span>
             </Field>
             <Field label="メモ（任意）" hint="同伴者の有無、苦手な食材、時間の希望など">
               <textarea name="note" rows={2} defaultValue={a.note} className={inputClass} />

@@ -54,7 +54,9 @@ export type Campaign = {
   slots: Slot[];
   /** 回答期限 YYYY-MM-DD */
   replyDeadline: string;
-  /** 投稿期限 YYYY-MM-DD */
+  /** 投稿日の候補 YYYY-MM-DD（発信者はこの中から選ぶ） */
+  postDates?: string[];
+  /** 最後の投稿日（postDates から自動。古い案件では投稿期限） */
   postDeadline: string;
   /** 飲食店向けページ（/p/[token]）のトークン */
   shareToken: string;

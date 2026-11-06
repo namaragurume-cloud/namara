@@ -1,6 +1,6 @@
 import "server-only";
 import { opsTemplates } from "@/data/ops-templates";
-import { addDays, fmtDate, fmtDateLong, fmtNum, fmtSlot, isLastDayOfMonth, jstDate } from "./dates";
+import { addDays, fmtDate, fmtDateLong, fmtNum, fmtPostDates, fmtSlot, isLastDayOfMonth, jstDate } from "./dates";
 import { db } from "./db";
 import { sendToCreator, sendToRestaurant, type SendResult } from "./notify";
 import { needsInsight } from "./insights";
@@ -136,6 +136,7 @@ export function prRequestMsg(b: Bundle, creator: Creator, a: Assignment) {
     title: b.campaign.title,
     offer: b.campaign.offer,
     slots: b.campaign.slots.map(fmtSlot),
+    postDates: fmtPostDates(b.campaign),
     replyDeadline: fmtDateLong(b.campaign.replyDeadline),
     url: assignmentUrl(creator, a),
   });
@@ -218,7 +219,7 @@ export function confirmedMsg(b: Bundle, creator: Creator, a: Assignment) {
     restaurant: b.restaurant?.name ?? "",
     address: b.restaurant?.address,
     slot: slotLabel(b.campaign, a.confirmedSlotId),
-    postDate: a.plannedPostDate ? fmtDateLong(a.plannedPostDate) : `${fmtDateLong(b.campaign.postDeadline)}まで`,
+    postDate: a.plannedPostDate ? fmtDateLong(a.plannedPostDate) : `${fmtPostDates(b.campaign)}のいずれか`,
     conditions: b.campaign.conditions,
     url: assignmentUrl(creator, a),
   });
@@ -265,7 +266,7 @@ export function scheduleLines(b: Bundle): string[] {
     })
     .map(
       (r) =>
-        `■ ${slotLabel(b.campaign, r.a.confirmedSlotId)}　${r.creator.name}（@${r.creator.account}）　投稿予定：${r.a.plannedPostDate ? fmtDate(r.a.plannedPostDate) : `${fmtDate(b.campaign.postDeadline)}まで`}`,
+        `■ ${slotLabel(b.campaign, r.a.confirmedSlotId)}　${r.creator.name}（@${r.creator.account}）　投稿日：${r.a.plannedPostDate ? fmtDate(r.a.plannedPostDate) : "調整中"}`,
     );
 }
 

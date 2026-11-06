@@ -209,10 +209,12 @@ export async function saveCampaign(fd: FormData) {
   const restaurantId = str(fd, "restaurantId");
   const title = str(fd, "title");
   const replyDeadline = str(fd, "replyDeadline");
-  const postDeadline = str(fd, "postDeadline");
+  const postDates = [...new Set(fd.getAll("postDates").map(String))].filter((d) => ymd.safeParse(d).success).sort();
+  const postDeadline = postDates.at(-1) ?? "";
   if (!restaurantId || !(await db.get("restaurants", restaurantId))) back(path, "!店舗を選んでください");
   if (!title) back(path, "!案件名を入力してください");
-  if (!ymd.safeParse(replyDeadline).success || !ymd.safeParse(postDeadline).success) back(path, "!回答期限・投稿期限を入力してください");
+  if (!ymd.safeParse(replyDeadline).success) back(path, "!回答期限を入力してください");
+  if (postDates.length === 0) back(path, "!投稿日をカレンダーから1日以上選んでください");
   const prev = id ? await db.get("campaigns", id) : null;
   const slots = readSlots(fd, prev?.slots);
   if (slots.length === 0) back(path, "!撮影候補日を1つ以上入力してください");
@@ -224,6 +226,7 @@ export async function saveCampaign(fd: FormData) {
     conditions: str(fd, "conditions"),
     slots,
     replyDeadline,
+    postDates,
     postDeadline,
   };
   if (prev) {

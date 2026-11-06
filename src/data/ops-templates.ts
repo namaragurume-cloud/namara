@@ -15,6 +15,7 @@ export const opsTemplates = {
     title: string;
     offer: string;
     slots: string[];
+    postDates: string;
     replyDeadline: string;
     url: string;
   }): Msg => ({
@@ -29,8 +30,9 @@ export const opsTemplates = {
       ...(p.offer ? [`■ 報酬・特典：${p.offer}`] : []),
       "■ 撮影候補日",
       ...p.slots.map((s) => `・${s}`),
+      `■ 投稿日：${p.postDates}（この中から選んでください）`,
       "",
-      `下のページから、参加の可否と参加できる日時を${p.replyDeadline}までに選んでください（1分で終わります）。`,
+      `下のページから、参加の可否・参加できる撮影日時・投稿日を${p.replyDeadline}までに選んでください（1分で終わります）。`,
       p.url,
       "",
       SIGN,
@@ -69,7 +71,7 @@ export const opsTemplates = {
       `■ 店舗：${p.restaurant}`,
       ...(p.address ? [`■ 住所：${p.address}`] : []),
       `■ 撮影日時：${p.slot}`,
-      `■ 投稿予定日：${p.postDate}`,
+      `■ 投稿日：${p.postDate}`,
       ...(p.conditions ? ["■ 投稿条件", p.conditions] : []),
       "",
       "詳細はこちら",

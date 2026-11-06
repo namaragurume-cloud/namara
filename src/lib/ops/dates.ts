@@ -50,6 +50,11 @@ export function fmtSlot(s: { date: string; start: string; end: string }): string
   return `${fmtDate(s.date)} ${s.start}${s.end ? `〜${s.end}` : ""}`;
 }
 
+/** 案件の投稿日の表示（11/20(金)・11/22(日)） */
+export function fmtPostDates(c: { postDates?: string[]; postDeadline: string }): string {
+  return c.postDates?.length ? c.postDates.map(fmtDate).join("・") : `${fmtDate(c.postDeadline)}まで`;
+}
+
 export function fmtNum(n?: number): string {
   return typeof n === "number" && Number.isFinite(n) ? n.toLocaleString("ja-JP") : "-";
 }

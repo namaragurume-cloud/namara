@@ -1,4 +1,6 @@
 import { SlotEditor, SubmitButton } from "@/components/ops/client";
+import { DateCalendar } from "@/components/ops/DateCalendar";
+import { jstDate } from "@/lib/ops/dates";
 import { Field, inputClass } from "@/components/ops/ui";
 import type { Campaign, Restaurant } from "@/lib/ops/types";
 import { saveCampaign } from "../../actions";
@@ -16,6 +18,7 @@ export function CampaignForm({
   copy?: Campaign;
 }) {
   const v = c ?? copy;
+  const today = jstDate();
   return (
     <form action={saveCampaign} className="space-y-4">
       {c && <input type="hidden" name="id" value={c.id} />}
@@ -53,11 +56,13 @@ export function CampaignForm({
         </span>
       </Field>
       <div className="grid gap-4 md:grid-cols-2">
+        <Field label="投稿日" required hint="投稿してほしい日をカレンダーでタップ（複数選べます）。発信者はこの中から自分の投稿日を選びます">
+          <span className="block">
+            <DateCalendar name="postDates" mode="multi" initial={c?.postDates ?? []} today={today} />
+          </span>
+        </Field>
         <Field label="回答期限" required hint="前日に未回答の人へ自動でリマインドします">
           <input type="date" name="replyDeadline" required defaultValue={c?.replyDeadline} className={inputClass} />
-        </Field>
-        <Field label="投稿期限" required>
-          <input type="date" name="postDeadline" required defaultValue={c?.postDeadline} className={inputClass} />
         </Field>
       </div>
       <SubmitButton>{c ? "保存する" : "案件をつくる"}</SubmitButton>

@@ -61,7 +61,7 @@ export default async function RestaurantPortal({ params }: { params: Promise<{ t
       {!showSchedule && !showReport && <Card>撮影日が決まりましたら、こちらでご案内いたします。</Card>}
 
       {showSchedule && (
-        <Card title="撮影日・投稿予定日" className="print:hidden">
+        <Card title="撮影日・投稿日" className="print:hidden">
           {schedule.length === 0 ? (
             <p className="text-sm text-muted">調整中です。</p>
           ) : (
@@ -71,7 +71,7 @@ export default async function RestaurantPortal({ params }: { params: Promise<{ t
                   <tr className="border-b border-line">
                     <th className="px-4 py-2 md:px-2">撮影日時</th>
                     <th className="px-2 py-2">発信者</th>
-                    <th className="px-2 py-2">投稿予定日</th>
+                    <th className="px-2 py-2">投稿日</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -86,7 +86,7 @@ export default async function RestaurantPortal({ params }: { params: Promise<{ t
                           </a>
                         )}
                       </td>
-                      <td className="px-2 py-2.5">{r.a.plannedPostDate ? fmtDate(r.a.plannedPostDate) : `${fmtDate(c.postDeadline)}まで`}</td>
+                      <td className="px-2 py-2.5">{r.a.plannedPostDate ? fmtDate(r.a.plannedPostDate) : "調整中"}</td>
                     </tr>
                   ))}
                 </tbody>

@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { CheckAll, CopyButton, SubmitButton } from "@/components/ops/client";
 import { channelLabel, phaseTone } from "@/components/ops/phase";
 import { Badge, ButtonLink, Card, Empty, Field, Flash, Stat, buttonClass, inputClass } from "@/components/ops/ui";
-import { fmtDate, fmtDateLong, fmtDateTime, fmtNum, fmtSlot, jstDate } from "@/lib/ops/dates";
+import { fmtDate, fmtDateLong, fmtDateTime, fmtNum, fmtPostDates, fmtSlot, jstDate } from "@/lib/ops/dates";
 import { db } from "@/lib/ops/db";
 import { isEmailConfigured } from "@/lib/ops/email";
 import { lineShareUrl } from "@/lib/ops/line";
@@ -106,7 +106,7 @@ export default async function CampaignPage({ params, searchParams }: { params: P
           <h1 className="text-xl font-extrabold md:text-2xl">{c.title}</h1>
           <p className="mt-1 flex flex-wrap items-center gap-2 text-sm text-muted">
             <Badge tone={phaseTone[phase]}>{phaseLabel[phase]}</Badge>
-            回答期限 {fmtDate(c.replyDeadline)}・投稿期限 {fmtDate(c.postDeadline)}
+            回答期限 {fmtDate(c.replyDeadline)}・投稿日 {fmtPostDates(c)}
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
@@ -241,7 +241,18 @@ export default async function CampaignPage({ params, searchParams }: { params: P
                           </select>
                         </td>
                         <td className="px-2 py-2">
-                          <input type="date" name={`post_${r.a.id}`} defaultValue={r.a.plannedPostDate} max={c.postDeadline} className={inputClass} />
+                          {c.postDates?.length ? (
+                            <select name={`post_${r.a.id}`} defaultValue={r.a.plannedPostDate ?? ""} className={inputClass}>
+                              <option value="">未定</option>
+                              {[...new Set([...c.postDates, ...(r.a.plannedPostDate ? [r.a.plannedPostDate] : [])])].sort().map((d) => (
+                                <option key={d} value={d}>
+                                  {fmtDate(d)}
+                                </option>
+                              ))}
+                            </select>
+                          ) : (
+                            <input type="date" name={`post_${r.a.id}`} defaultValue={r.a.plannedPostDate} className={inputClass} />
+                          )}
                         </td>
                         <td className="px-2 py-2">
                           {r.a.confirmedNotifiedAt ? (
@@ -515,8 +526,8 @@ export default async function CampaignPage({ params, searchParams }: { params: P
             <dd>{fmtDateLong(c.replyDeadline)}</dd>
           </div>
           <div>
-            <dt className="text-xs font-bold text-muted">投稿期限</dt>
-            <dd>{fmtDateLong(c.postDeadline)}</dd>
+            <dt className="text-xs font-bold text-muted">投稿日</dt>
+            <dd>{fmtPostDates(c)}</dd>
           </div>
         </dl>
       </Card>

@@ -29,7 +29,12 @@ export async function respond(token: string, id: string, fd: FormData) {
   const note = String(fd.get("note") ?? "").trim().slice(0, 500) || undefined;
   if (fd.get("answer") !== "yes" && fd.get("answer") !== "no") back(token, id, "!参加するかどうかを選んでください");
   if (accept && !a.confirmedNotifiedAt && slotIds.length === 0) back(token, id, "!参加できる日時を1つ以上選んでください");
-  if (plannedPostDate && !ymd.test(plannedPostDate)) back(token, id, "!投稿予定日の形式が正しくありません");
+  if (plannedPostDate && !ymd.test(plannedPostDate)) back(token, id, "!投稿日の形式が正しくありません");
+  const postDates = campaign.postDates ?? [];
+  if (accept && postDates.length) {
+    if (!plannedPostDate && !a.confirmedNotifiedAt) back(token, id, "!投稿日をカレンダーから選んでください");
+    if (plannedPostDate && !postDates.includes(plannedPostDate) && plannedPostDate !== a.plannedPostDate) back(token, id, "!投稿日は色のついた日から選んでください");
+  }
   await recordResponse(a, campaign, { accept, slotIds, plannedPostDate: plannedPostDate || undefined, note });
   back(token, id, accept ? "回答ありがとうございます！撮影日が決まったらお知らせします。" : "ご回答ありがとうございました。またよろしくお願いします！");
 }
