@@ -7,7 +7,7 @@ import { DemoBanner } from "@/components/ops/DemoBanner";
 import { VideoUploader } from "@/components/ops/VideoUploader";
 import { VideoView } from "@/components/ops/VideoView";
 import { latestVideo, revisionComment, videoEnabled, videoStage, videoStageLabel } from "@/lib/ops/video-state";
-import { videoStorage } from "@/lib/ops/video-store";
+import { blobAccess, blobAuth, videoStorage } from "@/lib/ops/video-store";
 import { Badge, Card, Field, Flash, inputClass } from "@/components/ops/ui";
 import { fmtDateLong, fmtPostDates, fmtSlot, jstDate } from "@/lib/ops/dates";
 import { db } from "@/lib/ops/db";
@@ -185,7 +185,7 @@ export default async function AssignmentPage({ params, searchParams }: { params:
             <p className="mb-3 whitespace-pre-wrap rounded-xl bg-rose-50 px-3 py-2 text-sm text-rose-900">{revisionComment(latestVideo(a))}</p>
           )}
           {!closed && vStage !== "approved" && (
-            <VideoUploader assignmentId={a.id} token={token} mode={videoStorage()} label={a.videos?.length ? (vStage === "revise" ? "修正した動画を送る" : "動画を差し替える") : "動画を選んで送る"} />
+            <VideoUploader assignmentId={a.id} token={token} mode={videoStorage()} blob={blobAuth() ? { auth: blobAuth()!, access: blobAccess() } : undefined} label={a.videos?.length ? (vStage === "revise" ? "修正した動画を送る" : "動画を差し替える") : "動画を選んで送る"} />
           )}
           {(a.videos?.length ?? 0) > 0 && (
             <details className="mt-4" open={vStage !== "approved"}>

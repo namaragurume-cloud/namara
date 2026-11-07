@@ -12,7 +12,7 @@ import { VideoView } from "@/components/ops/VideoView";
 import { lineShareUrl } from "@/lib/ops/line";
 import { shopVideoText } from "@/lib/ops/video";
 import { latestVideo, videoEnabled, videoStage, videoStageLabel } from "@/lib/ops/video-state";
-import { videoStorage } from "@/lib/ops/video-store";
+import { blobAccess, blobAuth, videoStorage } from "@/lib/ops/video-store";
 import { insightFields, isComplete } from "@/lib/ops/insight-fields";
 import { listShots } from "@/lib/ops/insights";
 import type { DistKey, MetricKey, Platform } from "@/lib/ops/types";
@@ -179,7 +179,7 @@ export default async function AssignmentPage({ params, searchParams }: { params:
           )}
           <div className="mt-4">
             <p className="mb-1 text-xs text-muted">DMなどで受け取った動画は、ここから代わりに追加できます。</p>
-            <VideoUploader assignmentId={a.id} mode={videoStorage()} label="動画を追加する" />
+            <VideoUploader assignmentId={a.id} mode={videoStorage()} blob={blobAuth() ? { auth: blobAuth()!, access: blobAccess() } : undefined} label="動画を追加する" />
           </div>
           {(a.videos?.length ?? 0) > 1 && (
             <details className="mt-4">
