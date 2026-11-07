@@ -63,6 +63,13 @@ export default async function AssignmentPage({ params, searchParams }: { params:
                 ))}
               </select>
             </Field>
+            <Field label="来店人数">
+              <select name="partySize" defaultValue={String(a.partySize ?? 1)} className={inputClass}>
+                <option value="1">1名（本人のみ）</option>
+                <option value="2">2名（同伴1名）</option>
+                <option value="3">3名（同伴2名）</option>
+              </select>
+            </Field>
             <Field label="投稿予定日">
               <input type="date" name="plannedPostDate" defaultValue={a.plannedPostDate} className={inputClass} />
             </Field>

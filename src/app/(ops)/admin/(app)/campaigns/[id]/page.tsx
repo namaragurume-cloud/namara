@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { CheckAll, CopyButton, SubmitButton } from "@/components/ops/client";
 import { channelLabel, phaseTone } from "@/components/ops/phase";
 import { Badge, ButtonLink, Card, Empty, Field, Flash, Stat, buttonClass, inputClass } from "@/components/ops/ui";
-import { fmtDate, fmtDateLong, fmtDateTime, fmtNum, fmtPostDates, fmtSlot, jstDate } from "@/lib/ops/dates";
+import { fmtDate, fmtDateLong, fmtDateTime, fmtNum, fmtParty, fmtPostDates, fmtSlot, jstDate } from "@/lib/ops/dates";
 import { db } from "@/lib/ops/db";
 import { isEmailConfigured } from "@/lib/ops/email";
 import { lineShareUrl } from "@/lib/ops/line";
@@ -249,7 +249,7 @@ export default async function CampaignPage({ params, searchParams }: { params: P
                     割当 {assigned.length}/{s.capacity}人
                   </span>
                 </div>
-                <p className="mt-1 text-xs leading-relaxed text-muted">{avail.length ? avail.map((r) => r.creator.name).join("、") : "参加可能な人はまだいません"}</p>
+                <p className="mt-1 text-xs leading-relaxed text-muted">{avail.length ? avail.map((r) => `${r.creator.name}${(r.a.partySize ?? 1) > 1 ? `（${r.a.partySize}名）` : ""}`).join("、") : "参加可能な人はまだいません"}</p>
               </div>
             );
           })}
@@ -275,6 +275,7 @@ export default async function CampaignPage({ params, searchParams }: { params: P
                       <tr key={r.a.id} className="border-b border-line last:border-0 align-top">
                         <td className="px-4 py-2 md:px-2">
                           <b>{r.creator.name}</b>
+                          <span className="ml-1 text-xs text-muted">来店 {fmtParty(r.a.partySize)}</span>
                           {r.a.note && <p className="mt-0.5 max-w-56 text-xs text-muted">💬 {r.a.note}</p>}
                         </td>
                         <td className="px-2 py-2">

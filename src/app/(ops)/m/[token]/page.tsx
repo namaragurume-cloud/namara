@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { DemoBanner } from "@/components/ops/DemoBanner";
 import { ProgressSteps } from "@/components/ops/ProgressSteps";
 import { Badge, Card, Flash, buttonClass } from "@/components/ops/ui";
-import { fmtDate, jstDate } from "@/lib/ops/dates";
+import { fmtDate, fmtParty, jstDate } from "@/lib/ops/dates";
 import { db } from "@/lib/ops/db";
 import { lineOaMessageUrl } from "@/lib/ops/line";
 import { fmtMonth, monthOf, progressOf, type Progress } from "@/lib/ops/progress";
@@ -60,6 +60,8 @@ export default async function CreatorHome({ params, searchParams }: { params: Pr
                 <dd>{slot ? slotLabel(i.c, slot.id) : "調整中"}</dd>
                 <dt className="text-muted">投稿日</dt>
                 <dd>{i.a.plannedPostDate ? fmtDate(i.a.plannedPostDate) : "未定"}</dd>
+                <dt className="text-muted">来店人数</dt>
+                <dd>{fmtParty(i.a.partySize)}</dd>
               </>
             )}
             {i.c.offer && i.a.status !== "declined" && (

@@ -236,13 +236,13 @@ export function demoSeed(): Seed {
   const assignments: Assignment[] = [
     // カフェ ことり：回答受付中
     as("k-kotori", "c1", { status: "accepted", availableSlotIds: ["s1", "s2"], plannedPostDate: d(15), respondedAt: iso(-1) }),
-    as("k-kotori", "c3", { status: "accepted", availableSlotIds: ["s1"], plannedPostDate: d(14), respondedAt: iso(-1), note: "同伴1名でもよいですか？" }),
+    as("k-kotori", "c3", { status: "accepted", availableSlotIds: ["s1"], plannedPostDate: d(14), partySize: 2, respondedAt: iso(-1), note: "友人と2名で伺います" }),
     as("k-kotori", "c5", { status: "accepted", availableSlotIds: ["s2", "s3"], respondedAt: iso(0, 9) }),
     as("k-kotori", "c7", { status: "declined", respondedAt: iso(-1), sentVia: "email", note: "今月は予定が埋まっています" }),
     as("k-kotori", "c2", {}),
     as("k-kotori", "c8", { status: "unsent", sentAt: undefined, sentVia: undefined }),
     // スープカレー 晴れ：撮影待ち
-    as("k-hare", "c2", done("s1", 9, { platform: "tiktok" })),
+    as("k-hare", "c2", done("s1", 9, { platform: "tiktok", partySize: 2 })),
     as("k-hare", "c4", done("s0", 9, { sentVia: "email", videoRequestedAt: iso(-1, 10), videos: [vid(-1, { owner: { status: "ok", at: iso(-1, 15), by: "admin" }, sentToShopAt: iso(-1, 15) })] })),
     as("k-hare", "c6", done("s0", 10, { platform: "tiktok", videoRequestedAt: iso(-1, 10), videos: [vid(-1, { owner: { status: "ng", comment: "冒頭3秒でカレーのアップを見せてください", at: iso(-1, 16), by: "admin" } }), vid(0)] })),
     // 焼肉 たいよう：インサイト回収中

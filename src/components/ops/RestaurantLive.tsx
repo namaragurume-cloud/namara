@@ -1,5 +1,5 @@
 import { CalendarClock, Camera, Clapperboard } from "lucide-react";
-import { addDays, fmtDate, fmtSlot } from "@/lib/ops/dates";
+import { addDays, fmtDate, fmtParty, fmtSlot } from "@/lib/ops/dates";
 import type { Assignment, Campaign, Creator, Slot } from "@/lib/ops/types";
 import { cn } from "@/lib/utils";
 
@@ -108,7 +108,7 @@ export function RestaurantLive({ campaign: c, rows: all, today, updatedAt }: { c
                     <Camera className="size-4 text-muted" />
                     <b className="num">{fmtSlot(e.r.slot).replace(/^\S+\s/, "")}</b>
                     <Who c={e.r.creator} />
-                    が撮影に伺います
+                    {(e.r.a.partySize ?? 1) > 1 ? `ほか計${e.r.a.partySize}名` : ""}が撮影に伺います
                   </span>
                 ) : (
                   <span className="flex items-center gap-1.5">
@@ -134,7 +134,10 @@ export function RestaurantLive({ campaign: c, rows: all, today, updatedAt }: { c
               const p = postState(r.a, today);
               return (
                 <li key={r.a.id} className="grid gap-2 py-3 text-sm sm:grid-cols-[1fr_1.2fr_1.2fr] sm:items-center">
-                  <Who c={r.creator} />
+                  <span>
+                    <Who c={r.creator} />
+                    <span className="ml-1 text-xs text-muted">来店 {fmtParty(r.a.partySize)}</span>
+                  </span>
                   <span className="flex flex-wrap items-center gap-2">
                     <span className={cn("rounded-full px-2.5 py-0.5 text-xs font-bold", chip[s.tone])}>{s.label}</span>
                     <span className="num text-xs text-muted">{fmtSlot(r.slot)}</span>

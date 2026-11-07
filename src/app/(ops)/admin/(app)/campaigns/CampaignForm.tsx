@@ -50,7 +50,7 @@ export function CampaignForm({
           <textarea name="conditions" rows={3} defaultValue={v?.conditions} className={inputClass} />
         </Field>
       </div>
-      <Field label="撮影候補日" required hint="発信者は、この中から参加できる日時をすべて選びます。人数＝その枠に入れる人数です。">
+      <Field label="撮影候補日" required hint="発信者は、この中から参加できる日時をすべて選びます。「人まで」＝その時間に入れる発信者の人数の上限（同伴者は含みません。発信者は回答時に1人／2人で来店するかを選びます）。">
         <span className="block">
           <SlotEditor initial={c?.slots ?? []} />
         </span>

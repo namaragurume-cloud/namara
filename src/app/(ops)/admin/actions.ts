@@ -440,6 +440,7 @@ export async function saveAssignment(fd: FormData) {
     plannedPostDate: plannedPostDate && ymd.safeParse(plannedPostDate).success ? plannedPostDate : undefined,
     postUrl: optStr(fd, "postUrl"),
     note: optStr(fd, "note"),
+    partySize: [1, 2, 3].includes(Number(str(fd, "partySize"))) ? Number(str(fd, "partySize")) : a.partySize,
     respondedAt: a.respondedAt ?? (status === "accepted" || status === "declined" ? nowIso() : undefined),
   });
   back(`/admin/campaigns/${a.campaignId}`, "依頼の内容を保存しました");

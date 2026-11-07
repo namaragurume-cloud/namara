@@ -143,7 +143,23 @@ export default async function AssignmentPage({ params, searchParams }: { params:
                 <DateCalendar name="plannedPostDate" mode="single" initial={a.plannedPostDate ? [a.plannedPostDate] : []} allowed={c.postDates?.length ? c.postDates : undefined} today={today} />
               </span>
             </Field>
-            <Field label="メモ（任意）" hint="同伴者の有無、苦手な食材、時間の希望など">
+            <fieldset>
+              <legend className="mb-2 text-sm font-bold">何名で来店しますか？</legend>
+              <div className="grid grid-cols-2 gap-2">
+                {[
+                  [1, "1人", "本人のみ"],
+                  [2, "2人", "本人＋同伴1名"],
+                ].map(([n, label, sub]) => (
+                  <label key={n} className="flex flex-col items-center rounded-xl border border-line bg-white px-3 py-2.5 has-[:checked]:border-brand has-[:checked]:bg-brand/5 has-[:checked]:text-brand">
+                    <input type="radio" name="partySize" value={n} defaultChecked={(a.partySize ?? 1) === n} className="sr-only" />
+                    <b>{label}</b>
+                    <span className="text-xs text-muted">{sub}</span>
+                  </label>
+                ))}
+              </div>
+              <p className="mt-1 text-xs text-muted">同伴の飲食代の扱いは「報酬・特典」をご確認ください。3人以上の場合はメモに書いてください。</p>
+            </fieldset>
+            <Field label="メモ（任意）" hint="苦手な食材、時間の希望など">
               <textarea name="note" rows={2} defaultValue={a.note} className={inputClass} />
             </Field>
             <SubmitButton className="w-full">{a.respondedAt ? "回答を更新する" : "回答する"}</SubmitButton>
