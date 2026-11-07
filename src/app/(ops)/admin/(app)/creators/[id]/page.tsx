@@ -9,7 +9,7 @@ import { db } from "@/lib/ops/db";
 import { isLineConfigured, lineOaMessageUrl } from "@/lib/ops/line";
 import { text } from "@/lib/ops/templates";
 import { creatorPortalUrl } from "@/lib/ops/urls";
-import { resetCreatorToken, saveCreator, setCreatorActive, unlinkLine } from "../../../actions";
+import { deleteCreator, resetCreatorToken, saveCreator, setCreatorActive, unlinkLine } from "../../../actions";
 
 export const metadata = { title: "発信者の詳細" };
 
@@ -138,6 +138,18 @@ export default async function CreatorPage({ params, searchParams }: { params: Pr
             })}
           </ul>
         )}
+      </Card>
+      <Card title="発信者を削除" className="border-rose-200">
+        <p className="text-sm leading-relaxed text-muted">
+          今後依頼しないだけなら、上の「依頼対象から外す」がおすすめです（これまでの実績・レポートの数字は残ります）。
+          {mine.length ? `削除すると、この人への依頼${mine.length}件とインサイト・スクショもすべて消え、レポートの数字からも外れます。` : ""}
+          元には戻せません。
+        </p>
+        <form action={deleteCreator.bind(null, c.id)} className="mt-3">
+          <SubmitButton variant="danger" size="sm" confirm={`「${c.name}」さん${mine.length ? `と依頼${mine.length}件` : ""}を削除します。元に戻せません。よろしいですか？`}>
+            この発信者を削除
+          </SubmitButton>
+        </form>
       </Card>
     </>
   );

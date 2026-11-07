@@ -19,6 +19,7 @@ import {
 } from "@/lib/ops/service";
 import { fieldLabel, insightFields, missingKeys, missingLabels, parseDistText } from "@/lib/ops/insight-fields";
 import { draftReportText } from "@/lib/ops/ai-report";
+import { deleteShot } from "@/lib/ops/insights";
 import { buildReport } from "@/lib/ops/report";
 import { isAiConfigured } from "@/lib/ops/vision";
 import { sendToCreator } from "@/lib/ops/notify";
@@ -239,11 +240,44 @@ export async function saveCampaign(fd: FormData) {
   back(`/admin/campaigns/${c.id}`, "案件を作成しました。次に依頼する発信者を選んで一括送信してください");
 }
 
+/** 依頼と、そのスクショ画像もまとめて削除 */
+async function removeAssignments(list: Assignment[]) {
+  const ids = new Set(list.map((a) => a.id));
+  for (const s of (await db.list("shots")).filter((s) => ids.has(s.assignmentId))) await deleteShot(s);
+  for (const a of list) await db.remove("assignments", a.id);
+}
+
+async function removeCampaign(id: string) {
+  await removeAssignments((await db.list("assignments")).filter((a) => a.campaignId === id));
+  await db.remove("campaigns", id);
+}
+
 export async function deleteCampaign(id: string) {
   await requireAdmin();
-  for (const a of (await db.list("assignments")).filter((a) => a.campaignId === id)) await db.remove("assignments", a.id);
-  await db.remove("campaigns", id);
+  await removeCampaign(id);
   back("/admin", "案件を削除しました");
+}
+
+/** 店舗を削除（その店舗の案件・依頼・スクショもすべて削除） */
+export async function deleteRestaurant(id: string) {
+  await requireAdmin();
+  const r = await db.get("restaurants", id);
+  if (!r) back("/admin/restaurants", "!店舗が見つかりません");
+  const campaigns = (await db.list("campaigns")).filter((c) => c.restaurantId === id);
+  for (const c of campaigns) await removeCampaign(c.id);
+  await db.remove("restaurants", id);
+  back("/admin/restaurants", `「${r.name}」を削除しました${campaigns.length ? `（案件${campaigns.length}件も削除）` : ""}`);
+}
+
+/** 発信者を削除（その人への依頼・スクショもすべて削除。レポートの数字からも消えます） */
+export async function deleteCreator(id: string) {
+  await requireAdmin();
+  const c = await db.get("creators", id);
+  if (!c) back("/admin/creators", "!発信者が見つかりません");
+  const list = (await db.list("assignments")).filter((a) => a.creatorId === id);
+  await removeAssignments(list);
+  await db.remove("creators", id);
+  back("/admin/creators", `「${c.name}」さんを削除しました${list.length ? `（依頼${list.length}件も削除）` : ""}`);
 }
 
 export async function sendRequestsAction(campaignId: string, fd: FormData) {
