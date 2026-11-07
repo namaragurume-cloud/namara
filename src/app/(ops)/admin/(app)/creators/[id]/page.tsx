@@ -2,9 +2,10 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { opsTemplates } from "@/data/ops-templates";
 import { CopyButton, SubmitButton } from "@/components/ops/client";
-import { statusLabel, statusTone } from "@/components/ops/phase";
+import { ProgressSteps } from "@/components/ops/ProgressSteps";
+import { progressOf } from "@/lib/ops/progress";
 import { Badge, Card, Field, Flash, inputClass } from "@/components/ops/ui";
-import { fmtDate } from "@/lib/ops/dates";
+import { fmtDate, jstDate } from "@/lib/ops/dates";
 import { db } from "@/lib/ops/db";
 import { isLineConfigured, lineOaMessageUrl } from "@/lib/ops/line";
 import { creatorPortalUrl } from "@/lib/ops/urls";
@@ -20,6 +21,7 @@ export default async function CreatorPage({ params, searchParams }: { params: Pr
   const mine = assignments.filter((a) => a.creatorId === c.id).sort((a, b) => b.createdAt.localeCompare(a.createdAt));
   const cMap = new Map(campaigns.map((x) => [x.id, x]));
   const rMap = new Map(restaurants.map((x) => [x.id, x.name]));
+  const today = jstDate();
   const portal = creatorPortalUrl(c);
   const lineUrl = lineOaMessageUrl(`連携 ${c.lineLinkCode}`);
   const onboarding = opsTemplates.creatorOnboarding({ creator: c.name, code: c.lineLinkCode, lineUrl, portalUrl: portal }).text;
@@ -123,8 +125,8 @@ export default async function CreatorPage({ params, searchParams }: { params: Pr
                     {rMap.get(camp?.restaurantId ?? "") ?? "-"}
                   </Link>
                   <span className="text-muted">{camp?.title}</span>
-                  <Badge tone={statusTone[a.status]}>{statusLabel[a.status]}</Badge>
-                  {a.insight ? <Badge tone="green">インサイト提出済</Badge> : a.status === "accepted" ? <Badge>インサイト未</Badge> : null}
+                  {camp && <ProgressSteps p={progressOf(a, camp, today)} compact />}
+                  {camp && <Badge tone={progressOf(a, camp, today).tone}>{progressOf(a, camp, today).status}</Badge>}
                   <span className="ml-auto text-xs text-muted">{fmtDate(a.createdAt.slice(0, 10))}</span>
                 </li>
               );

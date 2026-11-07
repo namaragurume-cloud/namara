@@ -7,6 +7,7 @@ import { logout } from "../actions";
 const nav = [
   { href: "/admin", label: "ホーム" },
   { href: "/admin/campaigns/new", label: "＋新しい案件" },
+  { href: "/admin/monthly", label: "月別の進捗" },
   { href: "/admin/creators", label: "発信者" },
   { href: "/admin/restaurants", label: "飲食店" },
   { href: "/admin/messages", label: "送信履歴" },

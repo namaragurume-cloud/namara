@@ -66,9 +66,9 @@ export default async function AdminHome({ searchParams }: { searchParams: Promis
               ["/admin/campaigns/k-kotori", "① 回答受付中の案件", "依頼の一括送信・回答の集計・撮影日の自動割り当て"],
               ["/admin/campaigns/k-taiyo", "② インサイト回収中の案件", "スクショ不足の検出と本人への連絡状況"],
               ["/p/demo-report-shiokaze", "③ 飲食店に送るレポート", "完了した案件の16:9レポート（PDF保存可）"],
-              ["/m/demo-creator-1", "④ 発信者に見えるページ", "回答・スクショ送信（はなこさんの画面）"],
-              ["/admin/campaigns/new", "⑤ 新しい案件をつくる", "店舗・PR内容・撮影候補日の入力"],
-              ["/admin/messages", "⑥ 送信履歴", "自動で送られる文面（デモでは記録のみ）"],
+              ["/m/demo-creator-1", "④ 発信者に見えるページ", "やること・月ごとの進捗・スクショ送信（はなこさん）"],
+              ["/admin/monthly", "⑤ 月別の進捗", "発信者ごとに、今月の案件がどこまで進んだか"],
+              ["/admin/campaigns/new", "⑥ 新しい案件をつくる", "店舗・PR内容・撮影候補日・投稿日の入力"],
             ].map(([href, title, sub]) => (
               <li key={href}>
                 <Link href={href} target={href.startsWith("/admin") ? undefined : "_blank"} className="block rounded-xl border border-amber-200 bg-white px-4 py-3 hover:border-amber-400">

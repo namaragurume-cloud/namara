@@ -194,15 +194,17 @@ export function demoSeed(): Seed {
   ];
 
   let n = 0;
+  // 依頼した日（月別の進捗に使う）
+  const sentDay: Record<string, number> = { "k-kotori": -2, "k-hare": -12, "k-taiyo": -38, "k-shiokaze": -68 };
   const as = (campaignId: string, creatorId: string, p: Partial<Assignment>): Assignment => ({
     id: `demo-a${++n}`,
     campaignId,
     creatorId,
     status: "sent",
-    sentAt: iso(-2, 10),
+    sentAt: iso(sentDay[campaignId], 10),
     sentVia: "line",
     availableSlotIds: [],
-    createdAt: iso(-2, 10),
+    createdAt: iso(sentDay[campaignId], 10),
     ...p,
   });
   const done = (slotId: string, post: number, extra: Partial<Assignment> = {}): Partial<Assignment> => ({
