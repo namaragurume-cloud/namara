@@ -320,7 +320,7 @@ PR依頼から日程調整・飲食店への共有・インサイト回収・レ
 5. 結果は発信者へ自動連絡（OKなら投稿日に投稿、修正なら出し直し）。お店の確認が2日止まると1回リマインド
 
 お店からLINEで返事が来た場合は、依頼詳細の「代理で入力」から記録できます。動画は投稿が確認できたら（または投稿日の7日後に）自動で削除されます。
-**動画の保存には Vercel Blob が必要です**（Storage → Blob を追加し Production に接続）。
+**動画の保存には Vercel Blob が必要です**（Storage → Blob を追加し Production に接続）。新しい接続方式（OIDC。`BLOB_STORE_ID` と `BLOB_WEBHOOK_PUBLIC_KEY` が入る）と以前の方式（`BLOB_READ_WRITE_TOKEN`）のどちらにも対応しています。Blob の置き場を「Private」で作った場合は、環境変数 `VIDEO_BLOB_ACCESS=private` を設定してください（表示のたびに6時間有効のURLを作ります）。
 
 ### 飲食店の公式LINE連携
 飲食店も発信者と同じく、連携コードを公式LINEに送ると紐づきます（飲食店ページの「案内文をコピー」）。連携済みの店には、撮影日程の共有・動画の確認依頼・レポート送付がLINEで自動で届きます。
@@ -368,7 +368,7 @@ LINEで画像を受け取ったとき、その発信者にインサイトをお�
    - LINE Official Account Manager の応答設定で「応答メッセージ」をオフ（自動返信がツールの返信と重ならないように）
    - 無料プランは月200通までです。発信者が多い場合はライトプラン以上を検討してください
 4. **メール**（LINE未連携の発信者・飲食店への送付）：フォームと同じ Resend の設定（`MAIL_PROVIDER=resend`・`RESEND_API_KEY`・`MAIL_FROM`）を使います。返信先は `MAIL_TO` の1件目です
-5. **動画の保存先**（動画チェックを使う場合）：Storage → **Blob** を追加して Production に接続（`BLOB_READ_WRITE_TOKEN` が自動で入ります）
+5. **動画の保存先**（動画チェックを使う場合）：Storage → **Blob** を追加して Production に接続（`BLOB_STORE_ID` か `BLOB_READ_WRITE_TOKEN` が自動で入ります。Private の置き場なら `VIDEO_BLOB_ACCESS=private`）
 6. **スクショの自動読み取り**（推奨）：[Anthropic Console](https://console.anthropic.com) で API キーを発行し `ANTHROPIC_API_KEY` に設定（1投稿の読み取りで数円程度）。未設定でもスクショは受け取れ、数値は管理画面で手入力できます
 7. 再デプロイ後、`/admin/settings` で各連携が「設定済み」になっていることを確認
 

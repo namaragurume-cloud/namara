@@ -1,6 +1,6 @@
 "use client";
 
-import { upload } from "@vercel/blob/client";
+import { upload, uploadPresigned } from "@vercel/blob/client";
 import { useRouter } from "next/navigation";
 import { useRef, useState } from "react";
 import { cn } from "@/lib/utils";
@@ -16,11 +16,14 @@ export function VideoUploader({
   assignmentId,
   token,
   mode,
+  blob,
   label = "動画を選んで送る",
 }: {
   assignmentId: string;
   token?: string;
   mode: "blob" | "local" | "demo" | null;
+  /** Vercel Blob の接続方式と公開設定（mode が blob のとき） */
+  blob?: { auth: "token" | "oidc"; access: "public" | "private" };
   label?: string;
 }) {
   const router = useRouter();
@@ -37,18 +40,20 @@ export function VideoUploader({
       let res: Response;
       if (mode === "blob") {
         const ext = (file.name.split(".").pop() ?? "mp4").replace(/[^a-z0-9]/gi, "").slice(0, 5) || "mp4";
-        const blob = await upload(`videos/${assignmentId}/${Date.now()}.${ext}`, file, {
-          access: "public",
+        const opts = {
+          access: blob?.access ?? "public",
           handleUploadUrl: "/api/ops/video/token",
           clientPayload: JSON.stringify({ assignmentId, token }),
           multipart: file.size > 20 * 1024 * 1024,
-          onUploadProgress: (p) => setBusy(`動画を送信中… ${Math.floor(p.percentage)}%`),
-        });
+          onUploadProgress: (p: { percentage: number }) => setBusy(`動画を送信中… ${Math.floor(p.percentage)}%`),
+        } as const;
+        const path = `videos/${assignmentId}/${Date.now()}.${ext}`;
+        const uploaded = blob?.auth === "oidc" ? await uploadPresigned(path, file, opts) : await upload(path, file, opts);
         setBusy("登録しています…");
         res = await fetch("/api/ops/video/complete", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ assignmentId, token, url: blob.url }),
+          body: JSON.stringify({ assignmentId, token, url: uploaded.url }),
         });
       } else {
         setBusy("動画を送信中…");

@@ -1,10 +1,12 @@
 import { fmtDateTime } from "@/lib/ops/dates";
 import type { VideoVersion } from "@/lib/ops/types";
 import { fmtSize } from "@/lib/ops/video-state";
+import { playableUrl } from "@/lib/ops/video-store";
 import { Badge } from "./ui";
 
 /** 動画1本の表示（再生・確認の結果） */
-export function VideoView({ v, index, showDecisions = true }: { v: VideoVersion; index?: number; showDecisions?: boolean }) {
+export async function VideoView({ v, index, showDecisions = true }: { v: VideoVersion; index?: number; showDecisions?: boolean }) {
+  const src = v.fileDeletedAt || v.storage === "demo" ? "" : await playableUrl(v);
   return (
     <div className="space-y-2">
       {v.fileDeletedAt ? (
@@ -12,7 +14,7 @@ export function VideoView({ v, index, showDecisions = true }: { v: VideoVersion;
       ) : v.storage === "demo" ? (
         <p className="flex aspect-[9/16] max-h-80 items-center justify-center rounded-xl bg-zinc-800 px-3 text-center text-xs text-zinc-300">（デモ：動画はここで再生されます）</p>
       ) : (
-        <video src={v.url} controls playsInline preload="metadata" className="max-h-[70svh] w-full rounded-xl bg-black" />
+        <video src={src} controls playsInline preload="metadata" className="max-h-[70svh] w-full rounded-xl bg-black" />
       )}
       <p className="flex flex-wrap items-center gap-2 text-xs text-muted">
         {index !== undefined && <b className="text-ink">{index + 1}回目の提出</b>}
