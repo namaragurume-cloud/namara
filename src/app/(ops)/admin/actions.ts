@@ -253,6 +253,39 @@ export async function sendRequestsAction(campaignId: string, fd: FormData) {
   back(`/admin/campaigns/${campaignId}`, summarize("PR依頼", result));
 }
 
+/** 実施済みの案件に、発信者を「参加・撮影済み」として記録だけ追加する（連絡はしない） */
+export async function addPastParticipants(campaignId: string, fd: FormData) {
+  await requireAdmin();
+  const c = await db.get("campaigns", campaignId);
+  if (!c) back("/admin", "!案件が見つかりません");
+  const ids = fd.getAll("creatorId").map(String).filter(Boolean);
+  if (ids.length === 0) back(`/admin/campaigns/${campaignId}`, "!記録する発信者を選んでください");
+  const slotId = c.slots.find((s) => s.id === str(fd, "slotId"))?.id ?? c.slots[0]?.id;
+  const postDate = str(fd, "postDate");
+  const existing = new Set((await db.list("assignments")).filter((a) => a.campaignId === campaignId).map((a) => a.creatorId));
+  let added = 0;
+  for (const id of ids) {
+    if (existing.has(id) || !(await db.get("creators", id))) continue;
+    const t = nowIso();
+    await db.put("assignments", {
+      id: newToken(),
+      campaignId,
+      creatorId: id,
+      status: "accepted",
+      sentAt: t,
+      sentVia: "manual",
+      availableSlotIds: slotId ? [slotId] : [],
+      confirmedSlotId: slotId,
+      plannedPostDate: ymd.safeParse(postDate).success ? postDate : undefined,
+      respondedAt: t,
+      confirmedNotifiedAt: t,
+      createdAt: t,
+    });
+    added++;
+  }
+  back(`/admin/campaigns/${campaignId}`, `${added}人を実施済みとして記録しました（連絡はしていません）。下の「インサイトのスクショ回収」から各発信者のスクショを追加するか、提出のお願いを送ってください`);
+}
+
 export async function markSentAction(campaignId: string, assignmentId: string) {
   await requireAdmin();
   await markSentManually(assignmentId);

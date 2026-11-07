@@ -56,9 +56,9 @@ export function CampaignForm({
         </span>
       </Field>
       <div className="grid gap-4 md:grid-cols-2">
-        <Field label="投稿日" required hint="投稿してほしい日をカレンダーでタップ（複数選べます）。発信者はこの中から自分の投稿日を選びます">
+        <Field label="投稿日" required hint="投稿してほしい日をカレンダーでタップ（複数選べます）。発信者はこの中から自分の投稿日を選びます。実施済みの案件なら過去の日付も選べます">
           <span className="block">
-            <DateCalendar name="postDates" mode="multi" initial={c?.postDates ?? []} today={today} />
+            <DateCalendar name="postDates" mode="multi" initial={c?.postDates ?? []} today={today} allowPast />
           </span>
         </Field>
         <Field label="回答期限" required hint="前日に未回答の人へ自動でリマインドします">

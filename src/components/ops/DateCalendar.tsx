@@ -20,6 +20,7 @@ export function DateCalendar({
   initial = [],
   allowed,
   today,
+  allowPast,
 }: {
   name: string;
   mode: "multi" | "single";
@@ -27,6 +28,8 @@ export function DateCalendar({
   allowed?: string[];
   /** 今日（YYYY-MM-DD）。これより前は選べない */
   today: string;
+  /** 過去の日付も選べるようにする（実施済みの案件を登録するとき） */
+  allowPast?: boolean;
 }) {
   const [selected, setSelected] = useState<string[]>([...new Set(initial)].sort());
   const start = (selected[0] ?? allowed?.find((d) => d >= today) ?? allowed?.[0] ?? today).slice(0, 7);
@@ -72,7 +75,7 @@ export function DateCalendar({
           const d = ymd(y, m, i + 1);
           const isSel = selected.includes(d);
           const isAllowed = allowedSet ? allowedSet.has(d) : true;
-          const disabled = !isAllowed || (d < today && !isSel);
+          const disabled = !isAllowed || (!allowPast && d < today && !isSel);
           return (
             <button
               key={d}

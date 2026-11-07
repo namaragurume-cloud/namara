@@ -23,6 +23,7 @@ import { fieldLabel, isComplete, platformLabel } from "@/lib/ops/insight-fields"
 import { buildReport, pct, pct1 } from "@/lib/ops/report";
 import { isAiConfigured } from "@/lib/ops/vision";
 import {
+  addPastParticipants,
   confirmScheduleAction,
   draftReportAction,
   insightRequestAction,
@@ -159,6 +160,45 @@ export default async function CampaignPage({ params, searchParams }: { params: P
           )}
           <SubmitButton confirm="選んだ発信者に依頼を送信します。よろしいですか？">選んだ人に一括送信</SubmitButton>
         </form>
+
+        <details className="mt-4 rounded-xl border border-line bg-mist p-3" open={rows.length === 0 && c.slots.every((s) => s.date < today)}>
+          <summary className="cursor-pointer text-sm font-bold">実施済みの案件として記録する（発信者に連絡しない）</summary>
+          <p className="mt-2 text-xs leading-relaxed text-muted">
+            すでに撮影・投稿が終わった案件のレポートを作るときに使います。選んだ発信者を「参加・撮影済み」として登録します。LINE・メールは送りません。登録後、「インサイトのスクショ回収」から各発信者のスクショを追加するか、提出のお願いを送ってください。
+          </p>
+          <form id="past-form" action={addPastParticipants.bind(null, c.id)} className="mt-3 space-y-3">
+            <div className="flex justify-end">
+              <CheckAll formId="past-form" name="creatorId" />
+            </div>
+            <div className="grid max-h-64 gap-1.5 overflow-y-auto sm:grid-cols-2 lg:grid-cols-3">
+              {creators.map((cr) => (
+                <label key={cr.id} className={`flex items-center gap-2 rounded-xl border px-3 py-2 text-sm ${assignedIds.has(cr.id) ? "border-transparent bg-white/50 text-muted" : "border-line bg-white"}`}>
+                  <input type="checkbox" name="creatorId" value={cr.id} disabled={assignedIds.has(cr.id)} className="size-4 accent-[var(--brand)]" />
+                  <b className="truncate">{cr.name}</b>
+                  {assignedIds.has(cr.id) && <span className="ml-auto text-xs">登録済</span>}
+                </label>
+              ))}
+            </div>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <label className="block text-sm">
+                <span className="mb-1 block font-bold">撮影日時</span>
+                <select name="slotId" className={inputClass} defaultValue={c.slots[0]?.id}>
+                  {c.slots.map((s) => (
+                    <option key={s.id} value={s.id}>
+                      {fmtSlot(s)}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label className="block text-sm">
+                <span className="mb-1 block font-bold">投稿日（わかれば）</span>
+                <input type="date" name="postDate" defaultValue={c.postDates?.[0]} className={inputClass} />
+              </label>
+            </div>
+            <p className="text-xs text-muted">人によって撮影日・投稿日が違う場合は、登録後に各発信者の「詳細・代理入力」で直せます。</p>
+            <SubmitButton variant="outline">選んだ人を実施済みとして記録</SubmitButton>
+          </form>
+        </details>
 
         {unsent.length > 0 && (
           <div className="mt-4 rounded-xl border border-rose-200 bg-rose-50 p-3">
