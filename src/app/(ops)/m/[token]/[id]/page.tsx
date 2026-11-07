@@ -11,7 +11,7 @@ import { videoStorage } from "@/lib/ops/video-store";
 import { Badge, Card, Field, Flash, inputClass } from "@/components/ops/ui";
 import { fmtDateLong, fmtPostDates, fmtSlot, jstDate } from "@/lib/ops/dates";
 import { db } from "@/lib/ops/db";
-import { findCreatorByToken, slotLabel } from "@/lib/ops/service";
+import { findCreatorByToken, offerOf, slotLabel } from "@/lib/ops/service";
 import { InsightView } from "@/components/ops/InsightView";
 import { ShotUploader } from "@/components/ops/ShotUploader";
 import { isComplete, platformLabel, screenshotGuide } from "@/lib/ops/insight-fields";
@@ -73,10 +73,10 @@ export default async function AssignmentPage({ params, searchParams }: { params:
               <dd className="whitespace-pre-wrap">{c.description}</dd>
             </div>
           )}
-          {c.offer && (
+          {offerOf(a, c) && (
             <div>
               <dt className="text-xs font-bold text-muted">報酬・特典</dt>
-              <dd className="whitespace-pre-wrap">{c.offer}</dd>
+              <dd className="whitespace-pre-wrap">{offerOf(a, c)}</dd>
             </div>
           )}
           {c.conditions && (

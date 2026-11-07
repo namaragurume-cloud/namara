@@ -96,6 +96,9 @@ export default async function AssignmentPage({ params, searchParams }: { params:
                 ))}
               </select>
             </Field>
+            <Field label="この人の報酬・特典" hint={`空欄なら案件の共通の報酬「${c.offer || "未設定"}」。この人にだけ表示されます（変えても本人への連絡はしません）`}>
+              <input name="offer" defaultValue={a.offer} placeholder={c.offer} className={inputClass} />
+            </Field>
             <Field label="本人からのメモ">
               <input name="note" defaultValue={a.note} className={inputClass} />
             </Field>

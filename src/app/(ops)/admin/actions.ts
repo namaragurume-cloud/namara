@@ -298,7 +298,8 @@ export async function sendRequestsAction(campaignId: string, fd: FormData) {
   await requireAdmin();
   const ids = fd.getAll("creatorId").map(String).filter(Boolean);
   if (ids.length === 0) back(`/admin/campaigns/${campaignId}`, "!依頼する発信者を選んでください");
-  const result = await sendRequests(campaignId, ids);
+  const offers = Object.fromEntries(ids.map((id) => [id, str(fd, `offer_${id}`)]).filter(([, v]) => v));
+  const result = await sendRequests(campaignId, ids, offers);
   back(`/admin/campaigns/${campaignId}`, summarize("PR依頼", result));
 }
 
@@ -452,6 +453,7 @@ export async function saveAssignment(fd: FormData) {
     plannedPostDate: plannedPostDate && ymd.safeParse(plannedPostDate).success ? plannedPostDate : undefined,
     postUrl: optStr(fd, "postUrl"),
     note: optStr(fd, "note"),
+    offer: optStr(fd, "offer"),
     partySize: [1, 2, 3].includes(Number(str(fd, "partySize"))) ? Number(str(fd, "partySize")) : a.partySize,
     respondedAt: a.respondedAt ?? (status === "accepted" || status === "declined" ? nowIso() : undefined),
   });
