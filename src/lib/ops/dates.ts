@@ -55,6 +55,12 @@ export function fmtPostDates(c: { postDates?: string[]; postDeadline: string }):
   return c.postDates?.length ? c.postDates.map(fmtDate).join("・") : `${fmtDate(c.postDeadline)}まで`;
 }
 
+/** 来店人数の表示 */
+export function fmtParty(n?: number): string {
+  if (!n || n <= 1) return "1名";
+  return `${n}名（同伴${n - 1}名）`;
+}
+
 export function fmtNum(n?: number): string {
   return typeof n === "number" && Number.isFinite(n) ? n.toLocaleString("ja-JP") : "-";
 }

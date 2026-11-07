@@ -1,5 +1,5 @@
 import "server-only";
-import { addDays, fmtDate, fmtDateLong, fmtNum, fmtPostDates, fmtSlot, isLastDayOfMonth, jstDate } from "./dates";
+import { addDays, fmtDate, fmtDateLong, fmtNum, fmtParty, fmtPostDates, fmtSlot, isLastDayOfMonth, jstDate } from "./dates";
 import { db } from "./db";
 import { sendToCreator, sendToRestaurant, type SendResult } from "./notify";
 import { needsInsight } from "./insights";
@@ -192,7 +192,7 @@ export async function markSentManually(assignmentId: string): Promise<void> {
 export async function recordResponse(
   a: Assignment,
   campaign: Campaign,
-  input: { accept: boolean; slotIds: string[]; plannedPostDate?: string; note?: string },
+  input: { accept: boolean; slotIds: string[]; plannedPostDate?: string; partySize?: number; note?: string },
 ): Promise<void> {
   const valid = new Set(campaign.slots.map((s) => s.id));
   await db.update("assignments", a.id, (x) => {
@@ -203,6 +203,7 @@ export async function recordResponse(
       status: locked ? x.status : input.accept ? "accepted" : "declined",
       availableSlotIds: locked ? x.availableSlotIds : input.accept ? input.slotIds.filter((id) => valid.has(id)) : [],
       plannedPostDate: input.accept ? input.plannedPostDate || x.plannedPostDate : undefined,
+      partySize: input.accept ? (input.partySize ?? x.partySize) : undefined,
       note: input.note,
       respondedAt: nowIso(),
       sentAt: x.sentAt ?? nowIso(),
@@ -267,7 +268,7 @@ export function scheduleLines(b: Bundle): string[] {
     })
     .map(
       (r) =>
-        `■ ${slotLabel(b.campaign, r.a.confirmedSlotId)}　${r.creator.name}（@${r.creator.account}）　投稿日：${r.a.plannedPostDate ? fmtDate(r.a.plannedPostDate) : "調整中"}`,
+        `■ ${slotLabel(b.campaign, r.a.confirmedSlotId)}　${r.creator.name}（@${r.creator.account}）　来店：${fmtParty(r.a.partySize)}　投稿日：${r.a.plannedPostDate ? fmtDate(r.a.plannedPostDate) : "調整中"}`,
     );
 }
 

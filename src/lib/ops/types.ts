@@ -166,6 +166,8 @@ export type Assignment = {
   confirmedSlotId?: string;
   /** 投稿予定日 YYYY-MM-DD */
   plannedPostDate?: string;
+  /** 来店人数（本人を含む。1＝本人のみ、2＝同伴1名） */
+  partySize?: number;
   note?: string;
   respondedAt?: string;
   confirmedNotifiedAt?: string;

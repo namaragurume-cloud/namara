@@ -83,8 +83,8 @@ export function SlotEditor({ initial }: { initial: SlotRow[] }) {
           <input aria-label="開始" type="time" name="slotStart" value={r.start} onChange={(e) => set(i, { start: e.target.value })} className={inputClass} />
           <input aria-label="終了" type="time" name="slotEnd" value={r.end} onChange={(e) => set(i, { end: e.target.value })} className={inputClass} />
           <label className="flex items-center gap-1 text-xs text-muted">
-            <input aria-label="人数" type="number" min={1} max={50} name="slotCapacity" value={r.capacity} onChange={(e) => set(i, { capacity: Number(e.target.value) || 1 })} className={inputClass} />
-            人
+            <input aria-label="この枠に入れる発信者の人数" type="number" min={1} max={50} name="slotCapacity" value={r.capacity} onChange={(e) => set(i, { capacity: Number(e.target.value) || 1 })} className={inputClass} />
+            <span className="whitespace-nowrap">人まで</span>
           </label>
           <button type="button" onClick={() => setRows((x) => (x.length > 1 ? x.filter((_, j) => j !== i) : [blank()]))} className={buttonClass("outline", "sm")} aria-label="この枠を削除">
             削除
