@@ -54,16 +54,17 @@ export async function sendToCreator(creator: Creator, msg: Msg, purpose: string)
 /** 飲食店へ送信。公式LINE（連携済みの場合）→ メール の順。どちらもなければ手動扱い */
 export async function sendToRestaurant(restaurant: Restaurant, msg: Msg, purpose: string): Promise<SendResult> {
   if (isDemo()) {
-    const channel: Channel = restaurant.lineUserId ? "line" : restaurant.email ? "email" : "manual";
+    const channel: Channel = restaurant.lineGroupId || restaurant.lineUserId ? "line" : restaurant.email ? "email" : "manual";
     const ok = channel !== "manual";
     const error = ok ? undefined : "LINE未連携・メール未登録のため自動送信できません";
     await log({ toKind: "restaurant", toId: restaurant.id, toName: restaurant.name, channel, ok, purpose: `［デモ・実際には未送信］${purpose}`, text: msg.text, error });
     return { ok, channel, error };
   }
   const errors: string[] = [];
-  if (restaurant.lineUserId && isLineConfigured()) {
+  const lineTo = restaurant.lineGroupId || restaurant.lineUserId;
+  if (lineTo && isLineConfigured()) {
     try {
-      await linePush(restaurant.lineUserId, msg.text);
+      await linePush(lineTo, msg.text);
       await log({ toKind: "restaurant", toId: restaurant.id, toName: restaurant.name, channel: "line", ok: true, purpose, text: msg.text });
       return { ok: true, channel: "line" };
     } catch (e) {

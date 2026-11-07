@@ -26,7 +26,7 @@ export default async function RestaurantsPage({ searchParams }: { searchParams: 
                     <span className="font-bold">{r.name}</span>
                     {r.contactName && <span className="text-sm text-muted">{r.contactName}様</span>}
                     <span className="ml-auto flex items-center gap-2 text-xs text-muted">
-                      {r.lineUserId ? <Badge tone="green">LINE</Badge> : <Badge>LINE未連携</Badge>}
+                      {r.lineGroupId ? <Badge tone="green">LINEグループ</Badge> : r.lineUserId ? <Badge tone="green">LINE</Badge> : <Badge>LINE未連携</Badge>}
                       案件 {count(r.id)}件
                     </span>
                   </Link>

@@ -88,12 +88,12 @@ export async function ownerDecide(assignmentId: string, versionId: string, ok: b
 }
 
 /** 飲食店の確認（お店のページ、またはあなたが代わりに入力） */
-export async function shopDecide(assignmentId: string, versionId: string, ok: boolean, comment: string | undefined, by: "shop" | "admin"): Promise<SendResult> {
+export async function shopDecide(assignmentId: string, versionId: string, ok: boolean, comment: string | undefined, by: "shop" | "admin", name?: string): Promise<SendResult> {
   const x = await load(assignmentId);
   const v = x && latestVideo(x.a);
   if (!x || !v || v.id !== versionId) throw new VideoError("最新の動画ではありません");
   if (videoStage(x.a, x.c) !== "shop_review") throw new VideoError("この動画はすでに確認済みです");
-  await db.update("assignments", assignmentId, (a) => setDecision(a, versionId, "shop", { status: ok ? "ok" : "ng", comment, at: nowIso(), by }));
+  await db.update("assignments", assignmentId, (a) => setDecision(a, versionId, "shop", { status: ok ? "ok" : "ng", comment, at: nowIso(), by, name }));
   return tellCreator(x, ok, comment);
 }
 

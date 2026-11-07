@@ -469,7 +469,7 @@ export default async function CampaignPage({ params, searchParams }: { params: P
           <>
             <p className="mt-3 text-xs leading-relaxed text-muted">
               撮影日の翌日に、発信者へ「動画を送ってください」と自動で届きます。お店には飲食店用ページで確認してもらいます（2日たっても確認がなければ1回リマインド）。
-              {b.restaurant?.lineUserId ? "" : " お店がLINE未連携のため、お店への連絡は各発信者の「詳細」からあなたのLINEで送れます。"}
+              {b.restaurant?.lineUserId || b.restaurant?.lineGroupId ? "" : " お店がLINE未連携のため、お店への連絡は各発信者の「詳細」からあなたのLINEで送れます。"}
             </p>
             {confirmed.length > 0 && (
               <ul className="mt-3 divide-y divide-line text-sm">

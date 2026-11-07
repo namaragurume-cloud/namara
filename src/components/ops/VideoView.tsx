@@ -30,6 +30,7 @@ export function VideoView({ v, index, showDecisions = true }: { v: VideoVersion;
             <p className="flex flex-wrap items-center gap-2">
               <Badge tone={v.shop.status === "ok" ? "green" : "red"}>お店 {v.shop.status === "ok" ? "OK" : "修正"}</Badge>
               {v.shop.comment && <span>「{v.shop.comment}」</span>}
+              {v.shop.name && <span className="text-muted">確認：{v.shop.name}</span>}
               {v.shop.by === "admin" && <span className="text-muted">（担当が代理入力）</span>}
             </p>
           )}

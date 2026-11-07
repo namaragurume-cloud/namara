@@ -21,7 +21,7 @@ const SETTLE_MS = 20_000;
 type LineEvent = {
   type: string;
   replyToken?: string;
-  source?: { type: string; userId?: string };
+  source?: { type: string; userId?: string; groupId?: string; roomId?: string };
   message?: { id: string; type: string; text?: string };
 };
 
@@ -61,6 +61,12 @@ export async function POST(req: Request) {
 }
 
 async function handle(ev: LineEvent, received: Set<string>) {
+  // お店のLINEグループ（複数人トーク）からのイベント
+  if (ev.source?.type === "group" || ev.source?.type === "room") {
+    const groupId = ev.source.groupId ?? ev.source.roomId;
+    if (groupId) await handleGroup(ev, groupId);
+    return;
+  }
   const userId = ev.source?.type === "user" ? ev.source.userId : undefined;
   if (!userId || !ev.replyToken) return;
 
@@ -142,4 +148,36 @@ async function handleImage(ev: LineEvent, userId: string, received: Set<string>)
     // 自動読み取りが未設定なら、担当者が画像を見て入力する
     await lineReply(replyToken, `${creator.name}さん、画像を受け取りました。ありがとうございます！`).catch(() => {});
   }
+}
+
+/**
+ * お店のLINEグループ。グループで連携コードが送られたら、そのお店とグループを紐づける。
+ * グループ内の普段の会話には反応しない。
+ */
+async function handleGroup(ev: LineEvent, groupId: string) {
+  if (ev.type === "leave") {
+    // 公式LINEがグループから外された
+    for (const r of (await db.list("restaurants")).filter((r) => r.lineGroupId === groupId)) await db.put("restaurants", { ...r, lineGroupId: undefined });
+    return;
+  }
+  if (!ev.replyToken) return;
+  if (ev.type === "join") {
+    const linked = (await db.list("restaurants")).find((r) => r.lineGroupId === groupId);
+    await lineReply(ev.replyToken, linked ? await tmpl("restaurantLinked", { 店舗名: linked.name }) : await tmpl("lineGroupJoined"));
+    return;
+  }
+  if (ev.type !== "message" || ev.message?.type !== "text") return;
+  const code = (ev.message.text ?? "").trim().toUpperCase().match(/^(?:連携[\s:：]*)?([A-Z0-9]{6})$/)?.[1];
+  if (!code) return;
+  const restaurants = await db.list("restaurants");
+  const shop = restaurants.find((r) => r.lineLinkCode === code);
+  if (!shop) {
+    if ((await db.list("creators")).some((c) => c.lineLinkCode === code)) {
+      await lineReply(ev.replyToken, "発信者の方の連携コードは、グループではなく公式LINEとの1対1のトークに送ってください。");
+    }
+    return;
+  }
+  for (const other of restaurants.filter((r) => r.lineGroupId === groupId && r.id !== shop.id)) await db.put("restaurants", { ...other, lineGroupId: undefined });
+  await db.put("restaurants", { ...shop, lineGroupId: groupId });
+  await lineReply(ev.replyToken, await tmpl("restaurantLinked", { 店舗名: shop.name }));
 }

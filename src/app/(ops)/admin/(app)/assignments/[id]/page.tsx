@@ -119,7 +119,7 @@ export default async function AssignmentPage({ params, searchParams }: { params:
         >
           <p className="mb-3 text-xs text-muted">
             {c.videoCheck === "owner_first" ? "流れ：発信者が提出 → あなたが確認 → お店が確認" : "流れ：発信者が提出 → お店が確認"}
-            {restaurant?.lineUserId ? "（お店はLINE連携済み）" : "（お店はLINE未連携：お店への連絡は下のボタンからあなたのLINEで）"}
+            {restaurant?.lineGroupId ? "（お店はLINEグループで連携済み）" : restaurant?.lineUserId ? "（お店はLINE連携済み）" : "（お店はLINE未連携：お店への連絡は下のボタンからあなたのLINEで）"}
           </p>
           {lv ? (
             <div className="grid gap-4 md:grid-cols-[minmax(0,320px)_1fr]">
