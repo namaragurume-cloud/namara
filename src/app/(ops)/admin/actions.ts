@@ -24,7 +24,7 @@ import { isAiConfigured } from "@/lib/ops/vision";
 import { sendToCreator } from "@/lib/ops/notify";
 import { msg as tmsg } from "@/lib/ops/templates";
 import { templateDefs, TEMPLATE_KEYS, unknownPlaceholders, type TemplateKey } from "@/data/ops-templates";
-import { assignmentUrl } from "@/lib/ops/urls";
+import { assignmentUrl, creatorPortalUrl } from "@/lib/ops/urls";
 import type { Assignment, Campaign, Creator, Insight, Platform, Restaurant, Slot } from "@/lib/ops/types";
 import { newLinkCode, newToken, nowIso, shortId } from "@/lib/ops/util";
 import { isRateLimited } from "@/lib/spam";
@@ -462,7 +462,7 @@ export async function notifyMissingAction(id: string) {
         送り先: creator.lineUserId ? "このトークに" : "下のページから",
         URL: assignmentUrl(creator, a),
       })
-    : await tmsg("insightReminder", { 発信者名: creator.name, 投稿一覧: `・${r?.name ?? c?.title}：未提出`, URL: assignmentUrl(creator, a) });
+    : await tmsg("insightReminder", { 発信者名: creator.name, 投稿一覧: `・${r?.name ?? c?.title}：未提出\n${assignmentUrl(creator, a)}`, URL: creatorPortalUrl(creator) });
   const res = await sendToCreator(creator, msg, "インサイト不足の連絡（手動）");
   if (res.ok) await db.update("assignments", a.id, (x) => ({ ...x, missingNotifiedAt: nowIso(), missingNotifiedFor: missing.join(",") }));
   back(`/admin/assignments/${a.id}`, res.ok ? "発信者に連絡しました" : `!自動で送れませんでした：${res.error}`);
