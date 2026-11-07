@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { SubmitButton } from "@/components/ops/client";
 import { ButtonLink, Card, Flash } from "@/components/ops/ui";
+import { deleteRestaurant } from "../../../actions";
 import { fmtDate } from "@/lib/ops/dates";
 import { db } from "@/lib/ops/db";
 import { RestaurantForm } from "../form";
@@ -42,6 +44,22 @@ export default async function RestaurantPage({ params, searchParams }: { params:
       </Card>
       <Card title="登録内容">
         <RestaurantForm r={r} />
+      </Card>
+      <Card title="店舗を削除" className="border-rose-200">
+        <p className="text-sm text-muted">
+          {campaigns.length
+            ? `この店舗の案件${campaigns.length}件と、その依頼・インサイト・スクショもすべて削除されます。元には戻せません。`
+            : "この店舗を削除します。元には戻せません。"}
+        </p>
+        <form action={deleteRestaurant.bind(null, r.id)} className="mt-3">
+          <SubmitButton
+            variant="danger"
+            size="sm"
+            confirm={campaigns.length ? `「${r.name}」と案件${campaigns.length}件をすべて削除します。元に戻せません。よろしいですか？` : `「${r.name}」を削除します。よろしいですか？`}
+          >
+            この店舗を削除
+          </SubmitButton>
+        </form>
       </Card>
     </>
   );

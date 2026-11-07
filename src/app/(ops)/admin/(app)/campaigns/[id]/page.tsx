@@ -25,6 +25,7 @@ import { isAiConfigured } from "@/lib/ops/vision";
 import {
   addPastParticipants,
   confirmScheduleAction,
+  deleteCampaign,
   draftReportAction,
   insightRequestAction,
   markConfirmedAction,
@@ -591,6 +592,11 @@ export default async function CampaignPage({ params, searchParams }: { params: P
           </div>
         </dl>
       </Card>
+      <form action={deleteCampaign.bind(null, c.id)} className="flex justify-end">
+        <SubmitButton variant="danger" size="sm" confirm={`「${c.title}」と、その依頼・インサイト・スクショをすべて削除します。元に戻せません。よろしいですか？`}>
+          この案件を削除
+        </SubmitButton>
+      </form>
     </>
   );
 }
