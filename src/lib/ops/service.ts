@@ -363,19 +363,21 @@ export async function sendInsightRequests(opts: { today?: string; campaignId?: s
   for (const [creatorId, list] of groupByCreator(insightDue(ctx, today, opts.campaignId))) {
     const creator = ctx.creators.get(creatorId);
     if (!creator) continue;
+    // 投稿ごとに専用のリンクを付ける（どの投稿のスクショか迷わないように）
     const posts = list.map((a) => {
       const c = ctx.campaigns.get(a.campaignId)!;
-      return `${ctx.restaurants.get(c.restaurantId)?.name ?? c.title}（撮影 ${slotLabel(c, a.confirmedSlotId)}）`;
+      return `・${ctx.restaurants.get(c.restaurantId)?.name ?? c.title}（撮影 ${slotLabel(c, a.confirmedSlotId)}）\n${assignmentUrl(creator, a)}`;
     });
     const result = await sendToCreator(
       creator,
       await msg("insightRequest", {
         発信者名: creator.name,
-        投稿一覧: posts.map((p) => `・${p}`).join("\n"),
+        投稿一覧: posts.join("\n\n"),
         撮り方: guideLines(list, creator).join("\n"),
-        送り方: creator.lineUserId
-          ? "このトークに画像を送るだけでOKです（数字は自動で読み取ります）。ページからも送れます。"
-          : "こちらのページから画像を送ってください（数字は自動で読み取ります）。",
+        送り方:
+          list.length === 1
+            ? `上のリンクから送ってください（数字は自動で読み取ります）。${creator.lineUserId ? "このトークに画像を送っていただいてもOKです。" : ""}`
+            : "投稿ごとに、それぞれのリンクからその投稿のスクショを送ってください（数字は自動で読み取ります）。",
         URL: creatorPortalUrl(creator),
       }),
       "インサイト提出のお願い",
@@ -444,9 +446,10 @@ export async function runReminders(today = jstDate()): Promise<BulkResult> {
     const lines = list.map((a) => {
       const c = ctx.campaigns.get(a.campaignId)!;
       const name = ctx.restaurants.get(c.restaurantId)?.name ?? c.title;
-      return a.insight ? `・${name}：${a.insight.missing.map((k) => fieldLabel(a.insight!.platform, k)).join("、")}が足りません` : `・${name}：未提出`;
+      const state = a.insight ? `${a.insight.missing.map((k) => fieldLabel(a.insight!.platform, k)).join("、")}が足りません` : "未提出";
+      return `・${name}：${state}\n${assignmentUrl(creator, a)}`;
     });
-    const result = await sendToCreator(creator, await msg("insightReminder", { 発信者名: creator.name, 投稿一覧: lines.join("\n"), URL: creatorPortalUrl(creator) }), "インサイト提出リマインド");
+    const result = await sendToCreator(creator, await msg("insightReminder", { 発信者名: creator.name, 投稿一覧: lines.join("\n\n"), URL: creatorPortalUrl(creator) }), "インサイト提出リマインド");
     if (result.ok) for (const a of list) await db.update("assignments", a.id, (x) => ({ ...x, insightRemindedAt: nowIso() }));
     out.push({ name: creator.name, result });
   }

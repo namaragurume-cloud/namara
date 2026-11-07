@@ -161,7 +161,7 @@ export default async function AssignmentPage({ params, searchParams }: { params:
                   </ul>
                 </div>
               ))}
-              {creator.lineUserId && <p className="mt-2 font-bold text-emerald-800">公式LINEのトークに画像を送るだけでもOKです。</p>}
+              <p className="mt-2 font-bold">このページの「スクショを選んで送る」から送ってください。{creator.lineUserId && "（お願いしている投稿が1件だけのときは、公式LINEのトークに送るだけでもOKです）"}</p>
             </div>
           )}
           <ShotUploader assignmentId={a.id} token={token} shots={shots.map((s) => ({ id: s.id, url: `/api/ops/shots/${s.id}?token=${token}` }))} canAnalyze={isAiConfigured()} disabled={closed} />
