@@ -174,12 +174,15 @@ export default async function AssignmentPage({ params, searchParams }: { params:
             shots.length > 0 && <p className="mt-3 text-sm text-muted">{isAiConfigured() ? "読み取りが終わるとここに数字が表示されます。" : "画像を受け取りました。担当者が確認します。"}</p>
           )}
           {!closed && (
-            <form action={savePostUrl.bind(null, token, a.id)} className="mt-4 flex gap-2">
+            <>
+            <p className="mt-4 text-xs text-muted">投稿したらURLを貼っておくと、お店にもすぐ「投稿済み」と伝わります（任意）。</p>
+            <form action={savePostUrl.bind(null, token, a.id)} className="mt-1 flex gap-2">
               <input name="postUrl" type="url" defaultValue={a.postUrl} placeholder="投稿のURL（任意）https://..." className={inputClass} />
               <SubmitButton variant="outline" size="sm" className="shrink-0">
                 保存
               </SubmitButton>
             </form>
+            </>
           )}
         </Card>
       )}

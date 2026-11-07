@@ -33,6 +33,7 @@ import {
   saveReportComment,
   sendReportAction,
   sendRequestsAction,
+  setLiveShare,
   shareScheduleAction,
 } from "../../../actions";
 
@@ -325,6 +326,21 @@ export default async function CampaignPage({ params, searchParams }: { params: P
         done={Boolean(c.scheduleSharedAt)}
         actions={c.scheduleSharedAt && <span className="text-xs text-muted">共有 {fmtDateTime(c.scheduleSharedAt)}</span>}
       >
+        <div className="mb-4 flex flex-wrap items-center gap-3 rounded-xl border border-line bg-mist px-4 py-3 text-sm">
+          <span className="min-w-0 flex-1">
+            <b>撮影・投稿の状況をリアルタイム公開</b>
+            <span className="block text-xs text-muted">
+              {c.liveShare
+                ? "オン：撮影日を確定した時点で、飲食店用ページに「今日・明日の撮影／投稿予定」と発信者ごとの状況が自動で表示されます。"
+                : "オフ：飲食店用ページには「共有」した撮影日程だけが表示されます。"}
+            </span>
+          </span>
+          <form action={setLiveShare.bind(null, c.id, !c.liveShare)}>
+            <SubmitButton variant={c.liveShare ? "outline" : "primary"} size="sm">
+              {c.liveShare ? "オフにする" : "オンにする"}
+            </SubmitButton>
+          </form>
+        </div>
         {confirmed.length === 0 ? (
           <Empty>撮影日を確定すると、ここに共有用の文面ができます。</Empty>
         ) : (

@@ -233,7 +233,7 @@ export async function saveCampaign(fd: FormData) {
     await db.put("campaigns", { ...prev, ...patch });
     back(`/admin/campaigns/${prev.id}`, "保存しました");
   }
-  const c: Campaign = { id: shortId(), ...patch, shareToken: newToken(), createdAt: nowIso() };
+  const c: Campaign = { id: shortId(), ...patch, shareToken: newToken(), liveShare: true, createdAt: nowIso() };
   await db.put("campaigns", c);
   back(`/admin/campaigns/${c.id}`, "案件を作成しました。次に依頼する発信者を選んで一括送信してください");
 }
@@ -290,6 +290,12 @@ export async function shareScheduleAction(campaignId: string, manual: boolean) {
   const r = await shareScheduleWithRestaurant(campaignId, manual);
   if (manual) back(`/admin/campaigns/${campaignId}`, "飲食店へ共有済みにしました");
   back(`/admin/campaigns/${campaignId}`, r?.ok ? "飲食店へ撮影日をメールで共有しました" : `!メールを送れませんでした：${r?.error}\n文面をコピーして送り、「共有済みにする」を押してください`);
+}
+
+export async function setLiveShare(campaignId: string, on: boolean) {
+  await requireAdmin();
+  await db.update("campaigns", campaignId, (c) => ({ ...c, liveShare: on }));
+  back(`/admin/campaigns/${campaignId}`, on ? "飲食店ページで撮影・投稿の状況をリアルタイムに公開しました" : "リアルタイム公開をオフにしました（「共有」した日程だけが表示されます）");
 }
 
 export async function insightRequestAction(campaignId: string) {

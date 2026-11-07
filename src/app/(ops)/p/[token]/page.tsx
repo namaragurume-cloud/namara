@@ -1,11 +1,13 @@
 import Image from "next/image";
 import { notFound } from "next/navigation";
 import { PrintButton } from "@/components/ops/client";
+import { AutoRefresh } from "@/components/ops/AutoRefresh";
 import { DemoBanner } from "@/components/ops/DemoBanner";
+import { RestaurantLive } from "@/components/ops/RestaurantLive";
 import { ReportSlides } from "@/components/ops/report/Report";
 import { Card } from "@/components/ops/ui";
 import { isAdmin } from "@/lib/ops/auth";
-import { fmtDate, fmtSlot } from "@/lib/ops/dates";
+import { fmtDate, fmtSlot, jstDate } from "@/lib/ops/dates";
 import { buildReport } from "@/lib/ops/report";
 import { findCampaignByShareToken, loadBundle, slotById } from "@/lib/ops/service";
 
@@ -28,7 +30,8 @@ export default async function RestaurantPortal({ params }: { params: Promise<{ t
   if (!b) notFound();
   const admin = await isAdmin();
   const { campaign: c, restaurant } = b;
-  const showSchedule = admin || Boolean(c.scheduleSharedAt);
+  const live = Boolean(c.liveShare);
+  const showSchedule = !live && (admin || Boolean(c.scheduleSharedAt));
   const showReport = admin || Boolean(c.reportSentAt);
   const schedule = b.rows
     .filter((r) => r.a.status === "accepted" && r.a.confirmedSlotId && (admin || r.a.confirmedNotifiedAt))
@@ -45,7 +48,7 @@ export default async function RestaurantPortal({ params }: { params: Promise<{ t
       {admin && (
         <p className="rounded-xl bg-amber-100 px-4 py-2 text-xs text-amber-900 print:hidden">
           管理者として表示中です。飲食店には{" "}
-          {[c.scheduleSharedAt && "撮影日程", c.reportSentAt && "レポート"].filter(Boolean).join("と") || "まだ何も"}
+          {[live ? "撮影・投稿の状況（リアルタイム）" : c.scheduleSharedAt && "撮影日程", c.reportSentAt && "レポート"].filter(Boolean).join("と") || "まだ何も"}
           が表示されています。
         </p>
       )}
@@ -58,7 +61,14 @@ export default async function RestaurantPortal({ params }: { params: Promise<{ t
         {showReport && report.submitted > 0 && <PrintButton />}
       </header>
 
-      {!showSchedule && !showReport && <Card>撮影日が決まりましたら、こちらでご案内いたします。</Card>}
+      {!live && !showSchedule && !showReport && <Card>撮影日が決まりましたら、こちらでご案内いたします。</Card>}
+
+      {live && (
+        <>
+          <AutoRefresh seconds={60} />
+          <RestaurantLive campaign={c} rows={b.rows} today={jstDate()} updatedAt={new Date().toLocaleTimeString("ja-JP", { timeZone: "Asia/Tokyo", hour: "2-digit", minute: "2-digit" })} />
+        </>
+      )}
 
       {showSchedule && (
         <Card title="撮影日・投稿日" className="print:hidden">

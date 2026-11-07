@@ -61,6 +61,8 @@ export type Campaign = {
   /** 飲食店向けページ（/p/[token]）のトークン */
   shareToken: string;
   scheduleSharedAt?: string;
+  /** 飲食店ページで撮影・投稿の状況をリアルタイムに公開する */
+  liveShare?: boolean;
   reportSentAt?: string;
   /** レポート：サマリー（表紙） */
   reportComment?: string;
