@@ -39,9 +39,18 @@ export const MAX_VIDEO_BYTES = 500 * 1024 * 1024;
 
 export const localVideoDir = () => path.join(process.cwd(), ".data", "videos");
 
+/** 非公開の置き場の動画か（URLが *.private.blob.vercel-storage.com、または VIDEO_BLOB_ACCESS=private） */
+function isPrivateBlob(url: string): boolean {
+  try {
+    return blobAccess() === "private" || /\.private\.blob\.vercel-storage\.com$/i.test(new URL(url).hostname);
+  } catch {
+    return blobAccess() === "private";
+  }
+}
+
 /** 再生用のURL（非公開の置き場なら、6時間有効の署名付きURLを作る） */
 export async function playableUrl(v: VideoVersion): Promise<string> {
-  if (v.storage !== "blob" || blobAccess() !== "private") return v.url;
+  if (v.storage !== "blob" || !isPrivateBlob(v.url)) return v.url;
   try {
     const pathname = new URL(v.url).pathname.replace(/^\//, "");
     const validUntil = Date.now() + 6 * 60 * 60 * 1000;

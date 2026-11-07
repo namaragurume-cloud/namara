@@ -14,7 +14,16 @@ export async function VideoView({ v, index, showDecisions = true }: { v: VideoVe
       ) : v.storage === "demo" ? (
         <p className="flex aspect-[9/16] max-h-80 items-center justify-center rounded-xl bg-zinc-800 px-3 text-center text-xs text-zinc-300">（デモ：動画はここで再生されます）</p>
       ) : (
-        <video src={src} controls playsInline preload="metadata" className="max-h-[70svh] w-full rounded-xl bg-black" />
+        <>
+          <video src={src} controls playsInline preload="metadata" className="max-h-[70svh] w-full rounded-xl bg-black" />
+          <p className="text-xs text-muted">
+            うまく再生できない場合は
+            <a href={src} target="_blank" rel="noopener" className="mx-1 font-bold text-brand underline">
+              こちらで動画を開く
+            </a>
+            （iPhoneで撮った動画は、パソコンのブラウザによっては再生できないことがあります。その場合は開いたページから保存して再生してください）
+          </p>
+        </>
       )}
       <p className="flex flex-wrap items-center gap-2 text-xs text-muted">
         {index !== undefined && <b className="text-ink">{index + 1}回目の提出</b>}
