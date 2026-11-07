@@ -92,8 +92,12 @@ export default async function CampaignPage({ params, searchParams }: { params: P
   const report = buildReport(b);
   const portal = restaurantPortalUrl(c);
   const canEmail = isEmailConfigured() && Boolean(restaurant?.email);
-  const scheduleText = restaurantScheduleMsg(b).text;
-  const reportText = restaurantReportMsg(b).text;
+  const scheduleText = (await restaurantScheduleMsg(b)).text;
+  const reportText = (await restaurantReportMsg(b)).text;
+  const requestTexts = new Map(await Promise.all(unsent.map(async (r) => [r.a.id, (await prRequestMsg(b, r.creator, r.a)).text] as const)));
+  const confirmTexts = new Map(
+    await Promise.all(accepted.filter((r) => r.a.confirmedSlotId && !r.a.confirmedNotifiedAt).map(async (r) => [r.a.id, (await confirmedMsg(b, r.creator, r.a)).text] as const)),
+  );
 
   return (
     <>
@@ -207,7 +211,7 @@ export default async function CampaignPage({ params, searchParams }: { params: P
               {unsent.map((r) => (
                 <li key={r.a.id} className="flex flex-wrap items-center gap-2 text-sm">
                   <b className="min-w-24">{r.creator.name}</b>
-                  <ManualSend text={prRequestMsg(b, r.creator, r.a).text} onDone={markSentAction.bind(null, c.id, r.a.id)} doneLabel="送信済みにする" />
+                  <ManualSend text={requestTexts.get(r.a.id) ?? ""} onDone={markSentAction.bind(null, c.id, r.a.id)} doneLabel="送信済みにする" />
                   <form action={removeAssignment.bind(null, c.id, r.a.id)}>
                     <SubmitButton variant="danger" size="sm">
                       取り消す
@@ -301,7 +305,7 @@ export default async function CampaignPage({ params, searchParams }: { params: P
                           ) : r.a.confirmedSlotId ? (
                             <span className="flex flex-col gap-1">
                               <Badge tone="red">連絡できず</Badge>
-                              <ManualSend text={confirmedMsg(b, r.creator, r.a).text} onDone={markConfirmedAction.bind(null, c.id, r.a.id)} doneLabel="連絡済みにする" />
+                              <ManualSend text={confirmTexts.get(r.a.id) ?? ""} onDone={markConfirmedAction.bind(null, c.id, r.a.id)} doneLabel="連絡済みにする" />
                             </span>
                           ) : (
                             <Badge tone="amber">未確定</Badge>

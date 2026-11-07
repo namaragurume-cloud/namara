@@ -250,7 +250,7 @@ export function demoSeed(): Seed {
     { id: "demo-m2", toKind: "creator", toId: "c1", toName: "はなこ", channel: "line", ok: true, purpose: "PR依頼：冬季限定パフェPR", text: "はなこさん\n\nいつもありがとうございます！\nカフェ ことり（デモ）さんのPRのご依頼です。\n（デモのサンプルです）", createdAt: iso(-2, 10) },
   ];
 
-  return { restaurants, creators, campaigns, assignments, messages, shots: [] };
+  return { restaurants, creators, campaigns, assignments, messages, shots: [], templates: [] };
 }
 
 /** デモ：スクショを読み取ったことにするサンプルの数値（実際の画像は読んでいない） */

@@ -1,5 +1,5 @@
 import { SubmitButton } from "@/components/ops/client";
-import { Badge, Card, Flash } from "@/components/ops/ui";
+import { Badge, ButtonLink, Card, Flash } from "@/components/ops/ui";
 import { dbMode } from "@/lib/ops/db";
 import { isEmailConfigured } from "@/lib/ops/email";
 import { isLineConfigured, lineBasicId } from "@/lib/ops/line";
@@ -28,6 +28,12 @@ export default async function SettingsPage({ searchParams }: { searchParams: Pro
     <>
       <Flash text={flash} />
       <h1 className="text-xl font-extrabold md:text-2xl">設定</h1>
+      <Card title="メッセージの文面">
+        <p className="text-sm text-muted">発信者・飲食店に送るLINE・メールの文章を編集できます。保存するとすぐ反映されます。</p>
+        <ButtonLink href="/admin/settings/messages" variant="outline" size="sm" className="mt-3">
+          文面を編集する
+        </ButtonLink>
+      </Card>
       <Card title="連携の状態">
         <ul className="divide-y divide-line">
           <Row ok={mode === "redis"} title="データの保存先（Upstash Redis）">

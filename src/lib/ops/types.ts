@@ -172,6 +172,14 @@ export type MessageLog = {
   createdAt: string;
 };
 
+/** 管理画面で編集したメッセージの文面（id はテンプレートの種類） */
+export type TemplateOverride = {
+  id: string;
+  subject?: string;
+  body: string;
+  updatedAt: string;
+};
+
 export type Collections = {
   creators: Creator;
   restaurants: Restaurant;
@@ -179,5 +187,6 @@ export type Collections = {
   assignments: Assignment;
   messages: MessageLog;
   shots: Shot;
+  templates: TemplateOverride;
 };
 export type CollectionName = keyof Collections;

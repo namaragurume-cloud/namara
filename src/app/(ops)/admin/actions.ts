@@ -17,12 +17,13 @@ import {
   sendRequests,
   shareScheduleWithRestaurant,
 } from "@/lib/ops/service";
-import { opsTemplates } from "@/data/ops-templates";
 import { fieldLabel, insightFields, missingKeys, missingLabels, parseDistText } from "@/lib/ops/insight-fields";
 import { draftReportText } from "@/lib/ops/ai-report";
 import { buildReport } from "@/lib/ops/report";
 import { isAiConfigured } from "@/lib/ops/vision";
 import { sendToCreator } from "@/lib/ops/notify";
+import { msg as tmsg } from "@/lib/ops/templates";
+import { templateDefs, TEMPLATE_KEYS, unknownPlaceholders, type TemplateKey } from "@/data/ops-templates";
 import { assignmentUrl } from "@/lib/ops/urls";
 import type { Assignment, Campaign, Creator, Insight, Platform, Restaurant, Slot } from "@/lib/ops/types";
 import { newLinkCode, newToken, nowIso, shortId } from "@/lib/ops/util";
@@ -454,11 +455,39 @@ export async function notifyMissingAction(id: string) {
   const r = c ? await db.get("restaurants", c.restaurantId) : null;
   const missing = a.insight ? missingLabels(a.insight) : [];
   const msg = a.insight
-    ? opsTemplates.insightMissing({ creator: creator.name, post: r?.name ?? c?.title ?? "PR", missing, url: assignmentUrl(creator, a), viaLine: Boolean(creator.lineUserId) })
-    : opsTemplates.insightReminder({ creator: creator.name, lines: [`・${r?.name ?? c?.title}：未提出`], url: assignmentUrl(creator, a) });
+    ? await tmsg("insightMissing", {
+        発信者名: creator.name,
+        店舗名: r?.name ?? c?.title ?? "PR",
+        足りない項目: missing.map((l) => `・${l}`).join("\n"),
+        送り先: creator.lineUserId ? "このトークに" : "下のページから",
+        URL: assignmentUrl(creator, a),
+      })
+    : await tmsg("insightReminder", { 発信者名: creator.name, 投稿一覧: `・${r?.name ?? c?.title}：未提出`, URL: assignmentUrl(creator, a) });
   const res = await sendToCreator(creator, msg, "インサイト不足の連絡（手動）");
   if (res.ok) await db.update("assignments", a.id, (x) => ({ ...x, missingNotifiedAt: nowIso(), missingNotifiedFor: missing.join(",") }));
   back(`/admin/assignments/${a.id}`, res.ok ? "発信者に連絡しました" : `!自動で送れませんでした：${res.error}`);
+}
+
+/* ---------- メッセージの文面 ---------- */
+
+export async function saveTemplate(key: TemplateKey, fd: FormData) {
+  await requireAdmin();
+  const go = (flash: string): never => redirect(`/admin/settings/messages?flash=${encodeURIComponent(flash)}#${key}`);
+  if (!TEMPLATE_KEYS.includes(key)) go("!文面が見つかりません");
+  const body = String(fd.get("body") ?? "").replace(/\r\n/g, "\n").trim();
+  const subject = fd.has("subject") ? String(fd.get("subject") ?? "").trim() : undefined;
+  if (!body) go("!本文が空です");
+  if (body.length > 4000) go("!本文が長すぎます（4000文字まで）");
+  const unknown = [...unknownPlaceholders(body, key), ...(subject ? unknownPlaceholders(subject, key) : [])];
+  if (unknown.length) go(`!使えない差し込み項目があります：${[...new Set(unknown)].map((u) => `{${u}}`).join("、")}\n下に出ている項目から選んでください`);
+  await db.put("templates", { id: key, body, subject, updatedAt: nowIso() });
+  go(`「${templateDefs[key].title}」を保存しました。次に送るメッセージから反映されます`);
+}
+
+export async function resetTemplate(key: TemplateKey) {
+  await requireAdmin();
+  await db.remove("templates", key);
+  redirect(`/admin/settings/messages?flash=${encodeURIComponent(`「${templateDefs[key].title}」を初期の文面に戻しました`)}#${key}`);
 }
 
 export async function resetDemoAction() {
