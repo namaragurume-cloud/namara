@@ -578,7 +578,7 @@ export async function markVideoSentAction(assignmentId: string, versionId: strin
 
 export async function unlinkRestaurantLine(id: string) {
   await requireAdmin();
-  await db.update("restaurants", id, (r) => ({ ...r, lineUserId: undefined, lineLinkCode: newLinkCode() }));
+  await db.update("restaurants", id, (r) => ({ ...r, lineUserId: undefined, lineGroupId: undefined, lineLinkCode: newLinkCode() }));
   back(`/admin/restaurants/${id}`, "LINE連携を解除しました（連携コードも新しくなりました）");
 }
 

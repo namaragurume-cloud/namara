@@ -35,17 +35,23 @@ export function ShopVideos({ token, campaign: c, rows }: { token: string; campai
             {r.a.plannedPostDate && <span className="ml-2 text-xs text-muted">投稿予定 {fmtDate(r.a.plannedPostDate)}</span>}
           </p>
           <VideoView v={r.v!} showDecisions={false} />
-          <form action={shopVideoDecision.bind(null, token, r.a.id, r.v!.id, true)}>
-            <SubmitButton className="w-full">この動画でOK</SubmitButton>
-          </form>
-          <form action={shopVideoDecision.bind(null, token, r.a.id, r.v!.id, false)} className="space-y-2 rounded-xl bg-mist p-3">
-            <label className="block text-sm font-bold" htmlFor={`c-${r.a.id}`}>
-              修正をお願いしたい場合
+          <form action={shopVideoDecision.bind(null, token, r.a.id, r.v!.id)} className="space-y-3">
+            <label className="block text-sm">
+              <span className="mb-1 block font-bold">確認した方のお名前（任意）</span>
+              <input name="name" placeholder="例：店長 山田" className={inputClass} />
             </label>
-            <textarea id={`c-${r.a.id}`} name="comment" rows={3} placeholder="例：冒頭にお店の外観を入れてください／メニュー名は「〇〇」です" className={inputClass} />
-            <SubmitButton variant="outline" className="w-full">
-              修正をお願いする
+            <SubmitButton className="w-full" name="decision" value="ok">
+              この動画でOK
             </SubmitButton>
+            <div className="space-y-2 rounded-xl bg-mist p-3">
+              <label className="block text-sm font-bold" htmlFor={`c-${r.a.id}`}>
+                修正をお願いしたい場合
+              </label>
+              <textarea id={`c-${r.a.id}`} name="comment" rows={3} placeholder="例：冒頭にお店の外観を入れてください／メニュー名は「〇〇」です" className={inputClass} />
+              <SubmitButton variant="outline" className="w-full" name="decision" value="ng">
+                修正をお願いする
+              </SubmitButton>
+            </div>
           </form>
         </div>
       ))}

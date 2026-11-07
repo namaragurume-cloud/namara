@@ -22,8 +22,10 @@ export type Creator = {
 export type Restaurant = {
   id: string;
   name: string;
-  /** 公式LINEと連携済みの場合の LINE userId */
+  /** 公式LINEと連携済みの場合の LINE userId（個人で連携） */
   lineUserId?: string;
+  /** お店のLINEグループと連携した場合のグループID（こちらが優先。グループ全員に届く） */
+  lineGroupId?: string;
   /** 公式LINEに送ってもらう連携コード */
   lineLinkCode?: string;
   contactName?: string;
@@ -89,7 +91,7 @@ export type AssignmentStatus = "unsent" | "sent" | "accepted" | "declined";
 
 export type Platform = "instagram" | "tiktok";
 
-export type VideoDecision = { status: "ok" | "ng"; comment?: string; at: string; by?: "shop" | "admin" };
+export type VideoDecision = { status: "ok" | "ng"; comment?: string; at: string; by?: "shop" | "admin"; /** 確認した人の名前（お店のページで入力・任意） */ name?: string };
 
 /** 発信者が送った動画（1回の提出＝1件） */
 export type VideoVersion = {
