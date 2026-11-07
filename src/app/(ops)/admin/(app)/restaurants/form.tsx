@@ -24,6 +24,12 @@ export function RestaurantForm({ r, next }: { r?: Restaurant; next?: string }) {
         <Field label="住所" hint="発信者への確定連絡に載ります">
           <input name="address" defaultValue={r?.address} className={inputClass} />
         </Field>
+        <Field label="食べログ" hint="お店の食べログのページのURL（発信者への依頼に載ります）">
+          <input name="tabelogUrl" type="url" defaultValue={r?.tabelogUrl} placeholder="https://tabelog.com/..." className={inputClass} />
+        </Field>
+        <Field label="Instagram" hint="URL か @アカウント（発信者への依頼に載ります）">
+          <input name="instagramUrl" defaultValue={r?.instagramUrl} placeholder="@shop_account" className={inputClass} />
+        </Field>
       </div>
       <Field label="メモ">
         <textarea name="memo" rows={2} defaultValue={r?.memo} className={inputClass} />

@@ -30,6 +30,10 @@ export type Restaurant = {
   email?: string;
   phone?: string;
   address?: string;
+  /** 食べログのページ */
+  tabelogUrl?: string;
+  /** お店のInstagram */
+  instagramUrl?: string;
   memo?: string;
   createdAt: string;
 };

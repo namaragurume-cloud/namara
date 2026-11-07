@@ -18,6 +18,7 @@ export function CampaignForm({
   copy?: Campaign;
 }) {
   const v = c ?? copy;
+  const shop = restaurants.find((r) => r.id === (c?.restaurantId ?? restaurantId ?? copy?.restaurantId));
   const today = jstDate();
   return (
     <form action={saveCampaign} className="space-y-4">
@@ -37,6 +38,14 @@ export function CampaignForm({
         </Field>
         <Field label="案件名" required hint="例：12月 新メニューPR">
           <input name="title" required defaultValue={v?.title} className={inputClass} />
+        </Field>
+      </div>
+      <div className="grid gap-4 md:grid-cols-2">
+        <Field label="店舗の食べログ" hint="空欄なら店舗に登録済みのリンクを使います。入力すると店舗情報にも保存されます">
+          <input name="tabelogUrl" type="url" defaultValue={shop?.tabelogUrl} placeholder="https://tabelog.com/..." className={inputClass} />
+        </Field>
+        <Field label="店舗のInstagram" hint="URL か @アカウント。発信者への依頼と依頼ページに載ります">
+          <input name="instagramUrl" defaultValue={shop?.instagramUrl} placeholder="@shop_account" className={inputClass} />
         </Field>
       </div>
       <Field label="PR内容" hint="お店の紹介・食べてほしいメニュー・訴求ポイントなど（発信者に表示されます）">

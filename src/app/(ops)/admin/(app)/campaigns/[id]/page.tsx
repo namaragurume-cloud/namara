@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { CheckAll, CopyButton, SubmitButton } from "@/components/ops/client";
 import { channelLabel, phaseTone } from "@/components/ops/phase";
+import { ShopLinks } from "@/components/ops/ShopLinks";
 import { Badge, ButtonLink, Card, Empty, Field, Flash, Stat, buttonClass, inputClass } from "@/components/ops/ui";
 import { fmtDate, fmtDateLong, fmtDateTime, fmtNum, fmtParty, fmtPostDates, fmtSlot, jstDate } from "@/lib/ops/dates";
 import { db } from "@/lib/ops/db";
@@ -619,6 +620,18 @@ export default async function CampaignPage({ params, searchParams }: { params: P
 
       <Card title="依頼内容（発信者に表示される内容）">
         <dl className="grid gap-3 text-sm md:grid-cols-2">
+          <div className="md:col-span-2">
+            <dt className="text-xs font-bold text-muted">店舗のリンク</dt>
+            <dd className="mt-1">
+              {restaurant?.tabelogUrl || restaurant?.instagramUrl ? (
+                <ShopLinks r={restaurant} />
+              ) : (
+                <span className="text-muted">
+                  未登録（<Link href={`/admin/campaigns/${c.id}/edit`} className="underline">編集</Link>から食べログ・Instagramを登録できます）
+                </span>
+              )}
+            </dd>
+          </div>
           <div className="md:col-span-2">
             <dt className="text-xs font-bold text-muted">PR内容</dt>
             <dd className="whitespace-pre-wrap">{c.description || "-"}</dd>

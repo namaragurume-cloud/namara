@@ -61,6 +61,15 @@ export function fmtParty(n?: number): string {
   return `${n}名（同伴${n - 1}名）`;
 }
 
+/** Instagram の入力（URL か @アカウント）をURLにそろえる */
+export function toInstagramUrl(v?: string): string | undefined {
+  const s = v?.trim();
+  if (!s) return undefined;
+  if (/^https?:\/\//i.test(s)) return s;
+  const acc = s.replace(/^@/, "").replace(/[^\w.]/g, "");
+  return acc ? `https://www.instagram.com/${acc}/` : undefined;
+}
+
 export function fmtNum(n?: number): string {
   return typeof n === "number" && Number.isFinite(n) ? n.toLocaleString("ja-JP") : "-";
 }

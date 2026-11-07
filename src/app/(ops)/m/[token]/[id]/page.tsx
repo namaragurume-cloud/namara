@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { SubmitButton } from "@/components/ops/client";
 import { DateCalendar } from "@/components/ops/DateCalendar";
+import { ShopLinks } from "@/components/ops/ShopLinks";
 import { DemoBanner } from "@/components/ops/DemoBanner";
 import { VideoUploader } from "@/components/ops/VideoUploader";
 import { VideoView } from "@/components/ops/VideoView";
@@ -50,6 +51,7 @@ export default async function AssignmentPage({ params, searchParams }: { params:
         <p className="text-xs font-bold tracking-widest text-brand">PRのご依頼</p>
         <h1 className="text-xl font-extrabold">{r?.name}</h1>
         <p className="text-sm text-muted">{c.title}</p>
+        <ShopLinks r={r} className="mt-2" />
       </header>
       <Flash text={flash} />
 
