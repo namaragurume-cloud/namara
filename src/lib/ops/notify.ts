@@ -51,20 +51,33 @@ export async function sendToCreator(creator: Creator, msg: Msg, purpose: string)
 }
 
 /** 飲食店へメール送信（メールアドレス未登録なら手動扱い） */
+/** 飲食店へ送信。公式LINE（連携済みの場合）→ メール の順。どちらもなければ手動扱い */
 export async function sendToRestaurant(restaurant: Restaurant, msg: Msg, purpose: string): Promise<SendResult> {
   if (isDemo()) {
-    const ok = Boolean(restaurant.email);
-    await log({ toKind: "restaurant", toId: restaurant.id, toName: restaurant.name, channel: ok ? "email" : "manual", ok, purpose: `［デモ・実際には未送信］${purpose}`, text: msg.text, error: ok ? undefined : "メールアドレス未登録" });
-    return ok ? { ok, channel: "email" } : { ok, channel: "manual", error: "メールアドレス未登録のため自動送信できません" };
+    const channel: Channel = restaurant.lineUserId ? "line" : restaurant.email ? "email" : "manual";
+    const ok = channel !== "manual";
+    const error = ok ? undefined : "LINE未連携・メール未登録のため自動送信できません";
+    await log({ toKind: "restaurant", toId: restaurant.id, toName: restaurant.name, channel, ok, purpose: `［デモ・実際には未送信］${purpose}`, text: msg.text, error });
+    return { ok, channel, error };
   }
-  let error = "メールアドレス未登録、またはメール送信が未設定のため自動送信できません";
+  const errors: string[] = [];
+  if (restaurant.lineUserId && isLineConfigured()) {
+    try {
+      await linePush(restaurant.lineUserId, msg.text);
+      await log({ toKind: "restaurant", toId: restaurant.id, toName: restaurant.name, channel: "line", ok: true, purpose, text: msg.text });
+      return { ok: true, channel: "line" };
+    } catch (e) {
+      errors.push(String(e instanceof Error ? e.message : e));
+    }
+  }
+  let error = errors.join(" / ") || "LINE未連携・メール未登録のため自動送信できません";
   if (restaurant.email && isEmailConfigured()) {
     try {
       await sendEmail(restaurant.email, msg.subject, msg.text);
       await log({ toKind: "restaurant", toId: restaurant.id, toName: restaurant.name, channel: "email", ok: true, purpose, text: msg.text });
       return { ok: true, channel: "email" };
     } catch (e) {
-      error = String(e instanceof Error ? e.message : e);
+      error = [...errors, String(e instanceof Error ? e.message : e)].join(" / ");
     }
   }
   await log({ toKind: "restaurant", toId: restaurant.id, toName: restaurant.name, channel: "manual", ok: false, purpose, text: msg.text, error });

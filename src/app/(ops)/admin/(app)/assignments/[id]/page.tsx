@@ -2,16 +2,22 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { CopyButton, SubmitButton } from "@/components/ops/client";
 import { statusLabel } from "@/components/ops/phase";
-import { Badge, Card, Field, Flash, inputClass } from "@/components/ops/ui";
+import { Badge, Card, Field, Flash, buttonClass, inputClass } from "@/components/ops/ui";
 import { fmtDateTime, fmtSlot } from "@/lib/ops/dates";
 import { db } from "@/lib/ops/db";
 import { assignmentUrl } from "@/lib/ops/urls";
 import { ShotUploader } from "@/components/ops/ShotUploader";
+import { VideoUploader } from "@/components/ops/VideoUploader";
+import { VideoView } from "@/components/ops/VideoView";
+import { lineShareUrl } from "@/lib/ops/line";
+import { shopVideoText } from "@/lib/ops/video";
+import { latestVideo, videoEnabled, videoStage, videoStageLabel } from "@/lib/ops/video-state";
+import { videoStorage } from "@/lib/ops/video-store";
 import { insightFields, isComplete } from "@/lib/ops/insight-fields";
 import { listShots } from "@/lib/ops/insights";
 import type { DistKey, MetricKey, Platform } from "@/lib/ops/types";
 import { isAiConfigured } from "@/lib/ops/vision";
-import { notifyMissingAction, saveAssignment, saveInsightManual } from "../../../actions";
+import { markVideoSentAction, notifyMissingAction, ownerVideoAction, saveAssignment, saveInsightManual, shopVideoAsAdmin } from "../../../actions";
 
 export const metadata = { title: "依頼の詳細" };
 
@@ -24,6 +30,10 @@ export default async function AssignmentPage({ params, searchParams }: { params:
   const url = assignmentUrl(creator, a);
   const i = a.insight;
   const shots = await listShots(a.id);
+  const restaurant = await db.get("restaurants", c.restaurantId);
+  const vStage = videoStage(a, c);
+  const lv = latestVideo(a);
+  const shopText = vStage === "shop_review" ? await shopVideoText(a.id) : null;
   const platform: Platform = i?.platform ?? a.platform ?? (/tiktok/i.test(creator.platform) ? "tiktok" : "instagram");
   return (
     <>
@@ -91,6 +101,88 @@ export default async function AssignmentPage({ params, searchParams }: { params:
         </Card>
         <SubmitButton>回答・URLを保存</SubmitButton>
       </form>
+
+      {videoEnabled(c) && (
+        <Card
+          title="投稿前の動画チェック"
+          actions={<Badge tone={vStage === "approved" ? "green" : vStage === "revise" ? "red" : "amber"}>{videoStageLabel[vStage]}</Badge>}
+        >
+          <p className="mb-3 text-xs text-muted">
+            {c.videoCheck === "owner_first" ? "流れ：発信者が提出 → あなたが確認 → お店が確認" : "流れ：発信者が提出 → お店が確認"}
+            {restaurant?.lineUserId ? "（お店はLINE連携済み）" : "（お店はLINE未連携：お店への連絡は下のボタンからあなたのLINEで）"}
+          </p>
+          {lv ? (
+            <div className="grid gap-4 md:grid-cols-[minmax(0,320px)_1fr]">
+              <VideoView v={lv} index={(a.videos?.length ?? 1) - 1} />
+              <div className="space-y-3">
+                {vStage === "owner_review" && (
+                  <>
+                    <p className="text-sm font-bold">あなたの確認</p>
+                    <form action={ownerVideoAction.bind(null, a.id, lv.id, true)}>
+                      <SubmitButton size="sm">OK（お店に確認をお願いする）</SubmitButton>
+                    </form>
+                    <form action={ownerVideoAction.bind(null, a.id, lv.id, false)} className="space-y-2">
+                      <textarea name="comment" rows={3} placeholder="発信者に伝える修正内容" className={inputClass} />
+                      <SubmitButton variant="outline" size="sm">修正をお願いする（発信者へ連絡）</SubmitButton>
+                    </form>
+                  </>
+                )}
+                {vStage === "shop_review" && (
+                  <>
+                    <p className="text-sm">
+                      お店の確認待ちです。
+                      {lv.sentToShopAt ? `（お店に連絡済み ${fmtDateTime(lv.sentToShopAt)}）` : "（まだお店に連絡していません）"}
+                    </p>
+                    {shopText && (
+                      <div className="flex flex-wrap gap-2">
+                        <a href={lineShareUrl(shopText)} target="_blank" rel="noopener" className={buttonClass("outline", "sm")}>
+                          お店にLINEで送る
+                        </a>
+                        <CopyButton text={shopText} label="文面をコピー" />
+                        {!lv.sentToShopAt && (
+                          <form action={markVideoSentAction.bind(null, a.id, lv.id)}>
+                            <SubmitButton variant="outline" size="sm">連絡済みにする</SubmitButton>
+                          </form>
+                        )}
+                      </div>
+                    )}
+                    <details className="rounded-xl bg-mist p-3">
+                      <summary className="cursor-pointer text-xs font-bold">お店からLINEで返事が来たとき（代理で入力）</summary>
+                      <div className="mt-2 space-y-2">
+                        <form action={shopVideoAsAdmin.bind(null, a.id, lv.id, true)}>
+                          <SubmitButton size="sm">お店がOK（発信者へ連絡）</SubmitButton>
+                        </form>
+                        <form action={shopVideoAsAdmin.bind(null, a.id, lv.id, false)} className="space-y-2">
+                          <textarea name="comment" rows={2} placeholder="お店からの修正内容" className={inputClass} />
+                          <SubmitButton variant="outline" size="sm">お店が修正希望（発信者へ連絡）</SubmitButton>
+                        </form>
+                      </div>
+                    </details>
+                  </>
+                )}
+                {vStage === "revise" && <p className="text-sm">発信者の修正待ちです。修正版が届くと、ここに表示されます。</p>}
+                {vStage === "approved" && <p className="text-sm">お店のOKが出ています。投稿日に投稿されます。</p>}
+              </div>
+            </div>
+          ) : (
+            <p className="text-sm text-muted">まだ動画は届いていません。{a.videoRequestedAt ? `（提出のお願い：${fmtDateTime(a.videoRequestedAt)}）` : "撮影日の翌日に、発信者へ自動でお願いが届きます。"}</p>
+          )}
+          <div className="mt-4">
+            <p className="mb-1 text-xs text-muted">DMなどで受け取った動画は、ここから代わりに追加できます。</p>
+            <VideoUploader assignmentId={a.id} mode={videoStorage()} label="動画を追加する" />
+          </div>
+          {(a.videos?.length ?? 0) > 1 && (
+            <details className="mt-4">
+              <summary className="cursor-pointer text-xs font-bold text-muted">前の提出（{a.videos!.length - 1}件）</summary>
+              <div className="mt-3 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                {a.videos!.slice(0, -1).reverse().map((v, i) => (
+                  <VideoView key={v.id} v={v} index={a.videos!.length - 2 - i} />
+                ))}
+              </div>
+            </details>
+          )}
+        </Card>
+      )}
 
       <Card
         title="インサイト（スクショ）"
