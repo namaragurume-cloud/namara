@@ -30,6 +30,7 @@ import { assignmentUrl, creatorPortalUrl } from "@/lib/ops/urls";
 import type { Assignment, Campaign, Creator, Insight, Platform, Restaurant, Slot } from "@/lib/ops/types";
 import { newLinkCode, newToken, nowIso, shortId } from "@/lib/ops/util";
 import { isRateLimited } from "@/lib/spam";
+import { toInstagramUrl } from "@/lib/ops/dates";
 import { headers } from "next/headers";
 
 /* ---------- 共通 ---------- */
@@ -165,12 +166,16 @@ export async function saveRestaurant(fd: FormData) {
   if (!name) back(path, "!店舗名を入力してください");
   const email = optStr(fd, "email");
   if (email && !z.email().safeParse(email).success) back(path, "!メールアドレスの形式が正しくありません");
+  const tabelog = optStr(fd, "tabelogUrl");
+  if (tabelog && !z.url().safeParse(tabelog).success) back(path, "!食べログのURLの形式が正しくありません（https:// から貼ってください）");
   const patch = {
     name,
     contactName: optStr(fd, "contactName"),
     email,
     phone: optStr(fd, "phone"),
     address: optStr(fd, "address"),
+    tabelogUrl: optStr(fd, "tabelogUrl"),
+    instagramUrl: toInstagramUrl(optStr(fd, "instagramUrl")),
     memo: optStr(fd, "memo"),
   };
   if (id) {
@@ -219,6 +224,13 @@ export async function saveCampaign(fd: FormData) {
   if (!ymd.safeParse(replyDeadline).success) back(path, "!回答期限を入力してください");
   if (postDates.length === 0) back(path, "!投稿日をカレンダーから1日以上選んでください");
   const prev = id ? await db.get("campaigns", id) : null;
+  // 店舗のリンク（入力があれば店舗情報に保存。空欄なら登録済みのものをそのまま使う）
+  const tabelogUrl = optStr(fd, "tabelogUrl");
+  const instagramUrl = toInstagramUrl(optStr(fd, "instagramUrl"));
+  if (tabelogUrl && !z.url().safeParse(tabelogUrl).success) back(path, "!食べログのURLの形式が正しくありません（https:// から貼ってください）");
+  if (tabelogUrl || instagramUrl) {
+    await db.update("restaurants", restaurantId, (r) => ({ ...r, tabelogUrl: tabelogUrl ?? r.tabelogUrl, instagramUrl: instagramUrl ?? r.instagramUrl }));
+  }
   const slots = readSlots(fd, prev?.slots);
   if (slots.length === 0) back(path, "!撮影候補日を1つ以上入力してください");
   const patch = {
@@ -286,7 +298,8 @@ export async function sendRequestsAction(campaignId: string, fd: FormData) {
   await requireAdmin();
   const ids = fd.getAll("creatorId").map(String).filter(Boolean);
   if (ids.length === 0) back(`/admin/campaigns/${campaignId}`, "!依頼する発信者を選んでください");
-  const result = await sendRequests(campaignId, ids);
+  const offers = Object.fromEntries(ids.map((id) => [id, str(fd, `offer_${id}`)]).filter(([, v]) => v));
+  const result = await sendRequests(campaignId, ids, offers);
   back(`/admin/campaigns/${campaignId}`, summarize("PR依頼", result));
 }
 
@@ -440,6 +453,7 @@ export async function saveAssignment(fd: FormData) {
     plannedPostDate: plannedPostDate && ymd.safeParse(plannedPostDate).success ? plannedPostDate : undefined,
     postUrl: optStr(fd, "postUrl"),
     note: optStr(fd, "note"),
+    offer: optStr(fd, "offer"),
     partySize: [1, 2, 3].includes(Number(str(fd, "partySize"))) ? Number(str(fd, "partySize")) : a.partySize,
     respondedAt: a.respondedAt ?? (status === "accepted" || status === "declined" ? nowIso() : undefined),
   });

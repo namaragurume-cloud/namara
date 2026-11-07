@@ -63,6 +63,8 @@ export const templateDefs: Record<TemplateKey, TemplateDef> = {
 {店舗名}さんのPRのご依頼です。
 
 ■ 案件：{案件名}
+■ 食べログ：{食べログ}
+■ Instagram：{Instagram}
 ■ 報酬・特典：{報酬}
 ■ 撮影候補日
 {撮影候補日}
@@ -76,6 +78,8 @@ export const templateDefs: Record<TemplateKey, TemplateDef> = {
       発信者名: "はなこ",
       店舗名: "焼肉 たいよう",
       案件名: "12月 新メニューPR",
+      食べログ: "https://tabelog.com/hokkaido/…",
+      Instagram: "https://www.instagram.com/shop_account/",
       報酬: "飲食代無料＋謝礼 5,000円",
       撮影候補日: "・12/5(金) 18:00〜20:00\n・12/6(土) 18:00〜20:00",
       投稿日: "12/10(水)・12/12(金)",
@@ -108,6 +112,8 @@ export const templateDefs: Record<TemplateKey, TemplateDef> = {
 撮影日が確定しました！
 ■ 店舗：{店舗名}
 ■ 住所：{住所}
+■ 食べログ：{食べログ}
+■ Instagram：{Instagram}
 ■ 撮影日時：{撮影日時}
 ■ 投稿日：{投稿日}
 ■ 投稿条件：{投稿条件}
@@ -120,6 +126,8 @@ export const templateDefs: Record<TemplateKey, TemplateDef> = {
       発信者名: "はなこ",
       店舗名: "焼肉 たいよう",
       住所: "札幌市中央区南5条西3丁目",
+      食べログ: "https://tabelog.com/hokkaido/…",
+      Instagram: "https://www.instagram.com/shop_account/",
       撮影日時: "12/5(金) 18:00〜20:00",
       投稿日: "2026年12月10日(水)",
       投稿条件: "リール1本／店舗アカウントをタグ付け／#PR 表記",

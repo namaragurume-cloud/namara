@@ -30,6 +30,10 @@ export type Restaurant = {
   email?: string;
   phone?: string;
   address?: string;
+  /** 食べログのページ */
+  tabelogUrl?: string;
+  /** お店のInstagram */
+  instagramUrl?: string;
   memo?: string;
   createdAt: string;
 };
@@ -166,6 +170,8 @@ export type Assignment = {
   confirmedSlotId?: string;
   /** 投稿予定日 YYYY-MM-DD */
   plannedPostDate?: string;
+  /** この人だけの報酬・特典（空なら案件の共通の報酬） */
+  offer?: string;
   /** 来店人数（本人を含む。1＝本人のみ、2＝同伴1名） */
   partySize?: number;
   note?: string;

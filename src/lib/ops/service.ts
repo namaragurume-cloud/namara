@@ -53,6 +53,9 @@ export async function findCreatorByToken(token: string): Promise<Creator | null>
   return (await db.list("creators")).find((c) => c.token === token && c.active) ?? null;
 }
 
+/** その人の報酬・特典（個別に決めたものがあればそれ、なければ案件の共通の報酬） */
+export const offerOf = (a: Pick<Assignment, "offer">, c: Pick<Campaign, "offer">) => a.offer?.trim() || c.offer;
+
 export const slotById = (c: Campaign, id?: string): Slot | undefined => c.slots.find((s) => s.id === id);
 export const slotLabel = (c: Campaign, id?: string) => {
   const s = slotById(c, id);
@@ -140,7 +143,9 @@ export function prRequestMsg(b: Bundle, creator: Creator, a: Assignment) {
     発信者名: creator.name,
     店舗名: b.restaurant?.name ?? "",
     案件名: b.campaign.title,
-    報酬: b.campaign.offer,
+    食べログ: b.restaurant?.tabelogUrl,
+    Instagram: b.restaurant?.instagramUrl,
+    報酬: offerOf(a, b.campaign),
     撮影候補日: b.campaign.slots.map((s) => `・${fmtSlot(s)}`).join("\n"),
     投稿日: fmtPostDates(b.campaign),
     回答期限: fmtDateLong(b.campaign.replyDeadline),
@@ -149,12 +154,17 @@ export function prRequestMsg(b: Bundle, creator: Creator, a: Assignment) {
 }
 
 /** 選んだ発信者に依頼を作成し、まだ届いていない人にまとめて送信 */
-export async function sendRequests(campaignId: string, creatorIds: string[]): Promise<BulkResult> {
+export async function sendRequests(campaignId: string, creatorIds: string[], offers: Record<string, string> = {}): Promise<BulkResult> {
   const before = await loadBundle(campaignId);
   if (!before) throw new Error("案件が見つかりません");
-  const existing = new Set(before.rows.map((r) => r.creator.id));
+  const existing = new Map(before.rows.map((r) => [r.creator.id, r.a]));
   for (const id of creatorIds) {
-    if (existing.has(id)) continue;
+    const prev = existing.get(id);
+    if (prev) {
+      // 送れなかった依頼を送り直すときに、個別の報酬を変えた場合
+      if (prev.status === "unsent" && offers[id] !== undefined) await db.update("assignments", prev.id, (x) => ({ ...x, offer: offers[id] || undefined }));
+      continue;
+    }
     const creator = await db.get("creators", id);
     if (!creator) continue;
     await db.put("assignments", {
@@ -162,6 +172,7 @@ export async function sendRequests(campaignId: string, creatorIds: string[]): Pr
       campaignId,
       creatorId: id,
       status: "unsent",
+      offer: offers[id] || undefined,
       availableSlotIds: [],
       createdAt: nowIso(),
     });
@@ -225,6 +236,8 @@ export function confirmedMsg(b: Bundle, creator: Creator, a: Assignment) {
     発信者名: creator.name,
     店舗名: b.restaurant?.name ?? "",
     住所: b.restaurant?.address,
+    食べログ: b.restaurant?.tabelogUrl,
+    Instagram: b.restaurant?.instagramUrl,
     撮影日時: slotLabel(b.campaign, a.confirmedSlotId),
     投稿日: a.plannedPostDate ? fmtDateLong(a.plannedPostDate) : `${fmtPostDates(b.campaign)}のいずれか`,
     投稿条件: b.campaign.conditions,

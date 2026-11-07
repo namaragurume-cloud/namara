@@ -7,7 +7,7 @@ import { fmtDate, fmtParty, jstDate } from "@/lib/ops/dates";
 import { db } from "@/lib/ops/db";
 import { lineOaMessageUrl } from "@/lib/ops/line";
 import { fmtMonth, monthOf, progressOf, type Progress } from "@/lib/ops/progress";
-import { findCreatorByToken, slotLabel } from "@/lib/ops/service";
+import { findCreatorByToken, offerOf, slotLabel } from "@/lib/ops/service";
 import type { Assignment, Campaign } from "@/lib/ops/types";
 
 export const metadata = { title: "PRのご依頼" };
@@ -64,10 +64,10 @@ export default async function CreatorHome({ params, searchParams }: { params: Pr
                 <dd>{fmtParty(i.a.partySize)}</dd>
               </>
             )}
-            {i.c.offer && i.a.status !== "declined" && (
+            {offerOf(i.a, i.c) && i.a.status !== "declined" && (
               <>
                 <dt className="text-muted">報酬・特典</dt>
-                <dd className="truncate">{i.c.offer}</dd>
+                <dd className="truncate">{offerOf(i.a, i.c)}</dd>
               </>
             )}
           </dl>

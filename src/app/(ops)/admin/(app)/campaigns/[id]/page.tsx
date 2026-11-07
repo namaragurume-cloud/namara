@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { CheckAll, CopyButton, SubmitButton } from "@/components/ops/client";
 import { channelLabel, phaseTone } from "@/components/ops/phase";
+import { ShopLinks } from "@/components/ops/ShopLinks";
 import { Badge, ButtonLink, Card, Empty, Field, Flash, Stat, buttonClass, inputClass } from "@/components/ops/ui";
 import { fmtDate, fmtDateLong, fmtDateTime, fmtNum, fmtParty, fmtPostDates, fmtSlot, jstDate } from "@/lib/ops/dates";
 import { db } from "@/lib/ops/db";
@@ -166,6 +167,29 @@ export default async function CampaignPage({ params, searchParams }: { params: P
               })}
             </div>
           )}
+          {creators.some((cr) => !assignedIds.has(cr.id) || unsent.some((r) => r.creator.id === cr.id)) && (
+            <details className="rounded-xl border border-line bg-mist p-3">
+              <summary className="cursor-pointer text-sm font-bold">人ごとに報酬を変える（任意）</summary>
+              <p className="mt-2 text-xs text-muted">
+                空欄の人には、案件の共通の報酬「{c.offer || "（未設定）"}」が届きます。入れた内容はその人にだけ表示され、ほかの発信者やお店には見えません。チェックを入れた人だけに使われます。
+              </p>
+              <div className="mt-3 grid gap-2 md:grid-cols-2">
+                {creators
+                  .filter((cr) => !assignedIds.has(cr.id) || unsent.some((r) => r.creator.id === cr.id))
+                  .map((cr) => (
+                    <label key={cr.id} className="flex items-center gap-2 text-sm">
+                      <span className="w-24 shrink-0 truncate font-bold">{cr.name}</span>
+                      <input
+                        name={`offer_${cr.id}`}
+                        defaultValue={unsent.find((r) => r.creator.id === cr.id)?.a.offer}
+                        placeholder={c.offer || "例：飲食代無料＋謝礼 8,000円"}
+                        className={inputClass}
+                      />
+                    </label>
+                  ))}
+              </div>
+            </details>
+          )}
           <SubmitButton confirm="選んだ発信者に依頼を送信します。よろしいですか？">選んだ人に一括送信</SubmitButton>
         </form>
 
@@ -278,6 +302,7 @@ export default async function CampaignPage({ params, searchParams }: { params: P
                         <td className="px-4 py-2 md:px-2">
                           <b>{r.creator.name}</b>
                           <span className="ml-1 text-xs text-muted">来店 {fmtParty(r.a.partySize)}</span>
+                          {r.a.offer && <p className="mt-0.5 max-w-56 text-xs text-sky-800">個別の報酬：{r.a.offer}</p>}
                           {r.a.note && <p className="mt-0.5 max-w-56 text-xs text-muted">💬 {r.a.note}</p>}
                         </td>
                         <td className="px-2 py-2">
@@ -344,6 +369,7 @@ export default async function CampaignPage({ params, searchParams }: { params: P
                         {r.a.sentVia && channelLabel[r.a.sentVia]} {fmtDateTime(r.a.sentAt)}
                         {r.a.replyRemindedAt && "・リマインド済"}
                       </span>
+                      {r.a.offer && <span className="text-xs text-sky-800">個別の報酬：{r.a.offer}</span>}
                       <Link href={`/admin/assignments/${r.a.id}`} className="text-xs underline">
                         代理で回答
                       </Link>
@@ -619,6 +645,18 @@ export default async function CampaignPage({ params, searchParams }: { params: P
 
       <Card title="依頼内容（発信者に表示される内容）">
         <dl className="grid gap-3 text-sm md:grid-cols-2">
+          <div className="md:col-span-2">
+            <dt className="text-xs font-bold text-muted">店舗のリンク</dt>
+            <dd className="mt-1">
+              {restaurant?.tabelogUrl || restaurant?.instagramUrl ? (
+                <ShopLinks r={restaurant} />
+              ) : (
+                <span className="text-muted">
+                  未登録（<Link href={`/admin/campaigns/${c.id}/edit`} className="underline">編集</Link>から食べログ・Instagramを登録できます）
+                </span>
+              )}
+            </dd>
+          </div>
           <div className="md:col-span-2">
             <dt className="text-xs font-bold text-muted">PR内容</dt>
             <dd className="whitespace-pre-wrap">{c.description || "-"}</dd>
