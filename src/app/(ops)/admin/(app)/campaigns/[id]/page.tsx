@@ -13,6 +13,7 @@ import {
   phaseLabel,
   phaseOf,
   prRequestMsg,
+  partyOf,
   proposeSlots,
   restaurantReportMsg,
   restaurantScheduleMsg,
@@ -241,12 +242,13 @@ export default async function CampaignPage({ params, searchParams }: { params: P
           {c.slots.map((s) => {
             const avail = accepted.filter((r) => r.a.availableSlotIds.includes(s.id));
             const assigned = accepted.filter((r) => proposal.get(r.a.id) === s.id);
+            const people = assigned.reduce((n, r) => n + partyOf(r.a), 0);
             return (
               <div key={s.id} className="rounded-xl border border-line p-3 text-sm">
                 <div className="flex items-center justify-between gap-2">
                   <b>{fmtSlot(s)}</b>
-                  <span className={`num text-xs ${assigned.length >= s.capacity ? "font-bold text-emerald-700" : "text-muted"}`}>
-                    割当 {assigned.length}/{s.capacity}人
+                  <span className={`num text-xs ${people > s.capacity ? "font-bold text-rose-700" : people === s.capacity ? "font-bold text-emerald-700" : "text-muted"}`}>
+                    {people > s.capacity ? "定員オーバー " : ""}割当 {people}/{s.capacity}名（同伴含む）
                   </span>
                 </div>
                 <p className="mt-1 text-xs leading-relaxed text-muted">{avail.length ? avail.map((r) => `${r.creator.name}${(r.a.partySize ?? 1) > 1 ? `（${r.a.partySize}名）` : ""}`).join("、") : "参加可能な人はまだいません"}</p>

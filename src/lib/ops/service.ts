@@ -94,8 +94,12 @@ export function phaseOf(b: Pick<Bundle, "campaign" | "rows">, today = jstDate())
 /* 日程の自動割り当て                                                   */
 /* ------------------------------------------------------------------ */
 
+/** 来店人数（本人＋同伴者） */
+export const partyOf = (a: Pick<Assignment, "partySize">) => Math.max(1, a.partySize ?? 1);
+
 /**
  * 回答（参加できる枠）から撮影枠を割り当てる。
+ * 枠の人数は同伴者を含めた来店人数で数える（2名で来る人は2人分）。
  * 確定済みはそのまま。選べる枠が少ない人から順に、空きの多い枠へ入れる。
  */
 export function proposeSlots(campaign: Campaign, rows: Row[]): Map<string, string | undefined> {
@@ -105,7 +109,7 @@ export function proposeSlots(campaign: Campaign, rows: Row[]): Map<string, strin
   for (const r of accepted) {
     if (r.a.confirmedSlotId) {
       result.set(r.a.id, r.a.confirmedSlotId);
-      used.set(r.a.confirmedSlotId, (used.get(r.a.confirmedSlotId) ?? 0) + 1);
+      used.set(r.a.confirmedSlotId, (used.get(r.a.confirmedSlotId) ?? 0) + partyOf(r.a));
     }
   }
   const valid = new Set(campaign.slots.map((s) => s.id));
@@ -116,11 +120,11 @@ export function proposeSlots(campaign: Campaign, rows: Row[]): Map<string, strin
   for (const { r, opts } of pending) {
     const free = opts
       .map((id) => ({ id, left: (slotById(campaign, id)?.capacity ?? 1) - (used.get(id) ?? 0) }))
-      .filter((o) => o.left > 0)
+      .filter((o) => o.left >= partyOf(r.a))
       .sort((x, y) => y.left - x.left);
     const pick = free[0]?.id;
     result.set(r.a.id, pick);
-    if (pick) used.set(pick, (used.get(pick) ?? 0) + 1);
+    if (pick) used.set(pick, (used.get(pick) ?? 0) + partyOf(r.a));
   }
   return result;
 }
