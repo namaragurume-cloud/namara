@@ -1,10 +1,10 @@
 import "server-only";
-import { opsTemplates } from "@/data/ops-templates";
 import { blobs, db } from "./db";
 import { fieldLabel, isComplete, missingKeys, platformLabel } from "./insight-fields";
 import { sendToCreator } from "./notify";
 import type { Assignment, Creator, Insight, Platform, Shot } from "./types";
 import { assignmentUrl } from "./urls";
+import { msg } from "./templates";
 import { nowIso, shortId } from "./util";
 import { extractInsight, isAiConfigured } from "./vision";
 
@@ -118,7 +118,7 @@ async function notifyInsightResult(a: Assignment, creator: Creator, insight: Ins
   const post = await postName(a);
   if (isComplete(insight)) {
     // ページから送った人には画面で伝わるので、LINEで送ってきた人にだけお礼を返す
-    if (viaLine) await sendToCreator(creator, opsTemplates.insightComplete({ creator: creator.name, post }), "インサイト受領");
+    if (viaLine) await sendToCreator(creator, await msg("insightComplete", { 発信者名: creator.name, 店舗名: post }), "インサイト受領");
     await db.update("assignments", a.id, (x) => ({ ...x, missingNotifiedFor: undefined }));
     return;
   }
@@ -127,7 +127,7 @@ async function notifyInsightResult(a: Assignment, creator: Creator, insight: Ins
   if (a.missingNotifiedFor === key) return;
   const r = await sendToCreator(
     creator,
-    opsTemplates.insightMissing({ creator: creator.name, post, missing: labels, url: assignmentUrl(creator, a), viaLine }),
+    await msg("insightMissing", { 発信者名: creator.name, 店舗名: post, 足りない項目: labels.map((l) => `・${l}`).join("\n"), 送り先: viaLine ? "このトークに" : "下のページから", URL: assignmentUrl(creator, a) }),
     `インサイト不足の連絡（${platformLabel[insight.platform]}）`,
   );
   if (r.ok) await db.update("assignments", a.id, (x) => ({ ...x, missingNotifiedAt: nowIso(), missingNotifiedFor: key }));

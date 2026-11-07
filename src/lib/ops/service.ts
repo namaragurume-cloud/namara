@@ -1,9 +1,9 @@
 import "server-only";
-import { opsTemplates } from "@/data/ops-templates";
 import { addDays, fmtDate, fmtDateLong, fmtNum, fmtPostDates, fmtSlot, isLastDayOfMonth, jstDate } from "./dates";
 import { db } from "./db";
 import { sendToCreator, sendToRestaurant, type SendResult } from "./notify";
 import { needsInsight } from "./insights";
+import { msg } from "./templates";
 import { fieldLabel, isComplete, platformLabel, screenshotGuide } from "./insight-fields";
 import { buildReport, pct, pct1 } from "./report";
 import type { Assignment, Campaign, Creator, Platform, Restaurant, Slot } from "./types";
@@ -130,15 +130,15 @@ export function proposeSlots(campaign: Campaign, rows: Row[]): Map<string, strin
 export type BulkResult = { name: string; result: SendResult }[];
 
 export function prRequestMsg(b: Bundle, creator: Creator, a: Assignment) {
-  return opsTemplates.prRequest({
-    creator: creator.name,
-    restaurant: b.restaurant?.name ?? "",
-    title: b.campaign.title,
-    offer: b.campaign.offer,
-    slots: b.campaign.slots.map(fmtSlot),
-    postDates: fmtPostDates(b.campaign),
-    replyDeadline: fmtDateLong(b.campaign.replyDeadline),
-    url: assignmentUrl(creator, a),
+  return msg("prRequest", {
+    発信者名: creator.name,
+    店舗名: b.restaurant?.name ?? "",
+    案件名: b.campaign.title,
+    報酬: b.campaign.offer,
+    撮影候補日: b.campaign.slots.map((s) => `・${fmtSlot(s)}`).join("\n"),
+    投稿日: fmtPostDates(b.campaign),
+    回答期限: fmtDateLong(b.campaign.replyDeadline),
+    URL: assignmentUrl(creator, a),
   });
 }
 
@@ -164,7 +164,7 @@ export async function sendRequests(campaignId: string, creatorIds: string[]): Pr
   const targets = b.rows.filter((r) => r.a.status === "unsent" && creatorIds.includes(r.creator.id));
   const out: BulkResult = [];
   for (const { a, creator } of targets) {
-    const result = await sendToCreator(creator, prRequestMsg(b, creator, a), `PR依頼：${b.campaign.title}`);
+    const result = await sendToCreator(creator, await prRequestMsg(b, creator, a), `PR依頼：${b.campaign.title}`);
     if (result.ok) {
       await db.update("assignments", a.id, (x) => ({ ...x, status: x.status === "unsent" ? "sent" : x.status, sentAt: nowIso(), sentVia: result.channel }));
     }
@@ -214,14 +214,14 @@ export async function recordResponse(
 /* ------------------------------------------------------------------ */
 
 export function confirmedMsg(b: Bundle, creator: Creator, a: Assignment) {
-  return opsTemplates.confirmed({
-    creator: creator.name,
-    restaurant: b.restaurant?.name ?? "",
-    address: b.restaurant?.address,
-    slot: slotLabel(b.campaign, a.confirmedSlotId),
-    postDate: a.plannedPostDate ? fmtDateLong(a.plannedPostDate) : `${fmtPostDates(b.campaign)}のいずれか`,
-    conditions: b.campaign.conditions,
-    url: assignmentUrl(creator, a),
+  return msg("confirmed", {
+    発信者名: creator.name,
+    店舗名: b.restaurant?.name ?? "",
+    住所: b.restaurant?.address,
+    撮影日時: slotLabel(b.campaign, a.confirmedSlotId),
+    投稿日: a.plannedPostDate ? fmtDateLong(a.plannedPostDate) : `${fmtPostDates(b.campaign)}のいずれか`,
+    投稿条件: b.campaign.conditions,
+    URL: assignmentUrl(creator, a),
   });
 }
 
@@ -243,8 +243,7 @@ export async function confirmSchedule(
       plannedPostDate: pick.postDate || x.plannedPostDate,
     })))!;
     if (a.confirmedNotifiedAt && !changed) continue;
-    const msg = confirmedMsg(b, creator, updated);
-    const result = await sendToCreator(creator, msg, `撮影日確定：${b.campaign.title}`);
+    const result = await sendToCreator(creator, await confirmedMsg(b, creator, updated), `撮影日確定：${b.campaign.title}`);
     if (result.ok) await db.update("assignments", a.id, (x) => ({ ...x, confirmedNotifiedAt: nowIso() }));
     out.push({ name: creator.name, result });
   }
@@ -270,20 +269,22 @@ export function scheduleLines(b: Bundle): string[] {
     );
 }
 
+const atena = (r: Restaurant | null) => (r?.contactName ? `${r.contactName}様` : "ご担当者様");
+
 export function restaurantScheduleMsg(b: Bundle) {
-  return opsTemplates.restaurantSchedule({
-    restaurant: b.restaurant?.name ?? "",
-    contact: b.restaurant?.contactName,
-    title: b.campaign.title,
-    lines: scheduleLines(b),
-    url: restaurantPortalUrl(b.campaign),
+  return msg("restaurantSchedule", {
+    店舗名: b.restaurant?.name ?? "",
+    宛名: atena(b.restaurant),
+    案件名: b.campaign.title,
+    日程一覧: scheduleLines(b).join("\n"),
+    URL: restaurantPortalUrl(b.campaign),
   });
 }
 
 export async function shareScheduleWithRestaurant(campaignId: string, manual = false): Promise<SendResult | null> {
   const b = await loadBundle(campaignId);
   if (!b || !b.restaurant) throw new Error("案件または店舗が見つかりません");
-  const result = manual ? null : await sendToRestaurant(b.restaurant, restaurantScheduleMsg(b), `日程共有：${b.campaign.title}`);
+  const result = manual ? null : await sendToRestaurant(b.restaurant, await restaurantScheduleMsg(b), `日程共有：${b.campaign.title}`);
   if (manual || result?.ok) await db.update("campaigns", campaignId, (c) => ({ ...c, scheduleSharedAt: nowIso() }));
   return result;
 }
@@ -294,24 +295,24 @@ export async function shareScheduleWithRestaurant(campaignId: string, manual = f
 
 export function restaurantReportMsg(b: Bundle) {
   const r = buildReport(b);
-  return opsTemplates.restaurantReport({
-    restaurant: b.restaurant?.name ?? "",
-    contact: b.restaurant?.contactName,
-    title: b.campaign.title,
-    summary: [
+  return msg("restaurantReport", {
+    店舗名: b.restaurant?.name ?? "",
+    宛名: atena(b.restaurant),
+    案件名: b.campaign.title,
+    結果の要約: [
       `■ 投稿数：${r.submitted}件`,
       `■ 合計閲覧数・再生数：${fmtNum(r.views)}回`,
       ...(r.reactions ? [`■ いいね・コメント・保存・シェア：${fmtNum(r.reactions)}件（エンゲージメント率 ${pct(r.er)}）`] : []),
       ...(r.nonFollowerPct !== undefined ? [`■ フォロワー以外への到達：${pct1(r.nonFollowerPct)}`] : []),
-    ],
-    url: restaurantPortalUrl(b.campaign),
+    ].join("\n"),
+    URL: restaurantPortalUrl(b.campaign),
   });
 }
 
 export async function sendReportToRestaurant(campaignId: string, manual = false): Promise<SendResult | null> {
   const b = await loadBundle(campaignId);
   if (!b || !b.restaurant) throw new Error("案件または店舗が見つかりません");
-  const result = manual ? null : await sendToRestaurant(b.restaurant, restaurantReportMsg(b), `レポート送付：${b.campaign.title}`);
+  const result = manual ? null : await sendToRestaurant(b.restaurant, await restaurantReportMsg(b), `レポート送付：${b.campaign.title}`);
   if (manual || result?.ok) await db.update("campaigns", campaignId, (c) => ({ ...c, reportSentAt: nowIso() }));
   return result;
 }
@@ -368,7 +369,15 @@ export async function sendInsightRequests(opts: { today?: string; campaignId?: s
     });
     const result = await sendToCreator(
       creator,
-      opsTemplates.insightRequest({ creator: creator.name, posts, guide: guideLines(list, creator), url: creatorPortalUrl(creator), viaLine: Boolean(creator.lineUserId) }),
+      await msg("insightRequest", {
+        発信者名: creator.name,
+        投稿一覧: posts.map((p) => `・${p}`).join("\n"),
+        撮り方: guideLines(list, creator).join("\n"),
+        送り方: creator.lineUserId
+          ? "このトークに画像を送るだけでOKです（数字は自動で読み取ります）。ページからも送れます。"
+          : "こちらのページから画像を送ってください（数字は自動で読み取ります）。",
+        URL: creatorPortalUrl(creator),
+      }),
       "インサイト提出のお願い",
     );
     if (result.ok) {
@@ -405,7 +414,7 @@ export async function runReminders(today = jstDate()): Promise<BulkResult> {
     if (a.status === "sent" && !a.respondedAt && !a.replyRemindedAt && c.replyDeadline === tomorrow) {
       const result = await sendToCreator(
         creator,
-        opsTemplates.replyReminder({ creator: creator.name, restaurant, replyDeadline: fmtDateLong(c.replyDeadline), url: assignmentUrl(creator, a) }),
+        await msg("replyReminder", { 発信者名: creator.name, 店舗名: restaurant, 回答期限: fmtDateLong(c.replyDeadline), URL: assignmentUrl(creator, a) }),
         `回答リマインド：${c.title}`,
       );
       if (result.ok) await db.update("assignments", a.id, (x) => ({ ...x, replyRemindedAt: nowIso() }));
@@ -417,7 +426,7 @@ export async function runReminders(today = jstDate()): Promise<BulkResult> {
     if (a.status === "accepted" && a.confirmedNotifiedAt && !a.shootRemindedAt && slot?.date === tomorrow) {
       const result = await sendToCreator(
         creator,
-        opsTemplates.shootReminder({ creator: creator.name, restaurant, slot: fmtSlot(slot), url: assignmentUrl(creator, a) }),
+        await msg("shootReminder", { 発信者名: creator.name, 店舗名: restaurant, 撮影日時: fmtSlot(slot), URL: assignmentUrl(creator, a) }),
         `撮影前日リマインド：${c.title}`,
       );
       if (result.ok) await db.update("assignments", a.id, (x) => ({ ...x, shootRemindedAt: nowIso() }));
@@ -437,7 +446,7 @@ export async function runReminders(today = jstDate()): Promise<BulkResult> {
       const name = ctx.restaurants.get(c.restaurantId)?.name ?? c.title;
       return a.insight ? `・${name}：${a.insight.missing.map((k) => fieldLabel(a.insight!.platform, k)).join("、")}が足りません` : `・${name}：未提出`;
     });
-    const result = await sendToCreator(creator, opsTemplates.insightReminder({ creator: creator.name, lines, url: creatorPortalUrl(creator) }), "インサイト提出リマインド");
+    const result = await sendToCreator(creator, await msg("insightReminder", { 発信者名: creator.name, 投稿一覧: lines.join("\n"), URL: creatorPortalUrl(creator) }), "インサイト提出リマインド");
     if (result.ok) for (const a of list) await db.update("assignments", a.id, (x) => ({ ...x, insightRemindedAt: nowIso() }));
     out.push({ name: creator.name, result });
   }

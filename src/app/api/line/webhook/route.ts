@@ -1,8 +1,8 @@
 import { after, NextResponse } from "next/server";
-import { opsTemplates } from "@/data/ops-templates";
 import { db } from "@/lib/ops/db";
 import { analyzeAssignment, listShots, needsInsight, saveShot, ShotError } from "@/lib/ops/insights";
 import { lineGetContent, lineReply, verifyLineSignature } from "@/lib/ops/line";
+import { text as tmpl } from "@/lib/ops/templates";
 import { creatorPortalUrl } from "@/lib/ops/urls";
 import { isAiConfigured } from "@/lib/ops/vision";
 
@@ -67,7 +67,7 @@ async function handle(ev: LineEvent, received: Set<string>) {
   if (ev.type === "follow") {
     const creators = await db.list("creators");
     const linked = creators.find((c) => c.lineUserId === userId);
-    await lineReply(ev.replyToken, linked ? opsTemplates.lineLinked(linked.name) : opsTemplates.lineWelcome);
+    await lineReply(ev.replyToken, linked ? await tmpl("lineLinked", { 発信者名: linked.name }) : await tmpl("lineWelcome"));
     return;
   }
 
@@ -83,7 +83,7 @@ async function handle(ev: LineEvent, received: Set<string>) {
   const creators = await db.list("creators");
   const creator = creators.find((c) => c.lineLinkCode === code);
   if (!creator) {
-    await lineReply(ev.replyToken, opsTemplates.lineUnknown);
+    await lineReply(ev.replyToken, await tmpl("lineUnknown"));
     return;
   }
   // 同じLINEが別の発信者に紐づいていたら外す
@@ -91,7 +91,7 @@ async function handle(ev: LineEvent, received: Set<string>) {
     await db.put("creators", { ...other, lineUserId: undefined });
   }
   await db.put("creators", { ...creator, lineUserId: userId });
-  await lineReply(ev.replyToken, opsTemplates.lineLinked(creator.name));
+  await lineReply(ev.replyToken, await tmpl("lineLinked", { 発信者名: creator.name }));
 }
 
 /** インサイトのスクショをLINEで受け取る */
@@ -113,7 +113,7 @@ async function handleImage(ev: LineEvent, userId: string, received: Set<string>)
       replyToken,
       pending.length === 0
         ? `${creator.name}さん、画像ありがとうございます！今インサイトをお願いしている投稿はないため、担当者が確認します。`
-        : opsTemplates.insightWhichPost({ creator: creator.name, url: creatorPortalUrl(creator) }).text,
+        : await tmpl("insightWhichPost", { 発信者名: creator.name, URL: creatorPortalUrl(creator) }),
     );
     return;
   }

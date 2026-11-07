@@ -1,6 +1,5 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { opsTemplates } from "@/data/ops-templates";
 import { CopyButton, SubmitButton } from "@/components/ops/client";
 import { ProgressSteps } from "@/components/ops/ProgressSteps";
 import { progressOf } from "@/lib/ops/progress";
@@ -8,6 +7,7 @@ import { Badge, Card, Field, Flash, inputClass } from "@/components/ops/ui";
 import { fmtDate, jstDate } from "@/lib/ops/dates";
 import { db } from "@/lib/ops/db";
 import { isLineConfigured, lineOaMessageUrl } from "@/lib/ops/line";
+import { text } from "@/lib/ops/templates";
 import { creatorPortalUrl } from "@/lib/ops/urls";
 import { resetCreatorToken, saveCreator, setCreatorActive, unlinkLine } from "../../../actions";
 
@@ -24,7 +24,12 @@ export default async function CreatorPage({ params, searchParams }: { params: Pr
   const today = jstDate();
   const portal = creatorPortalUrl(c);
   const lineUrl = lineOaMessageUrl(`連携 ${c.lineLinkCode}`);
-  const onboarding = opsTemplates.creatorOnboarding({ creator: c.name, code: c.lineLinkCode, lineUrl, portalUrl: portal }).text;
+  const onboarding = await text("creatorOnboarding", {
+    発信者名: c.name,
+    連携コード: c.lineLinkCode,
+    連携リンク: lineUrl ? `（こちらを押すとコードが入力された状態でトークが開きます）\n${lineUrl}` : undefined,
+    専用ページURL: portal,
+  });
 
   return (
     <>
