@@ -22,6 +22,10 @@ export type Creator = {
 export type Restaurant = {
   id: string;
   name: string;
+  /** 公式LINEと連携済みの場合の LINE userId */
+  lineUserId?: string;
+  /** 公式LINEに送ってもらう連携コード */
+  lineLinkCode?: string;
   contactName?: string;
   email?: string;
   phone?: string;
@@ -63,6 +67,8 @@ export type Campaign = {
   scheduleSharedAt?: string;
   /** 飲食店ページで撮影・投稿の状況をリアルタイムに公開する */
   liveShare?: boolean;
+  /** 投稿前の動画チェック：なし／飲食店が直接確認／あなたが先に確認してから飲食店へ */
+  videoCheck?: "none" | "direct" | "owner_first";
   reportSentAt?: string;
   /** レポート：サマリー（表紙） */
   reportComment?: string;
@@ -78,6 +84,28 @@ export type Campaign = {
 export type AssignmentStatus = "unsent" | "sent" | "accepted" | "declined";
 
 export type Platform = "instagram" | "tiktok";
+
+export type VideoDecision = { status: "ok" | "ng"; comment?: string; at: string; by?: "shop" | "admin" };
+
+/** 発信者が送った動画（1回の提出＝1件） */
+export type VideoVersion = {
+  id: string;
+  /** 再生用のURL（Vercel Blob の公開URL、またはローカル保存の配信URL） */
+  url: string;
+  /** 保存先での識別子（削除に使う） */
+  storageKey: string;
+  storage: "blob" | "local" | "demo";
+  size: number;
+  contentType: string;
+  uploadedAt: string;
+  /** あなたのチェック（「先に確認」の案件のみ） */
+  owner?: VideoDecision;
+  /** 飲食店の確認 */
+  shop?: VideoDecision;
+  sentToShopAt?: string;
+  /** 投稿後に動画ファイルを削除した日時 */
+  fileDeletedAt?: string;
+};
 
 /** 割合の内訳（年齢・性別・閲覧ソースなど）。pct は 0〜100 */
 export type Dist = { label: string; pct: number }[];
@@ -152,6 +180,10 @@ export type Assignment = {
   missingNotifiedFor?: string;
   /** 投稿した媒体 */
   platform?: Platform;
+  /** 投稿前チェック用の動画（新しいものが最後） */
+  videos?: VideoVersion[];
+  videoRequestedAt?: string;
+  videoShopRemindedAt?: string;
   createdAt: string;
 };
 

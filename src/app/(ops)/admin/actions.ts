@@ -20,6 +20,7 @@ import {
 import { fieldLabel, insightFields, missingKeys, missingLabels, parseDistText } from "@/lib/ops/insight-fields";
 import { draftReportText } from "@/lib/ops/ai-report";
 import { deleteShot } from "@/lib/ops/insights";
+import { deleteAllVideoFiles, markSentToShop, ownerDecide, shopDecide, VideoError } from "@/lib/ops/video";
 import { buildReport } from "@/lib/ops/report";
 import { isAiConfigured } from "@/lib/ops/vision";
 import { sendToCreator } from "@/lib/ops/notify";
@@ -176,7 +177,7 @@ export async function saveRestaurant(fd: FormData) {
     await db.update("restaurants", id, (r) => ({ ...r, ...patch }));
     back(path, "保存しました");
   }
-  const r: Restaurant = { id: shortId(), ...patch, createdAt: nowIso() };
+  const r: Restaurant = { id: shortId(), ...patch, lineLinkCode: newLinkCode(), createdAt: nowIso() };
   await db.put("restaurants", r);
   const next = str(fd, "next");
   if (next === "campaign") redirect(`/admin/campaigns/new?restaurant=${r.id}`);
@@ -242,6 +243,7 @@ export async function saveCampaign(fd: FormData) {
 
 /** 依頼と、そのスクショ画像もまとめて削除 */
 async function removeAssignments(list: Assignment[]) {
+  for (const a of list) await deleteAllVideoFiles(a);
   const ids = new Set(list.map((a) => a.id));
   for (const s of (await db.list("shots")).filter((s) => ids.has(s.assignmentId))) await deleteShot(s);
   for (const a of list) await db.remove("assignments", a.id);
@@ -500,6 +502,69 @@ export async function notifyMissingAction(id: string) {
   const res = await sendToCreator(creator, msg, "インサイト不足の連絡（手動）");
   if (res.ok) await db.update("assignments", a.id, (x) => ({ ...x, missingNotifiedAt: nowIso(), missingNotifiedFor: missing.join(",") }));
   back(`/admin/assignments/${a.id}`, res.ok ? "発信者に連絡しました" : `!自動で送れませんでした：${res.error}`);
+}
+
+/* ---------- 動画チェック ---------- */
+
+export async function setVideoCheck(campaignId: string, fd: FormData) {
+  await requireAdmin();
+  const v = str(fd, "videoCheck");
+  const mode = v === "direct" || v === "owner_first" ? v : "none";
+  await db.update("campaigns", campaignId, (c) => ({ ...c, videoCheck: mode }));
+  back(
+    `/admin/campaigns/${campaignId}`,
+    mode === "none" ? "動画チェックをなしにしました" : mode === "direct" ? "動画チェック：発信者 → お店が直接確認 にしました" : "動画チェック：発信者 → あなたが確認 → お店 にしました",
+  );
+}
+
+function sendNote(r: { ok: boolean; channel: string; error?: string } | undefined, who: string) {
+  if (!r) return "";
+  return r.ok ? `${who}に${r.channel === "line" ? "LINE" : "メール"}で連絡しました` : `!${who}に自動で連絡できませんでした（${r.error}）。手動で連絡してください`;
+}
+
+export async function ownerVideoAction(assignmentId: string, versionId: string, ok: boolean, fd: FormData) {
+  await requireAdmin();
+  const comment = str(fd, "comment") || undefined;
+  if (!ok && !comment) back(`/admin/assignments/${assignmentId}`, "!修正してほしい内容を書いてください");
+  try {
+    const r = await ownerDecide(assignmentId, versionId, ok, comment);
+    back(
+      `/admin/assignments/${assignmentId}`,
+      ok
+        ? r.shopSent
+          ? "OKにして、お店に確認をお願いしました"
+          : "!OKにしました。お店はLINE未連携のため、下の「お店にLINEで送る」から確認をお願いしてください"
+        : sendNote(r.creator, "発信者") || "修正をお願いしました",
+    );
+  } catch (e) {
+    if (e instanceof VideoError) back(`/admin/assignments/${assignmentId}`, `!${e.message}`);
+    throw e;
+  }
+}
+
+export async function shopVideoAsAdmin(assignmentId: string, versionId: string, ok: boolean, fd: FormData) {
+  await requireAdmin();
+  const comment = str(fd, "comment") || undefined;
+  if (!ok && !comment) back(`/admin/assignments/${assignmentId}`, "!修正してほしい内容を書いてください");
+  try {
+    const r = await shopDecide(assignmentId, versionId, ok, comment, "admin");
+    back(`/admin/assignments/${assignmentId}`, `お店の確認結果（${ok ? "OK" : "修正"}）を記録しました。${sendNote(r, "発信者").replace(/^!/, "")}`);
+  } catch (e) {
+    if (e instanceof VideoError) back(`/admin/assignments/${assignmentId}`, `!${e.message}`);
+    throw e;
+  }
+}
+
+export async function markVideoSentAction(assignmentId: string, versionId: string) {
+  await requireAdmin();
+  await markSentToShop(assignmentId, versionId);
+  back(`/admin/assignments/${assignmentId}`, "お店に確認をお願いした、と記録しました");
+}
+
+export async function unlinkRestaurantLine(id: string) {
+  await requireAdmin();
+  await db.update("restaurants", id, (r) => ({ ...r, lineUserId: undefined, lineLinkCode: newLinkCode() }));
+  back(`/admin/restaurants/${id}`, "LINE連携を解除しました（連携コードも新しくなりました）");
 }
 
 /* ---------- メッセージの文面 ---------- */

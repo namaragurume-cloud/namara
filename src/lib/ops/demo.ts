@@ -1,7 +1,7 @@
 import "server-only";
 import { addDays, jstDate } from "./dates";
 import { missingKeys } from "./insight-fields";
-import type { Assignment, Campaign, Collections, Creator, Dist, Insight, MessageLog, Restaurant } from "./types";
+import type { Assignment, Campaign, Collections, Creator, Dist, Insight, MessageLog, Restaurant, VideoVersion } from "./types";
 import type { Extracted } from "./vision";
 
 /**
@@ -95,7 +95,7 @@ export function demoSeed(): Seed {
 
   const restaurants: Restaurant[] = [
     { id: "r-taiyo", name: "焼肉 たいよう（デモ）", contactName: "山田", email: "taiyo@example.com", address: "札幌市中央区南5条西3丁目（架空）", createdAt: iso(-60) },
-    { id: "r-hare", name: "スープカレー 晴れ（デモ）", contactName: "佐藤", email: "hare@example.com", address: "札幌市北区北18条西4丁目（架空）", createdAt: iso(-50) },
+    { id: "r-hare", name: "スープカレー 晴れ（デモ）", contactName: "佐藤", email: "hare@example.com", lineUserId: "Udemo-shop", lineLinkCode: "SHOP01", address: "札幌市北区北18条西4丁目（架空）", createdAt: iso(-50) },
     { id: "r-shiokaze", name: "海鮮食堂 しおかぜ（デモ）", contactName: "鈴木", address: "小樽市色内1丁目（架空）", createdAt: iso(-90) },
     { id: "r-kotori", name: "カフェ ことり（デモ）", contactName: "高橋", email: "kotori@example.com", address: "札幌市中央区大通西10丁目（架空）", createdAt: iso(-20) },
   ];
@@ -148,12 +148,13 @@ export function demoSeed(): Seed {
       description: "新メニューのラムスープカレーを中心に紹介してください。",
       offer: "飲食代無料（2名様まで）＋謝礼 8,000円",
       conditions: "リール1本 or TikTok1本／#PR 表記",
-      slots: [slot("s1", 1), slot("s2", 6), slot("s3", 7)],
+      slots: [slot("s0", -2, "18:00", "20:00", 3), slot("s1", 1), slot("s2", 6), slot("s3", 7)],
       replyDeadline: d(-3),
       postDates: [d(9), d(10), d(12)],
       postDeadline: d(12),
       shareToken: "demo-report-hare",
       liveShare: true,
+      videoCheck: "owner_first",
       scheduleSharedAt: iso(-1),
       createdAt: iso(-10),
     },
@@ -220,6 +221,18 @@ export function demoSeed(): Seed {
     ...extra,
   });
 
+  let vn = 0;
+  const vid = (day: number, extra: Partial<VideoVersion> = {}): VideoVersion => ({
+    id: `demo-v${++vn}`,
+    url: "",
+    storageKey: "demo",
+    storage: "demo",
+    size: 48_000_000,
+    contentType: "video/mp4",
+    uploadedAt: iso(day, 11),
+    ...extra,
+  });
+
   const assignments: Assignment[] = [
     // カフェ ことり：回答受付中
     as("k-kotori", "c1", { status: "accepted", availableSlotIds: ["s1", "s2"], plannedPostDate: d(15), respondedAt: iso(-1) }),
@@ -230,8 +243,8 @@ export function demoSeed(): Seed {
     as("k-kotori", "c8", { status: "unsent", sentAt: undefined, sentVia: undefined }),
     // スープカレー 晴れ：撮影待ち
     as("k-hare", "c2", done("s1", 9, { platform: "tiktok" })),
-    as("k-hare", "c4", done("s2", 10, { sentVia: "email" })),
-    as("k-hare", "c6", done("s3", 12, { platform: "tiktok" })),
+    as("k-hare", "c4", done("s0", 9, { sentVia: "email", videoRequestedAt: iso(-1, 10), videos: [vid(-1, { owner: { status: "ok", at: iso(-1, 15), by: "admin" }, sentToShopAt: iso(-1, 15) })] })),
+    as("k-hare", "c6", done("s0", 10, { platform: "tiktok", videoRequestedAt: iso(-1, 10), videos: [vid(-1, { owner: { status: "ng", comment: "冒頭3秒でカレーのアップを見せてください", at: iso(-1, 16), by: "admin" } }), vid(0)] })),
     // 焼肉 たいよう：インサイト回収中
     as("k-taiyo", "c1", done("s1", -20, { postUrl: "https://www.instagram.com/", insight: ig(iso(-1), 48200, 1), insightRequestedAt: iso(-4) })),
     as("k-taiyo", "c2", done("s1", -21, { insight: tt(iso(-2), 92400, 1), insightRequestedAt: iso(-4) })),

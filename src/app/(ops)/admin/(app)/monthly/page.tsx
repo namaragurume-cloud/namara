@@ -27,10 +27,11 @@ export default async function MonthlyPage({ searchParams }: { searchParams: Prom
     });
   const joined = rows.filter((r) => r.a.status === "accepted");
   const shot = joined.filter((r) => r.p.steps[1]?.state === "done");
-  const insightDone = joined.filter((r) => ["current", "done"].includes(r.p.steps[4]?.state ?? ""));
+  const insightDone = joined.filter((r) => ["current", "done"].includes(r.p.steps.find((s) => s.key === "done")?.state ?? ""));
   const waitingCreator = rows.filter((r) => r.p.actionNeeded);
   const waitingMe = rows.filter((r) => r.p.next?.who === "admin");
-  const shown = only === "creator" ? waitingCreator : only === "me" ? waitingMe : rows;
+  const waitingShop = rows.filter((r) => r.p.next?.who === "shop");
+  const shown = only === "creator" ? waitingCreator : only === "me" ? waitingMe : only === "shop" ? waitingShop : rows;
 
   const byCreator = new Map<string, (Row & { creator: Creator })[]>();
   for (const r of shown) byCreator.set(r.creator.id, [...(byCreator.get(r.creator.id) ?? []), r]);
@@ -69,6 +70,7 @@ export default async function MonthlyPage({ searchParams }: { searchParams: Prom
           [undefined, `すべて（${rows.length}）`],
           ["creator", `発信者の対応待ち（${waitingCreator.length}）`],
           ["me", `あなたの対応待ち（${waitingMe.length}）`],
+          ...(waitingShop.length ? [["shop", `お店の確認待ち（${waitingShop.length}）`]] : []),
         ].map(([key, label]) => (
           <Link key={label} href={q({ only: key })} className={`rounded-full border px-3 py-1 font-bold ${only === key ? "border-ink bg-ink text-white" : "border-line bg-white text-muted hover:text-ink"}`}>
             {label}
@@ -118,7 +120,7 @@ export default async function MonthlyPage({ searchParams }: { searchParams: Prom
                       <Badge tone={r.p.tone}>{r.p.status}</Badge>
                       {r.p.next && r.p.next.who !== "none" && (
                         <span className={`text-xs ${r.p.next.who === "admin" ? "font-bold text-brand" : "text-muted"}`}>
-                          {r.p.next.who === "admin" ? "あなた：" : "発信者："}
+                          {r.p.next.who === "admin" ? "あなた：" : r.p.next.who === "shop" ? "お店：" : "発信者："}
                           {r.p.next.text}
                         </span>
                       )}

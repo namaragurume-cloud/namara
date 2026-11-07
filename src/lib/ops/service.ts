@@ -4,6 +4,8 @@ import { db } from "./db";
 import { sendToCreator, sendToRestaurant, type SendResult } from "./notify";
 import { needsInsight } from "./insights";
 import { msg } from "./templates";
+import { cleanupVideos } from "./video";
+import { latestVideo, videoEnabled, videoStage } from "./video-state";
 import { fieldLabel, isComplete, platformLabel, screenshotGuide } from "./insight-fields";
 import { buildReport, pct, pct1 } from "./report";
 import type { Assignment, Campaign, Creator, Platform, Restaurant, Slot } from "./types";
@@ -436,6 +438,56 @@ export async function runReminders(today = jstDate()): Promise<BulkResult> {
     }
   }
 
+  // 動画チェックあり：撮影日の翌日以降、まだ動画がなければ提出をお願い（1回）
+  for (const a of ctx.assignments) {
+    const c = ctx.campaigns.get(a.campaignId);
+    const creator = ctx.creators.get(a.creatorId);
+    if (!c || !creator || c.reportSentAt || !videoEnabled(c)) continue;
+    const slot = slotById(c, a.confirmedSlotId);
+    if (a.status !== "accepted" || !a.confirmedNotifiedAt || !slot || slot.date >= today) continue;
+    if (a.videos?.length || a.videoRequestedAt || a.postUrl || a.insight) continue;
+    const result = await sendToCreator(
+      creator,
+      await msg("videoRequest", {
+        発信者名: creator.name,
+        店舗名: ctx.restaurants.get(c.restaurantId)?.name ?? c.title,
+        URL: assignmentUrl(creator, a),
+        投稿日: a.plannedPostDate ? fmtDate(a.plannedPostDate) : fmtPostDates(c),
+      }),
+      `動画提出のお願い：${c.title}`,
+    );
+    if (result.ok) await db.update("assignments", a.id, (x) => ({ ...x, videoRequestedAt: nowIso() }));
+    out.push({ name: creator.name, result });
+  }
+
+  // お店の動画確認が2日止まっていたら、お店に1回リマインド（案件ごとにまとめて）
+  const waitingShop = new Map<string, Assignment[]>();
+  for (const a of ctx.assignments) {
+    const c = ctx.campaigns.get(a.campaignId);
+    if (!c || c.reportSentAt || videoStage(a, c) !== "shop_review" || a.videoShopRemindedAt) continue;
+    const since = latestVideo(a)?.sentToShopAt;
+    if (!since || daysSince(since, today) < 2) continue;
+    waitingShop.set(c.id, [...(waitingShop.get(c.id) ?? []), a]);
+  }
+  for (const [campaignId, list] of waitingShop) {
+    const c = ctx.campaigns.get(campaignId)!;
+    const r = ctx.restaurants.get(c.restaurantId);
+    if (!r) continue;
+    const result = await sendToRestaurant(
+      r,
+      await msg("restaurantVideoReminder", {
+        店舗名: r.name,
+        宛名: r.contactName ? `${r.contactName}様` : "ご担当者様",
+        件数: String(list.length),
+        URL: `${restaurantPortalUrl(c)}#video`,
+      }),
+      `動画確認のリマインド：${c.title}`,
+    );
+    // 自動で送れなかった場合も、毎日記録が増えないよう1回で止める（ホームの「あなたがやること」に出ます）
+    for (const a of list) await db.update("assignments", a.id, (x) => ({ ...x, videoShopRemindedAt: nowIso() }));
+    out.push({ name: r.name, result });
+  }
+
   // インサイト未提出・不足（依頼から3日後に1回）
   const late = ctx.assignments.filter(
     (a) => a.insightRequestedAt && needsInsight(a) && !a.insightRemindedAt && daysSince(a.insightRequestedAt, today) >= 3 && !ctx.campaigns.get(a.campaignId)?.reportSentAt,
@@ -469,6 +521,7 @@ export function isInsightDay(today: string): boolean {
 
 export async function runDaily(today = jstDate()) {
   const reminders = await runReminders(today);
+  await cleanupVideos(today).catch((e) => console.error("[video] cleanup", e));
   const insights = isInsightDay(today) ? await sendInsightRequests({ today }) : [];
   return { today, reminders, insights };
 }

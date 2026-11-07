@@ -4,6 +4,7 @@ import { dbMode } from "@/lib/ops/db";
 import { isEmailConfigured } from "@/lib/ops/email";
 import { isLineConfigured, lineBasicId } from "@/lib/ops/line";
 import { isAiConfigured } from "@/lib/ops/vision";
+import { videoStorage } from "@/lib/ops/video-store";
 import { absoluteUrl } from "@/lib/utils";
 import { resetDemoAction, runDailyNow } from "../../actions";
 
@@ -52,6 +53,9 @@ export default async function SettingsPage({ searchParams }: { searchParams: Pro
               console.anthropic.com
             </a>
             で発行。1投稿の読み取りあたり数円程度）。未設定でもスクショの受け取りはでき、数値は管理画面で手入力できます。
+          </Row>
+          <Row ok={videoStorage() === "blob" || videoStorage() === "demo"} title="動画の保存先（Vercel Blob）">
+            投稿前の動画チェックで、発信者が送る動画の保存に使います。Vercel の Storage から <b>Blob</b> を追加してプロジェクト（Production）に接続してください（<code>BLOB_READ_WRITE_TOKEN</code> が自動で入ります）。投稿が済んだ動画は自動で削除されます。
           </Row>
           <Row ok={Boolean(process.env.CRON_SECRET)} title="毎日の自動処理">
             毎日10時ごろにリマインド、月末{process.env.OPS_INSIGHT_DAY && process.env.OPS_INSIGHT_DAY !== "last" ? `（設定：毎月${process.env.OPS_INSIGHT_DAY}日）` : ""}にインサイト提出のお願いを自動送信します。Vercel に <code>CRON_SECRET</code>（ランダムな文字列）を設定してください。

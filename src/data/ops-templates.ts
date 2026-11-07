@@ -36,8 +36,15 @@ export const TEMPLATE_KEYS = [
   "lineWelcome",
   "lineLinked",
   "lineUnknown",
+  "videoRequest",
+  "videoApproved",
+  "videoRevision",
   "restaurantSchedule",
+  "restaurantVideoCheck",
+  "restaurantVideoReminder",
   "restaurantReport",
+  "restaurantOnboarding",
+  "restaurantLinked",
   "signature",
 ] as const;
 export type TemplateKey = (typeof TEMPLATE_KEYS)[number];
@@ -251,7 +258,7 @@ export const templateDefs: Record<TemplateKey, TemplateDef> = {
     when: "公式LINEが友だち追加されたとき（自動）",
     to: "発信者",
     body: `友だち追加ありがとうございます！MIRATSUMU（なまらグルメ）です。
-PRのご依頼をこのLINEでお届けするため、担当から届いた「連携コード」をこのトークに送ってください。`,
+ご案内をこのLINEでお届けするため、担当から届いた「連携コード」をこのトークに送ってください。`,
     vars: {},
   },
   lineLinked: {
@@ -269,6 +276,52 @@ PRのご依頼をこのLINEでお届けするため、担当から届いた「�
     body: `メッセージありがとうございます。担当者が確認してご連絡いたします。
 （連携コードの場合は、英数字6文字をそのまま送ってください）`,
     vars: {},
+  },
+  videoRequest: {
+    title: "動画提出のお願い",
+    when: "動画チェックありの案件で、撮影日の翌日（自動）",
+    to: "発信者",
+    subject: "【動画のご提出】{店舗名}",
+    body: `{発信者名}さん
+
+撮影ありがとうございました！
+この案件は投稿前に動画の確認があります。動画ができたら、下のページから動画を送ってください（投稿はまだしないでください）。
+{URL}
+
+投稿予定日：{投稿日}
+{署名}`,
+    vars: { 発信者名: "はなこ", 店舗名: "焼肉 たいよう", URL: "https://…/m/…", 投稿日: "12/10(水)", ...SIGN_VAR },
+  },
+  videoApproved: {
+    title: "動画OKの連絡",
+    when: "お店が動画を「OK」にしたとき（自動）",
+    to: "発信者",
+    subject: "【動画OK】{店舗名}",
+    body: `{発信者名}さん
+
+{店舗名}さんから、動画OKのお返事をいただきました🎉
+投稿予定日（{投稿日}）に投稿をお願いします！
+{URL}
+
+{署名}`,
+    vars: { 発信者名: "はなこ", 店舗名: "焼肉 たいよう", 投稿日: "12/10(水)", URL: "https://…/m/…", ...SIGN_VAR },
+  },
+  videoRevision: {
+    title: "動画の修正のお願い",
+    when: "お店（またはあなた）が動画を「修正」にしたとき（自動）",
+    to: "発信者",
+    subject: "【動画の修正のお願い】{店舗名}",
+    body: `{発信者名}さん
+
+{店舗名}の動画について、修正のお願いがありました。
+■ 修正してほしいこと
+{修正内容}
+
+修正した動画を、下のページからもう一度送ってください。
+{URL}
+
+{署名}`,
+    vars: { 発信者名: "はなこ", 店舗名: "焼肉 たいよう", 修正内容: "冒頭にお店の外観を入れてください", URL: "https://…/m/…", ...SIGN_VAR },
   },
   restaurantSchedule: {
     title: "飲食店への日程共有",
@@ -296,6 +349,71 @@ PRの撮影日・投稿予定日が決まりましたのでご案内いたしま
       URL: "https://…/p/…",
       ...SIGN_VAR,
     },
+  },
+  restaurantVideoCheck: {
+    title: "飲食店へ動画の確認のお願い",
+    when: "発信者が動画を送ったとき（「あなたが先に確認」の案件は、あなたがOKしたとき）",
+    to: "飲食店",
+    subject: "【動画のご確認】{発信者名}さんの投稿動画",
+    body: `{店舗名}
+{宛名}
+
+いつもお世話になっております。MIRATSUMUです。
+{発信者名}さんの投稿前の動画が届きました。
+下のページで動画をご覧いただき、「OK」か「修正をお願いしたい」を押してください（ログインは不要です）。
+{URL}
+
+投稿予定日：{投稿日}
+{署名}`,
+    vars: { 店舗名: "焼肉 たいよう", 宛名: "山田様", 発信者名: "はなこ", URL: "https://…/p/…", 投稿日: "12/10(水)", ...SIGN_VAR },
+  },
+  restaurantVideoReminder: {
+    title: "飲食店へ動画確認のリマインド",
+    when: "動画の確認をお願いして2日たっても確認されていないとき（自動・1回）",
+    to: "飲食店",
+    subject: "【リマインド】動画のご確認",
+    body: `{店舗名}
+{宛名}
+
+確認をお待ちしている投稿前の動画が{件数}件あります。
+お手すきの際にご覧いただけますと幸いです。
+{URL}
+
+{署名}`,
+    vars: { 店舗名: "焼肉 たいよう", 宛名: "山田様", 件数: "2", URL: "https://…/p/…", ...SIGN_VAR },
+  },
+  restaurantOnboarding: {
+    title: "飲食店への最初の案内文",
+    when: "飲食店を登録したあと、LINEでコピーして1回だけ送る",
+    to: "飲食店",
+    subject: "【MIRATSUMU】撮影日程・動画確認のご案内の受け取り方法",
+    body: `{店舗名}
+{宛名}
+
+いつもお世話になっております。MIRATSUMUです。
+撮影日程のご案内、投稿前の動画のご確認、結果レポートを、MIRATSUMUの公式LINEからお届けします。
+
+公式LINEを友だち追加して、下の連携コードを送ってください。
+連携コード：{連携コード}
+{連携リンク}
+
+どうぞよろしくお願いいたします。
+{署名}`,
+    vars: {
+      店舗名: "焼肉 たいよう",
+      宛名: "山田様",
+      連携コード: "ABC123",
+      連携リンク: "（こちらを押すとコードが入力された状態でトークが開きます）\nhttps://line.me/R/oaMessage/…",
+      ...SIGN_VAR,
+    },
+  },
+  restaurantLinked: {
+    title: "飲食店のLINE連携の完了",
+    when: "飲食店が連携コードを送ったとき（自動）",
+    to: "飲食店",
+    body: `{店舗名}様、連携が完了しました！
+今後の撮影日程のご案内・投稿前の動画のご確認・結果レポートは、このLINEにお届けします。`,
+    vars: { 店舗名: "焼肉 たいよう" },
   },
   restaurantReport: {
     title: "飲食店へのレポート送付",

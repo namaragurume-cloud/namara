@@ -22,6 +22,7 @@ import { restaurantPortalUrl } from "@/lib/ops/urls";
 import { fieldLabel, isComplete, platformLabel } from "@/lib/ops/insight-fields";
 import { buildReport, pct, pct1 } from "@/lib/ops/report";
 import { isAiConfigured } from "@/lib/ops/vision";
+import { videoEnabled, videoStage, videoStageLabel } from "@/lib/ops/video-state";
 import {
   addPastParticipants,
   confirmScheduleAction,
@@ -35,6 +36,7 @@ import {
   saveReportComment,
   sendReportAction,
   sendRequestsAction,
+  setVideoCheck,
   setLiveShare,
   shareScheduleAction,
 } from "../../../actions";
@@ -416,6 +418,50 @@ export default async function CampaignPage({ params, searchParams }: { params: P
           </>
         )}
       </Step>
+
+      <Card
+        title="投稿前の動画チェック"
+        actions={videoEnabled(c) ? <Badge tone="blue">{c.videoCheck === "owner_first" ? "あなた → お店" : "お店が直接確認"}</Badge> : <Badge>なし</Badge>}
+      >
+        <form action={setVideoCheck.bind(null, c.id)} className="flex flex-wrap items-end gap-3">
+          <label className="block min-w-64 flex-1 text-sm">
+            <span className="mb-1 block font-bold">撮影と投稿の間に、動画の確認を入れる</span>
+            <select name="videoCheck" defaultValue={c.videoCheck ?? "none"} className={inputClass}>
+              <option value="none">なし（撮影後そのまま投稿）</option>
+              <option value="direct">A：発信者 → お店が確認</option>
+              <option value="owner_first">B：発信者 → あなたが確認 → お店が確認</option>
+            </select>
+          </label>
+          <SubmitButton variant="outline" size="sm">
+            保存
+          </SubmitButton>
+        </form>
+        {videoEnabled(c) && (
+          <>
+            <p className="mt-3 text-xs leading-relaxed text-muted">
+              撮影日の翌日に、発信者へ「動画を送ってください」と自動で届きます。お店には飲食店用ページで確認してもらいます（2日たっても確認がなければ1回リマインド）。
+              {b.restaurant?.lineUserId ? "" : " お店がLINE未連携のため、お店への連絡は各発信者の「詳細」からあなたのLINEで送れます。"}
+            </p>
+            {confirmed.length > 0 && (
+              <ul className="mt-3 divide-y divide-line text-sm">
+                {confirmed.map((r) => {
+                  const st = videoStage(r.a, c);
+                  return (
+                    <li key={r.a.id} className="flex flex-wrap items-center gap-x-3 gap-y-1 py-2">
+                      <b>{r.creator.name}</b>
+                      <Badge tone={st === "approved" ? "green" : st === "revise" ? "red" : st === "owner_review" ? "amber" : "blue"}>{videoStageLabel[st]}</Badge>
+                      {r.a.videos?.length ? <span className="text-xs text-muted">提出{r.a.videos.length}回</span> : null}
+                      <Link href={`/admin/assignments/${r.a.id}`} className="ml-auto text-xs underline">
+                        {st === "owner_review" ? "動画を確認する" : "詳細"}
+                      </Link>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+          </>
+        )}
+      </Card>
 
       {/* ---------------- STEP 4 ---------------- */}
       <Step n={4} title="インサイトのスクショ回収（自動）" done={report.total > 0 && report.incomplete.length === 0}>

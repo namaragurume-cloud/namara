@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Card, Empty, Flash } from "@/components/ops/ui";
+import { Badge, Card, Empty, Flash } from "@/components/ops/ui";
 import { db } from "@/lib/ops/db";
 import { RestaurantForm } from "./form";
 
@@ -25,7 +25,10 @@ export default async function RestaurantsPage({ searchParams }: { searchParams: 
                   <Link href={`/admin/restaurants/${r.id}`} className="flex flex-wrap items-center gap-x-3 py-2.5 hover:opacity-80">
                     <span className="font-bold">{r.name}</span>
                     {r.contactName && <span className="text-sm text-muted">{r.contactName}様</span>}
-                    <span className="ml-auto text-xs text-muted">案件 {count(r.id)}件</span>
+                    <span className="ml-auto flex items-center gap-2 text-xs text-muted">
+                      {r.lineUserId ? <Badge tone="green">LINE</Badge> : <Badge>LINE未連携</Badge>}
+                      案件 {count(r.id)}件
+                    </span>
                   </Link>
                 </li>
               ))}

@@ -5,6 +5,7 @@ import { fmtDate, jstDate } from "@/lib/ops/dates";
 import { db } from "@/lib/ops/db";
 import { isDemo } from "@/lib/ops/demo-flag";
 import { isComplete } from "@/lib/ops/insight-fields";
+import { latestVideo, videoStage } from "@/lib/ops/video-state";
 import { phaseLabel, phaseOf, type Row } from "@/lib/ops/service";
 
 export const metadata = { title: "ホーム" };
@@ -33,6 +34,12 @@ export default async function AdminHome({ searchParams }: { searchParams: Promis
       if (unsent) todo.push(`手動送信が必要な依頼 ${unsent}件`);
       if (phase === "confirming") todo.push("回答が集まりました → 日程を確定");
       if (accepted.some((r) => r.a.confirmedNotifiedAt) && !campaign.scheduleSharedAt) todo.push("飲食店へ撮影日を共有");
+      const ownerVideo = accepted.filter((r) => videoStage(r.a, campaign) === "owner_review").length;
+      if (ownerVideo) todo.push(`動画の確認 ${ownerVideo}件`);
+      const shopUnsent = accepted.filter((r) => videoStage(r.a, campaign) === "shop_review" && !latestVideo(r.a)?.sentToShopAt).length;
+      if (shopUnsent) todo.push(`お店に動画確認を連絡 ${shopUnsent}件`);
+      const shopLate = accepted.filter((r) => videoStage(r.a, campaign) === "shop_review" && r.a.videoShopRemindedAt).length;
+      if (shopLate) todo.push(`お店の動画確認が止まっています ${shopLate}件`);
       const lacking = accepted.filter((r) => r.a.insight && r.a.insight.missing.length > 0 && !r.a.missingNotifiedAt).length;
       if (lacking) todo.push(`スクショ不足で本人に連絡できていない ${lacking}件`);
       if (phase === "report") todo.push("インサイトがそろいました → レポート送付");
@@ -68,6 +75,7 @@ export default async function AdminHome({ searchParams }: { searchParams: Promis
               ["/p/demo-report-shiokaze", "③ 飲食店に送るレポート", "完了した案件の16:9レポート（PDF保存可）"],
               ["/m/demo-creator-1", "④ 発信者に見えるページ", "やること・月ごとの進捗・スクショ送信（はなこさん）"],
               ["/admin/monthly", "⑤ 月別の進捗", "発信者ごとに、今月の案件がどこまで進んだか"],
+              ["/admin/campaigns/k-hare", "⑦ 投稿前の動画チェック", "あなたの確認 → お店の確認（お店のページは「飲食店用ページを見る」）"],
               ["/admin/campaigns/new", "⑥ 新しい案件をつくる", "店舗・PR内容・撮影候補日・投稿日の入力"],
             ].map(([href, title, sub]) => (
               <li key={href}>

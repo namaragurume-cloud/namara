@@ -3,6 +3,10 @@ import { notFound } from "next/navigation";
 import { SubmitButton } from "@/components/ops/client";
 import { DateCalendar } from "@/components/ops/DateCalendar";
 import { DemoBanner } from "@/components/ops/DemoBanner";
+import { VideoUploader } from "@/components/ops/VideoUploader";
+import { VideoView } from "@/components/ops/VideoView";
+import { latestVideo, revisionComment, videoEnabled, videoStage, videoStageLabel } from "@/lib/ops/video-state";
+import { videoStorage } from "@/lib/ops/video-store";
 import { Badge, Card, Field, Flash, inputClass } from "@/components/ops/ui";
 import { fmtDateLong, fmtPostDates, fmtSlot, jstDate } from "@/lib/ops/dates";
 import { db } from "@/lib/ops/db";
@@ -30,6 +34,7 @@ export default async function AssignmentPage({ params, searchParams }: { params:
   const closed = Boolean(c.reportSentAt);
   const confirmed = a.status === "accepted" && a.confirmedSlotId && locked;
   const i = a.insight;
+  const vStage = videoStage(a, c);
   const shots = confirmed ? await listShots(a.id) : [];
   const fromCreator: Platform | undefined = /tiktok/i.test(creator.platform) ? "tiktok" : /instagram/i.test(creator.platform) ? "instagram" : undefined;
   const guidePlatforms: Platform[] = a.platform ? [a.platform] : fromCreator ? [fromCreator] : ["instagram", "tiktok"];
@@ -143,6 +148,37 @@ export default async function AssignmentPage({ params, searchParams }: { params:
             </Field>
             <SubmitButton className="w-full">{a.respondedAt ? "回答を更新する" : "回答する"}</SubmitButton>
           </form>
+        </Card>
+      )}
+
+      {confirmed && videoEnabled(c) && (
+        <Card
+          title="投稿前の動画チェック"
+          actions={<Badge tone={vStage === "approved" ? "green" : vStage === "revise" ? "red" : vStage === "waiting" ? "amber" : "blue"}>{videoStageLabel[vStage]}</Badge>}
+        >
+          <p className="mb-3 text-sm leading-relaxed">
+            {vStage === "waiting" && "この案件は投稿前に動画の確認があります。撮影した動画ができたら、ここから送ってください。まだ投稿はしないでください。"}
+            {vStage === "owner_review" && "動画を受け取りました。担当が確認しています。結果はLINEでお知らせします。"}
+            {vStage === "shop_review" && "動画を受け取りました。お店に確認をお願いしています。結果はLINEでお知らせします。"}
+            {vStage === "revise" && "修正のお願いがありました。下の内容を直して、もう一度送ってください。"}
+            {vStage === "approved" && `動画OKです！投稿日（${a.plannedPostDate ? fmtDateLong(a.plannedPostDate) : fmtPostDates(c)}）に投稿をお願いします。`}
+          </p>
+          {vStage === "revise" && revisionComment(latestVideo(a)) && (
+            <p className="mb-3 whitespace-pre-wrap rounded-xl bg-rose-50 px-3 py-2 text-sm text-rose-900">{revisionComment(latestVideo(a))}</p>
+          )}
+          {!closed && vStage !== "approved" && (
+            <VideoUploader assignmentId={a.id} token={token} mode={videoStorage()} label={a.videos?.length ? (vStage === "revise" ? "修正した動画を送る" : "動画を差し替える") : "動画を選んで送る"} />
+          )}
+          {(a.videos?.length ?? 0) > 0 && (
+            <details className="mt-4" open={vStage !== "approved"}>
+              <summary className="cursor-pointer text-xs font-bold text-muted">送った動画（{a.videos!.length}回）</summary>
+              <div className="mt-3 space-y-5">
+                {[...a.videos!].reverse().map((v, i) => (
+                  <VideoView key={v.id} v={v} index={a.videos!.length - 1 - i} />
+                ))}
+              </div>
+            </details>
+          )}
         </Card>
       )}
 

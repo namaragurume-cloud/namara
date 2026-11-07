@@ -67,7 +67,11 @@ async function handle(ev: LineEvent, received: Set<string>) {
   if (ev.type === "follow") {
     const creators = await db.list("creators");
     const linked = creators.find((c) => c.lineUserId === userId);
-    await lineReply(ev.replyToken, linked ? await tmpl("lineLinked", { 発信者名: linked.name }) : await tmpl("lineWelcome"));
+    const shop = linked ? undefined : (await db.list("restaurants")).find((r) => r.lineUserId === userId);
+    await lineReply(
+      ev.replyToken,
+      linked ? await tmpl("lineLinked", { 発信者名: linked.name }) : shop ? await tmpl("restaurantLinked", { 店舗名: shop.name }) : await tmpl("lineWelcome"),
+    );
     return;
   }
 
@@ -83,6 +87,15 @@ async function handle(ev: LineEvent, received: Set<string>) {
   const creators = await db.list("creators");
   const creator = creators.find((c) => c.lineLinkCode === code);
   if (!creator) {
+    // 飲食店の連携コード
+    const restaurants = await db.list("restaurants");
+    const shop = restaurants.find((r) => r.lineLinkCode === code);
+    if (shop) {
+      for (const other of restaurants.filter((r) => r.lineUserId === userId && r.id !== shop.id)) await db.put("restaurants", { ...other, lineUserId: undefined });
+      await db.put("restaurants", { ...shop, lineUserId: userId });
+      await lineReply(ev.replyToken, await tmpl("restaurantLinked", { 店舗名: shop.name }));
+      return;
+    }
     await lineReply(ev.replyToken, await tmpl("lineUnknown"));
     return;
   }

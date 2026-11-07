@@ -5,7 +5,9 @@ import { AutoRefresh } from "@/components/ops/AutoRefresh";
 import { DemoBanner } from "@/components/ops/DemoBanner";
 import { RestaurantLive } from "@/components/ops/RestaurantLive";
 import { ReportSlides } from "@/components/ops/report/Report";
-import { Card } from "@/components/ops/ui";
+import { Card, Flash } from "@/components/ops/ui";
+import { ShopVideos } from "@/components/ops/ShopVideos";
+import { videoEnabled } from "@/lib/ops/video-state";
 import { isAdmin } from "@/lib/ops/auth";
 import { fmtDate, fmtSlot, jstDate } from "@/lib/ops/dates";
 import { buildReport } from "@/lib/ops/report";
@@ -23,8 +25,8 @@ const PRINT_CSS = `
   .report-slide:last-child { break-after: auto; page-break-after: auto; }
 }`;
 
-export default async function RestaurantPortal({ params }: { params: Promise<{ token: string }> }) {
-  const { token } = await params;
+export default async function RestaurantPortal({ params, searchParams }: { params: Promise<{ token: string }>; searchParams: Promise<{ flash?: string }> }) {
+  const [{ token }, { flash }] = await Promise.all([params, searchParams]);
   const found = await findCampaignByShareToken(token);
   const b = found ? await loadBundle(found.id) : null;
   if (!b) notFound();
@@ -60,6 +62,9 @@ export default async function RestaurantPortal({ params }: { params: Promise<{ t
         </div>
         {showReport && report.submitted > 0 && <PrintButton />}
       </header>
+
+      <Flash text={flash} />
+      {videoEnabled(c) && <ShopVideos token={token} campaign={c} rows={b.rows} />}
 
       {!live && !showSchedule && !showReport && <Card>撮影日が決まりましたら、こちらでご案内いたします。</Card>}
 
