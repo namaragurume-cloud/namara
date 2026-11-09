@@ -15,6 +15,10 @@ export type Creator = {
   /** 発信者専用ページ（/m/[token]）のトークン */
   token: string;
   memo?: string;
+  /** 飲食店への提案に使う料金（1投稿・税別・円） */
+  price?: number;
+  /** 提案資料に載せる紹介文（得意ジャンル・エリア・特徴など） */
+  pitch?: string;
   active: boolean;
   createdAt: string;
 };
@@ -94,6 +98,8 @@ export type Campaign = {
   /** 飲食店向けページ（/p/[token]）のトークン */
   shareToken: string;
   scheduleSharedAt?: string;
+  /** この案件のもとになった提案 */
+  proposalId?: string;
   /** 飲食店ページで撮影・投稿の状況をリアルタイムに公開する */
   liveShare?: boolean;
   /** 投稿前の動画チェック：なし／飲食店が直接確認／あなたが先に確認してから飲食店へ */
@@ -256,6 +262,47 @@ export type TemplateOverride = {
   updatedAt: string;
 };
 
+/** 提案の共通設定（料金の計算・資料の備考） */
+export type ProposalSettings = {
+  id: "proposal";
+  /** 消費税率（%） */
+  taxRate: number;
+  /** ディレクション費など、提案ごとに加える固定費（税別・円。0なら載せない） */
+  directionFee: number;
+  directionFeeLabel: string;
+  /** 提案の有効期限（日数） */
+  validDays: number;
+  /** 料金の下に載せる共通の備考（例：二次利用は別途ご相談） */
+  notes: string;
+};
+
+/** AIが作る提案資料の文章 */
+export type ProposalText = {
+  title: string;
+  catchcopy: string;
+  summary: string;
+  points: { title: string; body: string }[];
+  /** 発信者ごとのおすすめ理由（キーは発信者ID） */
+  reasons: Record<string, string>;
+  /** 少人数のプラン（AIが選んだ発信者と理由。なければ1プランだけ） */
+  lightPlan?: { creatorIds: string[]; reason: string };
+};
+
+/** 飲食店への提案 */
+export type Proposal = {
+  id: string;
+  restaurantId: string;
+  creatorIds: string[];
+  /** あなたのメモ（提案の狙い・お店の要望など。AIへの指示） */
+  request?: string;
+  text?: ProposalText;
+  shareToken: string;
+  sentAt?: string;
+  campaignId?: string;
+  createdAt: string;
+  updatedAt?: string;
+};
+
 export type Collections = {
   creators: Creator;
   restaurants: Restaurant;
@@ -264,5 +311,7 @@ export type Collections = {
   messages: MessageLog;
   shots: Shot;
   templates: TemplateOverride;
+  settings: ProposalSettings;
+  proposals: Proposal;
 };
 export type CollectionName = keyof Collections;

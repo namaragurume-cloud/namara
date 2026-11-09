@@ -20,11 +20,13 @@ import {
 } from "@/lib/ops/service";
 import { fieldLabel, insightFields, missingKeys, missingLabels, parseDistText } from "@/lib/ops/insight-fields";
 import { draftReportText } from "@/lib/ops/ai-report";
+import { draftProposal } from "@/lib/ops/ai-proposal";
+import { proposalShareMsg } from "@/lib/ops/proposal-msg";
 import { deleteShot } from "@/lib/ops/insights";
 import { deleteAllVideoFiles, markSentToShop, ownerDecide, shopDecide, VideoError } from "@/lib/ops/video";
 import { buildReport } from "@/lib/ops/report";
 import { isAiConfigured } from "@/lib/ops/vision";
-import { sendToCreator } from "@/lib/ops/notify";
+import { sendToCreator, sendToRestaurant } from "@/lib/ops/notify";
 import { msg as tmsg } from "@/lib/ops/templates";
 import { templateDefs, TEMPLATE_KEYS, unknownPlaceholders, type TemplateKey } from "@/data/ops-templates";
 import { assignmentUrl, creatorPortalUrl } from "@/lib/ops/urls";
@@ -96,6 +98,8 @@ export async function saveCreator(fd: FormData) {
     followers: optNum(fd, "followers"),
     email,
     memo: optStr(fd, "memo"),
+    price: optNum(fd, "price"),
+    pitch: optStr(fd, "pitch"),
   };
   if (id) {
     await db.update("creators", id, (c) => ({ ...c, ...patch }));
@@ -271,7 +275,9 @@ export async function saveCampaign(fd: FormData) {
     await db.put("campaigns", { ...prev, ...patch });
     back(`/admin/campaigns/${prev.id}`, "保存しました");
   }
-  const c: Campaign = { id: shortId(), ...patch, shareToken: newToken(), liveShare: true, createdAt: nowIso() };
+  const proposalId = optStr(fd, "proposalId");
+  const c: Campaign = { id: shortId(), ...patch, proposalId, shareToken: newToken(), liveShare: true, createdAt: nowIso() };
+  if (proposalId) await db.update("proposals", proposalId, (p) => ({ ...p, campaignId: c.id }));
   await db.put("campaigns", c);
   back(`/admin/campaigns/${c.id}`, "案件を作成しました。次に依頼する発信者を選んで一括送信してください");
 }
@@ -648,6 +654,122 @@ export async function unlinkRestaurantLine(id: string) {
   await requireAdmin();
   await db.update("restaurants", id, (r) => ({ ...r, lineUserId: undefined, lineGroupId: undefined, lineLinkCode: newLinkCode() }));
   back(`/admin/restaurants/${id}`, "LINE連携を解除しました（連携コードも新しくなりました）");
+}
+
+/* ---------- 飲食店への提案 ---------- */
+
+export async function saveProposalSettings(fd: FormData) {
+  await requireAdmin();
+  await db.put("settings", {
+    id: "proposal",
+    taxRate: Math.min(30, Math.max(0, Number(str(fd, "taxRate")) || 0)),
+    directionFee: optNum(fd, "directionFee") ?? 0,
+    directionFeeLabel: str(fd, "directionFeeLabel") || "ディレクション費",
+    validDays: Math.min(365, Math.max(1, Number(str(fd, "validDays")) || 14)),
+    notes: str(fd, "notes"),
+  });
+  back("/admin/settings", "提案の設定を保存しました");
+}
+
+async function draftAndSave(proposalId: string): Promise<string | null> {
+  const p = await db.get("proposals", proposalId);
+  if (!p) return "提案が見つかりません";
+  const restaurant = await db.get("restaurants", p.restaurantId);
+  const creators = (await Promise.all(p.creatorIds.map((id) => db.get("creators", id)))).filter((c): c is Creator => Boolean(c));
+  if (!restaurant) return "店舗が見つかりません";
+  try {
+    const text = await draftProposal({ restaurant, request: p.request, creators });
+    await db.update("proposals", proposalId, (x) => ({ ...x, text, updatedAt: nowIso() }));
+    return null;
+  } catch (e) {
+    console.error("[proposal] draft failed", e);
+    return "AIで資料を作れませんでした。時間をおいて「AIで作り直す」を押すか、文章を手で入力してください";
+  }
+}
+
+export async function createProposal(fd: FormData) {
+  await requireAdmin();
+  let restaurantId = str(fd, "restaurantId");
+  const newName = str(fd, "newRestaurant");
+  if (!restaurantId && newName) {
+    const r: Restaurant = { id: shortId(), name: newName, lineLinkCode: newLinkCode(), createdAt: nowIso() };
+    await db.put("restaurants", r);
+    restaurantId = r.id;
+  }
+  if (!restaurantId || !(await db.get("restaurants", restaurantId))) back("/admin/proposals", "!提案する店舗を選ぶか、新しい店舗名を入力してください");
+  const creatorIds = fd.getAll("creatorId").map(String).filter(Boolean);
+  if (creatorIds.length === 0) back("/admin/proposals", "!提案する発信者を選んでください");
+  const p = { id: shortId(), restaurantId, creatorIds, request: optStr(fd, "request"), shareToken: newToken(), createdAt: nowIso() };
+  await db.put("proposals", p);
+  const err = await draftAndSave(p.id);
+  back(`/admin/proposals/${p.id}`, err ? `!${err}` : "AIで提案資料を作りました。内容を確認して、飲食店に送ってください");
+}
+
+export async function regenerateProposal(id: string) {
+  await requireAdmin();
+  const err = await draftAndSave(id);
+  back(`/admin/proposals/${id}`, err ? `!${err}` : "AIで作り直しました");
+}
+
+export async function saveProposalCreators(id: string, fd: FormData) {
+  await requireAdmin();
+  const creatorIds = fd.getAll("creatorId").map(String).filter(Boolean);
+  if (creatorIds.length === 0) back(`/admin/proposals/${id}`, "!発信者を1人以上選んでください");
+  await db.update("proposals", id, (p) => ({ ...p, creatorIds, request: optStr(fd, "request"), updatedAt: nowIso() }));
+  const err = await draftAndSave(id);
+  back(`/admin/proposals/${id}`, err ? `!発信者は保存しました。${err}` : "発信者を変えて、AIで資料を作り直しました");
+}
+
+export async function saveProposalText(id: string, fd: FormData) {
+  await requireAdmin();
+  const p = await db.get("proposals", id);
+  if (!p) back("/admin/proposals", "!提案が見つかりません");
+  const points = str(fd, "points")
+    .split(/\r?\n/)
+    .map((l) => l.trim())
+    .filter(Boolean)
+    .map((l) => {
+      const [title, ...rest] = l.split(/[｜|]/);
+      return { title: title.trim(), body: rest.join("｜").trim() };
+    });
+  const reasons = Object.fromEntries(p.creatorIds.map((cid) => [cid, str(fd, `reason_${cid}`)]).filter(([, v]) => v));
+  const lightIds = fd.getAll("lightId").map(String).filter((x) => p.creatorIds.includes(x));
+  await db.update("proposals", id, (x) => ({
+    ...x,
+    text: {
+      title: str(fd, "title"),
+      catchcopy: str(fd, "catchcopy"),
+      summary: str(fd, "summary"),
+      points,
+      reasons,
+      lightPlan: str(fd, "useLight") === "on" && lightIds.length && lightIds.length < p.creatorIds.length ? { creatorIds: lightIds, reason: str(fd, "lightReason") } : undefined,
+    },
+    updatedAt: nowIso(),
+  }));
+  back(`/admin/proposals/${id}`, "提案資料を保存しました");
+}
+
+export async function sendProposal(id: string, manual: boolean) {
+  await requireAdmin();
+  const p = await db.get("proposals", id);
+  const r = p ? await db.get("restaurants", p.restaurantId) : null;
+  if (!p || !r) back("/admin/proposals", "!提案が見つかりません");
+  if (manual) {
+    await db.update("proposals", id, (x) => ({ ...x, sentAt: nowIso() }));
+    back(`/admin/proposals/${id}`, "送付済みにしました");
+  }
+  const res = await sendToRestaurant(r, await proposalShareMsg(p, r), `提案：${p.text?.title ?? r.name}`);
+  if (res.ok) await db.update("proposals", id, (x) => ({ ...x, sentAt: nowIso() }));
+  back(
+    `/admin/proposals/${id}`,
+    res.ok ? `飲食店へ${res.channel === "line" ? "公式LINE" : "メール"}で提案を送りました` : `!自動で送れませんでした：${res.error}\n文面をコピーして送り、「送付済みにする」を押してください`,
+  );
+}
+
+export async function deleteProposal(id: string) {
+  await requireAdmin();
+  await db.remove("proposals", id);
+  back("/admin/proposals", "提案を削除しました");
 }
 
 /* ---------- メッセージの文面 ---------- */

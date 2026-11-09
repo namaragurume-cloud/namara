@@ -11,12 +11,15 @@ export function CampaignForm({
   restaurants,
   restaurantId,
   copy,
+  proposal,
 }: {
   c?: Campaign;
   restaurants: Restaurant[];
   restaurantId?: string;
   /** 過去の案件を下書きにする */
   copy?: Campaign;
+  /** 提案から案件をつくる（案件名の下書きと、提案との紐づけ） */
+  proposal?: { id: string; title?: string };
 }) {
   const v = c ?? copy;
   const shop = restaurants.find((r) => r.id === (c?.restaurantId ?? restaurantId ?? copy?.restaurantId));
@@ -24,6 +27,7 @@ export function CampaignForm({
   return (
     <form action={saveCampaign} className="space-y-4">
       {c && <input type="hidden" name="id" value={c.id} />}
+      {!c && proposal && <input type="hidden" name="proposalId" value={proposal.id} />}
       <div className="grid gap-4 md:grid-cols-2">
         <Field label="店舗" required>
           <select name="restaurantId" required defaultValue={c?.restaurantId ?? restaurantId ?? copy?.restaurantId ?? ""} className={inputClass}>
@@ -38,7 +42,7 @@ export function CampaignForm({
           </select>
         </Field>
         <Field label="案件名" required hint="例：12月 新メニューPR">
-          <input name="title" required defaultValue={v?.title} className={inputClass} />
+          <input name="title" required defaultValue={v?.title ?? proposal?.title} className={inputClass} />
         </Field>
       </div>
       <div className="grid gap-4 md:grid-cols-2">

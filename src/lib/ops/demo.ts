@@ -1,7 +1,7 @@
 import "server-only";
 import { addDays, jstDate } from "./dates";
 import { missingKeys } from "./insight-fields";
-import type { Assignment, Campaign, Collections, Creator, Dist, Insight, MessageLog, Restaurant, VideoVersion } from "./types";
+import type { Assignment, Campaign, Collections, Creator, Dist, Insight, MessageLog, Proposal, Restaurant, VideoVersion } from "./types";
 import type { Extracted } from "./vision";
 
 /**
@@ -88,6 +88,17 @@ function tt(at: string, v: number, k: number): Insight {
   return i;
 }
 
+const DEMO_PITCH = [
+  "（デモ）札幌のランチ・カフェを中心に紹介。写真の世界観が好評です。",
+  "（デモ）TikTokで北海道グルメを短尺動画で紹介しています。",
+  "（デモ）グルメ全般。保存数の多いリール投稿が得意です。",
+  "（デモ）ラーメン専門。食べ歩きの投稿が中心です。",
+  "（デモ）カフェ・スイーツ。女性フォロワーが多めです。",
+  "（デモ）TikTokで若い世代に人気。テンポの良い紹介が得意です。",
+  "（デモ）スイーツとパン。地元の主婦層に届きます。",
+  "（デモ）焼肉・肉料理を中心に発信しています。",
+];
+
 export function demoSeed(): Seed {
   const today = jstDate();
   const d = (n: number) => addDays(today, n);
@@ -120,6 +131,9 @@ export function demoSeed(): Seed {
     lineUserId: ch === "line" ? `Udemo${i + 1}` : undefined,
     lineLinkCode: `DEMO${String(i + 1).padStart(2, "0")}`,
     token: `demo-creator-${i + 1}`,
+    // デモ用の仮の料金・紹介文（実在の料金ではありません）。りくは「料金未設定」の例
+    price: i === 7 ? undefined : Math.round(followers / 1000) * 1000 + 10000,
+    pitch: DEMO_PITCH[i],
     active: true,
     createdAt: iso(-100 + i),
   }));
@@ -296,7 +310,35 @@ export function demoSeed(): Seed {
     { id: "demo-m2", toKind: "creator", toId: "c1", toName: "はなこ", channel: "line", ok: true, purpose: "PR依頼：冬季限定パフェPR", text: "はなこさん\n\nいつもありがとうございます！\nカフェ ことり（デモ）さんのPRのご依頼です。\n（デモのサンプルです）", createdAt: iso(-2, 10) },
   ];
 
-  return { restaurants, creators, campaigns, assignments, messages, shots: [], templates: [] };
+  const proposals: Proposal[] = [
+    {
+      id: "pr-hare",
+      restaurantId: "r-hare",
+      creatorIds: ["c3", "c6", "c1", "c2"],
+      request: "（デモ）冬の新メニューを若い世代に。予算は抑えめ希望",
+      shareToken: "demo-proposal",
+      createdAt: iso(-1, 11),
+      text: {
+        title: "スープカレー 晴れ（デモ）様 冬の新メニューPRのご提案",
+        catchcopy: "（デモ）札幌の食好きに届く4名で、冬の新メニューを発信します",
+        summary: "（デモのサンプル文です。実際にはAIが店舗情報・発信者の情報・メモから作ります）\nInstagramとTikTokの発信者4名がお店に伺い、冬の新メニューを撮影・投稿します。",
+        points: [
+          { title: "2つのSNSで発信", body: "InstagramとTikTokの両方に投稿し、幅広い世代に届けます。" },
+          { title: "実際に来店して撮影", body: "発信者が料理とお店の雰囲気を自分の言葉で紹介します。" },
+          { title: "投稿後にレポート", body: "閲覧数などの反響をまとめてご報告します。" },
+        ],
+        reasons: {
+          c3: "（デモ）グルメ系の投稿が中心で、保存されやすいリールが得意です。",
+          c6: "（デモ）TikTokで若い世代へのリーチが見込めます。",
+          c1: "（デモ）札幌のランチ・ディナーを幅広く紹介しています。",
+          c2: "（デモ）テンポの良い短尺動画が得意です。",
+        },
+        lightPlan: { creatorIds: ["c3", "c6"], reason: "（デモ）フォロワーの多い2名に絞り、予算を抑えたプランです。" },
+      },
+    },
+  ];
+
+  return { restaurants, creators, campaigns, assignments, messages, shots: [], templates: [], settings: [], proposals };
 }
 
 /** デモ：スクショを読み取ったことにするサンプルの数値（実際の画像は読んでいない） */
