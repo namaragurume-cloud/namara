@@ -366,6 +366,14 @@ export async function addPastParticipants(campaignId: string, fd: FormData) {
   back(`/admin/campaigns/${campaignId}`, `${added}人を実施済みとして記録しました（連絡はしていません）。下の「インサイトのスクショ回収」から各発信者のスクショを追加するか、提出のお願いを送ってください`);
 }
 
+/** 見送りの人にもう一度依頼する */
+export async function reRequestAction(campaignId: string, creatorId: string, fd: FormData) {
+  await requireAdmin();
+  const note = str(fd, "note");
+  const result = await sendRequests(campaignId, [creatorId], {}, note ? { [creatorId]: note } : {});
+  back(`/admin/campaigns/${campaignId}`, summarize("再依頼", result));
+}
+
 export async function markSentAction(campaignId: string, assignmentId: string) {
   await requireAdmin();
   await markSentManually(assignmentId);
