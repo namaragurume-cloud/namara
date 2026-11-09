@@ -26,6 +26,7 @@ export default async function CreatorsPage({ searchParams }: { searchParams: Pro
                   <span className="font-bold">{c.name}</span>
                   {c.account && <span className="text-sm text-muted">@{c.account}</span>}
                   {c.followers && <span className="num text-xs text-muted">{fmtNum(c.followers)}人</span>}
+                  {c.price ? <span className="num text-xs text-muted">料金 {fmtNum(c.price)}円</span> : <span className="text-xs text-amber-700">料金未設定</span>}
                   <span className="ml-auto flex gap-1.5">
                     {!c.active && <Badge>依頼対象外</Badge>}
                     {c.lineUserId ? <Badge tone="green">LINE連携済</Badge> : c.email ? <Badge tone="blue">メール</Badge> : <Badge tone="red">連絡手段なし</Badge>}

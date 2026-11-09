@@ -90,6 +90,8 @@ export default async function CampaignPage({ params, searchParams }: { params: P
   const phase = phaseOf(b, today);
   const creators = (await db.list("creators")).filter((x) => x.active).sort((x, y) => (y.followers ?? 0) - (x.followers ?? 0));
   const assignedIds = new Set(rows.map((r) => r.creator.id));
+  // 提案から作った案件は、提案で選んだ発信者（まだ依頼していない人）にチェックを入れておく
+  const fromProposal = c.proposalId && rows.length === 0 ? new Set((await db.get("proposals", c.proposalId))?.creatorIds ?? []) : new Set<string>();
 
   const accepted = rows.filter((r) => r.a.status === "accepted");
   const waiting = rows.filter((r) => r.a.status === "sent");
@@ -162,7 +164,7 @@ export default async function CampaignPage({ params, searchParams }: { params: P
                 const already = assignedIds.has(cr.id) && !wasDeclined;
                 return (
                   <label key={cr.id} className={`flex items-center gap-2 rounded-xl border px-3 py-2 text-sm ${already && !failed ? "border-transparent bg-mist text-muted" : "border-line bg-white"}`}>
-                    <input type="checkbox" name="creatorId" value={cr.id} disabled={already && !failed} defaultChecked={failed} className="size-4 accent-[var(--brand)]" />
+                    <input type="checkbox" name="creatorId" value={cr.id} disabled={already && !failed} defaultChecked={failed || fromProposal.has(cr.id)} className="size-4 accent-[var(--brand)]" />
                     <span className="min-w-0 flex-1 truncate">
                       <b>{cr.name}</b>
                       {cr.followers ? <span className="num ml-1 text-xs text-muted">{fmtNum(cr.followers)}</span> : null}

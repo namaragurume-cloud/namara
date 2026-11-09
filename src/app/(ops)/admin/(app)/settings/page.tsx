@@ -1,12 +1,13 @@
 import { SubmitButton } from "@/components/ops/client";
-import { Badge, ButtonLink, Card, Flash } from "@/components/ops/ui";
+import { Badge, ButtonLink, Card, Field, Flash, inputClass } from "@/components/ops/ui";
 import { dbMode } from "@/lib/ops/db";
 import { isEmailConfigured } from "@/lib/ops/email";
 import { isLineConfigured, lineBasicId } from "@/lib/ops/line";
 import { isAiConfigured } from "@/lib/ops/vision";
 import { blobAccess, blobAuth, videoStorage } from "@/lib/ops/video-store";
 import { absoluteUrl } from "@/lib/utils";
-import { resetDemoAction, runDailyNow } from "../../actions";
+import { resetDemoAction, runDailyNow, saveProposalSettings } from "../../actions";
+import { proposalSettings } from "@/lib/ops/proposal-store";
 
 export const metadata = { title: "設定" };
 
@@ -25,6 +26,7 @@ function Row({ ok, title, children }: { ok: boolean; title: string; children: Re
 export default async function SettingsPage({ searchParams }: { searchParams: Promise<{ flash?: string }> }) {
   const { flash } = await searchParams;
   const mode = dbMode();
+  const ps = await proposalSettings();
   return (
     <>
       <Flash text={flash} />
@@ -34,6 +36,33 @@ export default async function SettingsPage({ searchParams }: { searchParams: Pro
         <ButtonLink href="/admin/settings/messages" variant="outline" size="sm" className="mt-3">
           文面を編集する
         </ButtonLink>
+      </Card>
+      <Card title="飲食店への提案（料金の計算）">
+        <form action={saveProposalSettings} className="grid gap-3 md:grid-cols-4">
+          <Field label="消費税率（%）">
+            <input name="taxRate" inputMode="numeric" defaultValue={ps.taxRate} className={inputClass} />
+          </Field>
+          <Field label="固定費の名前">
+            <input name="directionFeeLabel" defaultValue={ps.directionFeeLabel} className={inputClass} />
+          </Field>
+          <Field label="固定費（税別・円）" hint="0なら料金表に載せません">
+            <input name="directionFee" inputMode="numeric" defaultValue={ps.directionFee} className={inputClass} />
+          </Field>
+          <Field label="提案の有効期限（日）">
+            <input name="validDays" inputMode="numeric" defaultValue={ps.validDays} className={inputClass} />
+          </Field>
+          <div className="md:col-span-4">
+            <Field label="料金表の下に載せる備考">
+              <textarea name="notes" rows={2} defaultValue={ps.notes} className={inputClass} />
+            </Field>
+          </div>
+          <div className="md:col-span-4">
+            <SubmitButton variant="outline" size="sm">
+              保存
+            </SubmitButton>
+            <span className="ml-3 text-xs text-muted">発信者ごとの料金は「発信者」の各ページで設定します。</span>
+          </div>
+        </form>
       </Card>
       <Card title="連携の状態">
         <ul className="divide-y divide-line">
