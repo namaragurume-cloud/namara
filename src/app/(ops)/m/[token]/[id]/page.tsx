@@ -55,6 +55,15 @@ export default async function AssignmentPage({ params, searchParams }: { params:
       </header>
       <Flash text={flash} />
 
+      {a.rescheduleRequestedAt && a.status === "sent" && (
+        <div className="rounded-2xl border border-amber-300 bg-amber-50 p-4 text-sm leading-relaxed">
+          <p className="font-bold text-amber-900">撮影日時の再調整をお願いしています</p>
+          {a.rescheduleReason && <p className="mt-1">理由：{a.rescheduleReason}</p>}
+          {a.previousSlotId && <p className="mt-1">これまでの撮影日時：{slotLabel(c, a.previousSlotId)}</p>}
+          <p className="mt-1">お手数ですが、下の「ご回答」から参加できる日時を選び直してください。</p>
+        </div>
+      )}
+
       {confirmed && (
         <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4">
           <p className="text-xs font-bold text-emerald-800">撮影日が確定しました</p>

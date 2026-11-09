@@ -40,6 +40,15 @@ export function progressOf(a: Assignment, c: Campaign, today: string): Progress 
   if (a.status === "declined") {
     return { steps: [], closed: "declined", status: "見送り", tone: "gray", actionNeeded: false };
   }
+  if (a.status === "sent" && a.rescheduleRequestedAt) {
+    return {
+      steps: build("shoot"),
+      status: "日程の選び直し待ち",
+      tone: "amber",
+      next: { who: "creator", text: "撮影日時を選び直す" },
+      actionNeeded: true,
+    };
+  }
   if (a.status === "unsent" || a.status === "sent") {
     const late = c.replyDeadline < today;
     return {
