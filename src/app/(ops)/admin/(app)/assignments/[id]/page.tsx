@@ -187,7 +187,7 @@ export default async function AssignmentPage({ params, searchParams }: { params:
                     {shopText && (
                       <div className="flex flex-wrap gap-2">
                         <a href={lineShareUrl(shopText)} target="_blank" rel="noopener" className={buttonClass("outline", "sm")}>
-                          お店にLINEで送る
+                          お店に自分のLINEで送る
                         </a>
                         <CopyButton text={shopText} label="文面をコピー" />
                         {!lv.sentToShopAt && (

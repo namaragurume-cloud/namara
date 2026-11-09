@@ -426,7 +426,12 @@ export async function shareScheduleAction(campaignId: string, manual: boolean) {
   await requireAdmin();
   const r = await shareScheduleWithRestaurant(campaignId, manual);
   if (manual) back(`/admin/campaigns/${campaignId}`, "飲食店へ共有済みにしました");
-  back(`/admin/campaigns/${campaignId}`, r?.ok ? "飲食店へ撮影日をメールで共有しました" : `!メールを送れませんでした：${r?.error}\n文面をコピーして送り、「共有済みにする」を押してください`);
+  back(
+    `/admin/campaigns/${campaignId}`,
+    r?.ok
+      ? `飲食店へ撮影日を${r.channel === "line" ? "公式LINE" : "メール"}で共有しました`
+      : `!自動で送れませんでした：${r?.error}\n文面をコピーして送り、「共有済みにする」を押してください`,
+  );
 }
 
 export async function setLiveShare(campaignId: string, on: boolean) {
@@ -478,7 +483,12 @@ export async function sendReportAction(campaignId: string, manual: boolean) {
   await requireAdmin();
   const r = await sendReportToRestaurant(campaignId, manual);
   if (manual) back(`/admin/campaigns/${campaignId}`, "レポートを送付済みにしました");
-  back(`/admin/campaigns/${campaignId}`, r?.ok ? "レポートを飲食店へメールで送付しました" : `!メールを送れませんでした：${r?.error}\n文面をコピーして送り、「送付済みにする」を押してください`);
+  back(
+    `/admin/campaigns/${campaignId}`,
+    r?.ok
+      ? `レポートを飲食店へ${r.channel === "line" ? "公式LINE" : "メール"}で送付しました`
+      : `!自動で送れませんでした：${r?.error}\n文面をコピーして送り、「送付済みにする」を押してください`,
+  );
 }
 
 export async function reopenReport(campaignId: string) {
