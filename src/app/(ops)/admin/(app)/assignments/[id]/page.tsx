@@ -15,10 +15,11 @@ import { latestVideo, videoEnabled, videoStage, videoStageLabel } from "@/lib/op
 import { blobAccess, blobAuth, videoStorage } from "@/lib/ops/video-store";
 import { insightFields, isComplete } from "@/lib/ops/insight-fields";
 import { listShots } from "@/lib/ops/insights";
+import { slotLabel } from "@/lib/ops/service";
 import { findSlot, isFlex } from "@/lib/ops/slots";
 import type { DistKey, MetricKey, Platform } from "@/lib/ops/types";
 import { isAiConfigured } from "@/lib/ops/vision";
-import { markVideoSentAction, notifyMissingAction, ownerVideoAction, saveAssignment, saveInsightManual, shopVideoAsAdmin } from "../../../actions";
+import { rescheduleAction, markVideoSentAction, notifyMissingAction, ownerVideoAction, saveAssignment, saveInsightManual, shopVideoAsAdmin } from "../../../actions";
 
 export const metadata = { title: "依頼の詳細" };
 
@@ -51,6 +52,20 @@ export default async function AssignmentPage({ params, searchParams }: { params:
       <p className="text-xs text-muted">
         送信 {fmtDateTime(a.sentAt) || "-"}／回答 {fmtDateTime(a.respondedAt) || "-"}／確定連絡 {fmtDateTime(a.confirmedNotifiedAt) || "-"}／インサイト依頼 {fmtDateTime(a.insightRequestedAt) || "-"}
       </p>
+      {a.status === "accepted" && (
+        <Card title="日程の再調整（選び直し）">
+          <p className="mb-3 text-xs leading-relaxed text-muted">
+            お店の都合などで撮影日時を変えたいときに押すと、この人の回答画面がもう一度開き、「日程の再調整のお願い」がLINEで届きます。選び直した結果を案件ページで確定すると「日程変更」の連絡が届きます。
+            {a.confirmedNotifiedAt ? `（今の撮影日時：${slotLabel(c, a.confirmedSlotId)}）` : ""}
+          </p>
+          <form action={rescheduleAction.bind(null, c.id, a.id)} className="flex flex-wrap gap-2">
+            <input name="reason" placeholder="理由（例：お店の都合により）" className={`${inputClass} min-w-48 flex-1`} />
+            <SubmitButton variant="outline" size="sm" confirm={`${creator.name}さんに日程の選び直しをお願いします。よろしいですか？`}>
+              日程の再調整をお願いする
+            </SubmitButton>
+          </form>
+        </Card>
+      )}
       <form action={saveAssignment} className="space-y-6">
         <input type="hidden" name="id" value={a.id} />
         <Card title="回答（DM・電話で返事が来たときの代理入力）">
