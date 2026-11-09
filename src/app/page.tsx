@@ -10,6 +10,9 @@ import { ServicesOverview } from "@/components/sections/home/ServicesOverview";
 import { Stats } from "@/components/sections/home/Stats";
 import { WorksSection } from "@/components/sections/home/WorksSection";
 
+// フォロワー数（Instagram）を定期的に取り直すため、6時間ごとに再生成
+export const revalidate = 21600;
+
 /**
  * トップページ。
  * ブランドストーリー・なまらグルメの紹介・これまでの活動は /about に掲載しています。

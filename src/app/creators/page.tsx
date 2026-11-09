@@ -1,5 +1,5 @@
 import { getCreatorsWithFollowers } from "@/lib/creators";
-import { site } from "@/data/site";
+import { followerNote, showFollowerCounts, site } from "@/data/site";
 import { pageMetadata } from "@/lib/metadata";
 import { ScrollReveal } from "@/components/animation/ScrollReveal";
 import { CreatorList } from "@/components/sections/CreatorList";
@@ -8,6 +8,9 @@ import { CreatorsEmpty } from "@/components/ui/CreatorsEmpty";
 import { CTAButton } from "@/components/ui/CTAButton";
 import { CreatorMini } from "@/components/ui/CreatorMini";
 import { PageHero } from "@/components/ui/PageHero";
+
+// フォロワー数（Instagram）を定期的に取り直すため、6時間ごとに再生成
+export const revalidate = 21600;
 
 export const metadata = pageMetadata({
   title: "札幌・北海道のグルメインフルエンサー紹介",
@@ -67,6 +70,12 @@ export default async function CreatorsPage() {
             )}
               <p className="mt-10 text-xs leading-relaxed text-muted">
                 ※掲載しているのはネットワークの一部です。最終的な発信者のご提案は、目的やご予算、スケジュールを踏まえてMIRATSUMUが行います。
+                {showFollowerCounts && (
+                  <>
+                    <br />
+                    {followerNote}
+                  </>
+                )}
               </p>
               <div className="mt-12 flex flex-col items-center gap-4 rounded-[28px] bg-mist p-8 text-center md:p-12">
                 <p className="text-lg font-bold md:text-xl">どの発信者が合うか迷ったら、MIRATSUMUにお任せください。</p>

@@ -13,7 +13,7 @@ import "server-only";
  * - 未設定・取得失敗時は null を返し、各データの手入力の値を表示します。
  */
 
-const REVALIDATE_SECONDS = 60 * 60 * 6; // 6時間
+const REVALIDATE_SECONDS = 60 * 60 * 6; // 6時間（1日に数回更新）
 
 export function isInstagramConfigured(): boolean {
   return Boolean(process.env.INSTAGRAM_BUSINESS_ACCOUNT_ID && process.env.INSTAGRAM_ACCESS_TOKEN);

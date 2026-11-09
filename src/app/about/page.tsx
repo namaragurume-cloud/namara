@@ -15,6 +15,9 @@ import { SectionHeading, SectionLabel } from "@/components/ui/SectionHeading";
 import { LogoElements } from "@/components/ui/LogoElements";
 import { Timeline } from "@/components/ui/Timeline";
 
+// フォロワー数（Instagram）を定期的に取り直すため、6時間ごとに再生成
+export const revalidate = 21600;
+
 export const metadata = pageMetadata({
   title: "MIRATSUMUについて",
   description:

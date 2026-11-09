@@ -67,7 +67,10 @@ export const mediaFollowers = { value: 14.2, decimals: 1, suffix: "万人" };
  * true にすると、手入力の値（または Instagram API で自動取得した値）を表示します。
  * ※トップの「数字で見る MIRATSUMU」（SNS総フォロワー数）はこの設定に関係なく表示されます。
  */
-export const showFollowerCounts = false;
+export const showFollowerCounts = true;
+
+/** フォロワー数の注記（発信者一覧の下に表示） */
+export const followerNote = "※フォロワー数はInstagramから自動で取得し、毎日更新しています（取得できない場合は掲載時点の数値、または非表示）。";
 
 /**
  * 数字で見る「MIRATSUMU」（トップページ）。

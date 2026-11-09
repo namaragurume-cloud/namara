@@ -1,6 +1,7 @@
 import Image from "next/image";
 import { UserRound } from "lucide-react";
-import type { Creator } from "@/data/creators";
+import { formatFollowers, type Creator } from "@/data/creators";
+import { showFollowerCounts } from "@/data/site";
 
 /** 小さい発信者カード（ネットワーク発信者用） */
 export function CreatorMini({ creator }: { creator: Creator }) {
@@ -21,7 +22,15 @@ export function CreatorMini({ creator }: { creator: Creator }) {
       </span>
       <span className="min-w-0">
         <span className="block truncate text-[12px] font-bold sm:text-[13px] transition-colors group-hover:text-brand">{label}</span>
-        <span className="block text-[11px] text-muted">Instagram</span>
+        <span className="block text-[11px] text-muted">
+          {showFollowerCounts && creator.followers !== undefined ? (
+            <>
+              <span className="num font-bold text-ink">{formatFollowers(creator.followers)}</span> フォロワー
+            </>
+          ) : (
+            "Instagram"
+          )}
+        </span>
       </span>
       <span className="sr-only">（新しいタブで開きます）</span>
     </a>

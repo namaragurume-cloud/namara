@@ -1,4 +1,4 @@
-import { site } from "@/data/site";
+import { followerNote, showFollowerCounts, site } from "@/data/site";
 import { getCreatorsWithFollowers } from "@/lib/creators";
 import { ScrollReveal } from "@/components/animation/ScrollReveal";
 import { CTAButton } from "@/components/ui/CTAButton";
@@ -72,6 +72,7 @@ export async function CreatorsSection() {
               </ul>
             </div>
           )}
+          {showFollowerCounts && creators.length > 0 && <p className="mt-6 text-[11px] text-muted">{followerNote}</p>}
         </ScrollReveal>
         {creators.length > 0 && (
           <ScrollReveal className="mt-12 flex flex-col items-center gap-3 text-center">

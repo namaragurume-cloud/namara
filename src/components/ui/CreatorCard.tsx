@@ -46,9 +46,9 @@ export function CreatorCard({ creator }: { creator: CreatorView }) {
         </a>
 
         {showFollowerCounts && creator.followers !== undefined && (
-          <p className="mt-5 flex items-baseline gap-1.5">
-            <span className="num text-3xl font-extrabold">{formatFollowers(creator.followers)}</span>
-            <span className="text-xs text-muted">フォロワー</span>
+          <p className="mt-3 flex items-baseline gap-1 sm:mt-5 sm:gap-1.5">
+            <span className="num text-xl font-extrabold sm:text-3xl">{formatFollowers(creator.followers)}</span>
+            <span className="text-[11px] text-muted sm:text-xs">フォロワー</span>
           </p>
         )}
 
@@ -101,15 +101,6 @@ export function CreatorCard({ creator }: { creator: CreatorView }) {
           </span>
           <ArrowRight size={16} aria-hidden="true" className="shrink-0 transition-transform group-hover/btn:translate-x-1" />
         </TrackedLink>
-        {showFollowerCounts && creator.followers !== undefined && (
-          <p className="mt-2 text-[11px] text-muted">
-            {creator.followersLive
-              ? "※フォロワー数はInstagramから自動で更新しています"
-              : creator.followersAsOf
-                ? `※フォロワー数は${creator.followersAsOf}時点`
-                : "※フォロワー数は掲載時点のものです"}
-          </p>
-        )}
       </div>
     </article>
   );

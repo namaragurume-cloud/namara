@@ -168,7 +168,7 @@ npm run dev                  # http://localhost:3000
 
 ### フォロワー数の自動取得（Instagram Graph API）
 
-> 現在は `src/data/site.ts` の `showFollowerCounts` が `false` のため、発信者カードと /about のフォロワー数は非表示です。表示する場合は `true` にしてください。
+> 現在は `src/data/site.ts` の `showFollowerCounts` が `true` で、発信者カード（小さいカード含む）と /about にフォロワー数を表示しています。非表示に戻す場合は `false` にしてください。
 
 トップの「Instagramフォロワー」と、発信者カードのフォロワー数を Instagram から自動取得できます（6時間ごとに更新。`src/lib/instagram.ts`）。設定しない場合は `src/data/` に入力した数値を表示します。
 
