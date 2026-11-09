@@ -7,6 +7,7 @@ import { Badge, ButtonLink, Card, Empty, Field, Flash, Stat, buttonClass, inputC
 import { fmtDate, fmtDateLong, fmtDateTime, fmtNum, fmtParty, fmtPostDates, fmtSlot, jstDate } from "@/lib/ops/dates";
 import { db } from "@/lib/ops/db";
 import { isEmailConfigured } from "@/lib/ops/email";
+import { isLineConfigured } from "@/lib/ops/line";
 import { lineShareUrl } from "@/lib/ops/line";
 import {
   confirmOrChangeMsg,
@@ -69,7 +70,7 @@ function ManualSend({ text, onDone, doneLabel }: { text: string; onDone: () => P
     <span className="flex flex-wrap gap-1.5">
       <CopyButton text={text} label="文面をコピー" />
       <a href={lineShareUrl(text)} target="_blank" rel="noopener" className={buttonClass("outline", "sm")}>
-        LINEで送る
+        自分のLINEで送る
       </a>
       <form action={onDone}>
         <SubmitButton variant="outline" size="sm">
@@ -100,7 +101,11 @@ export default async function CampaignPage({ params, searchParams }: { params: P
   const confirmed = accepted.filter((r) => r.a.confirmedSlotId && r.a.confirmedNotifiedAt);
   const report = buildReport(b);
   const portal = restaurantPortalUrl(c);
-  const canEmail = isEmailConfigured() && Boolean(restaurant?.email);
+  // お店への自動送信：公式LINE（連携済み）が優先、なければメール
+  const shopLine = isLineConfigured() && Boolean(restaurant?.lineGroupId || restaurant?.lineUserId);
+  const shopEmail = isEmailConfigured() && Boolean(restaurant?.email);
+  const shopVia = shopLine ? (restaurant?.lineGroupId ? "公式LINE（お店のグループ）" : "公式LINE") : shopEmail ? "メール" : null;
+  const shopTo = shopLine ? `お店の${shopVia}` : restaurant?.email;
   const scheduleText = (await restaurantScheduleMsg(b)).text;
   const needsReshare = Boolean(
     c.scheduleSharedAt && rows.some((r) => (r.a.scheduleChangedAt && r.a.scheduleChangedAt > c.scheduleSharedAt!) || (r.a.rescheduleRequestedAt && r.a.rescheduleRequestedAt > c.scheduleSharedAt!)),
@@ -481,7 +486,7 @@ export default async function CampaignPage({ params, searchParams }: { params: P
       >
         {needsReshare && (
           <p className="mb-4 rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 text-sm font-bold text-amber-900">
-            お店に共有したあとに、日程の変更・再調整がありました。最新の内容をお店に送ってください（下の「再送」またはLINEで送る）。
+            お店に共有したあとに、日程の変更・再調整がありました。最新の内容をお店に送ってください（下の「再送」または「自分のLINEで送る」）。
           </p>
         )}
         <div className="mb-4 flex flex-wrap items-center gap-3 rounded-xl border border-line bg-mist px-4 py-3 text-sm">
@@ -505,16 +510,22 @@ export default async function CampaignPage({ params, searchParams }: { params: P
           <>
             <pre className="max-h-72 overflow-auto whitespace-pre-wrap rounded-xl bg-mist p-3 text-xs leading-relaxed">{scheduleText}</pre>
             <div className="mt-3 flex flex-wrap gap-2">
-              {canEmail ? (
+              {shopVia ? (
                 <form action={shareScheduleAction.bind(null, c.id, false)}>
-                  <SubmitButton confirm={`${restaurant?.email} にメールで送ります。よろしいですか？`}>{c.scheduleSharedAt ? "最新の内容をメールで再送" : "メールで飲食店に送る"}</SubmitButton>
+                  <SubmitButton confirm={`${shopTo} に送ります。よろしいですか？`}>
+                    {c.scheduleSharedAt ? `最新の内容を${shopVia}で再送` : `${shopVia}で飲食店に送る`}
+                  </SubmitButton>
                 </form>
               ) : (
-                <p className="w-full text-xs text-muted">※ 店舗のメールアドレスが未登録（またはメール送信が未設定）のため、コピーしてLINE等で送ってください。</p>
+                <p className="w-full text-xs text-muted">
+                  ※ お店が公式LINEと未連携（メールも未登録）のため、自動では送れません。コピーしてあなたのLINEで送るか、
+                  <Link href={`/admin/restaurants/${restaurant?.id}`} className="underline">飲食店ページ</Link>
+                  から公式LINEの案内文を送って連携してもらってください。
+                </p>
               )}
               <CopyButton text={scheduleText} label="文面をコピー" size="md" />
               <a href={lineShareUrl(scheduleText)} target="_blank" rel="noopener" className={buttonClass("outline")}>
-                LINEで送る
+                自分のLINEで送る
               </a>
               {!c.scheduleSharedAt && (
                 <form action={shareScheduleAction.bind(null, c.id, true)}>
@@ -701,14 +712,14 @@ export default async function CampaignPage({ params, searchParams }: { params: P
                 レポートを確認
               </ButtonLink>
               {report.incomplete.length > 0 && <p className="w-full text-xs text-amber-700">※ インサイトがそろっていない人がいます（{report.incomplete.map((r) => r.creator.name).join("、")}）。このまま送ることもできます（足りない数値は「-」で表示されます）。</p>}
-              {canEmail && (
+              {shopVia && (
                 <form action={sendReportAction.bind(null, c.id, false)}>
-                  <SubmitButton confirm={`${restaurant?.email} にレポートを送ります。よろしいですか？`}>{c.reportSentAt ? "メールで再送" : "メールで飲食店に送る"}</SubmitButton>
+                  <SubmitButton confirm={`${shopTo} にレポートを送ります。よろしいですか？`}>{c.reportSentAt ? `${shopVia}で再送` : `${shopVia}で飲食店に送る`}</SubmitButton>
                 </form>
               )}
               <CopyButton text={reportText} label="送付文をコピー" size="md" />
               <a href={lineShareUrl(reportText)} target="_blank" rel="noopener" className={buttonClass("outline")}>
-                LINEで送る
+                自分のLINEで送る
               </a>
               {c.reportSentAt ? (
                 <form action={reopenReport.bind(null, c.id)}>
