@@ -1,3 +1,4 @@
+import { CreatorAvatar } from "@/components/ops/CreatorAvatar";
 import type { Plan } from "@/lib/ops/proposal";
 import { yen } from "@/lib/ops/proposal";
 
@@ -16,8 +17,18 @@ export function PlanTable({ plan, title, taxRate, compact }: { plan: Plan; title
           {plan.lines.map((l, i) => (
             <tr key={i} className="border-b border-[#eef1f5]">
               <td className={`px-4 ${compact ? "py-1.5" : "py-2"} font-sans [overflow-wrap:anywhere]`}>
-                {l.label}
-                {l.sub && !compact && <span className="block text-xs text-muted">{l.sub}</span>}
+                <span className="flex items-center gap-3">
+                  {l.creator && <CreatorAvatar name={l.creator.name} src={l.creator.icon} size={compact ? 28 : 36} />}
+                  <span className="min-w-0">
+                    {l.label}
+                    {l.sub && !compact && <span className="block text-xs text-muted">{l.sub}</span>}
+                    {l.creator?.url && (
+                      <a href={l.creator.url} target="_blank" rel="noopener" className="block text-xs text-[#1f5fbf] underline">
+                        {l.creator.url.replace(/^https?:\/\/(www\.)?/, "").replace(/\/$/, "")}
+                      </a>
+                    )}
+                  </span>
+                </span>
               </td>
               <td className="whitespace-nowrap px-4 py-2 text-right">{yen(l.amount)}</td>
             </tr>

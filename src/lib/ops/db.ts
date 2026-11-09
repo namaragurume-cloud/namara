@@ -60,7 +60,7 @@ function redisBackend(cfg: { url: string; token: string }): Backend {
   }
   return {
     async blobSet(k, v, ttl) {
-      await cmd(["SET", `${PREFIX}blob:${k}`, v, "EX", ttl]);
+      await cmd(ttl > 0 ? ["SET", `${PREFIX}blob:${k}`, v, "EX", ttl] : ["SET", `${PREFIX}blob:${k}`, v]);
     },
     blobGet: (k) => cmd<string | null>(["GET", `${PREFIX}blob:${k}`]),
     async blobDel(k) {
@@ -186,6 +186,8 @@ const BLOB_TTL_DAYS = 180;
 
 export const blobs = {
   set: (key: string, base64: string) => backend().blobSet(key, base64, BLOB_TTL_DAYS * 86_400),
+  /** 期限なしで保存（発信者のアイコンなど） */
+  setForever: (key: string, base64: string) => backend().blobSet(key, base64, 0),
   get: (key: string) => backend().blobGet(key),
   del: (key: string) => backend().blobDel(key),
 };

@@ -15,6 +15,10 @@ export type Creator = {
   /** 発信者専用ページ（/m/[token]）のトークン */
   token: string;
   memo?: string;
+  /** SNSのプロフィールURL（空ならSNSとアカウントから自動で作る） */
+  profileUrl?: string;
+  /** アイコン画像を保存した日時（あればアイコンあり。URLのキャッシュ更新にも使う） */
+  iconAt?: string;
   /** 飲食店への提案に使う料金（1投稿・税別・円） */
   price?: number;
   active: boolean;

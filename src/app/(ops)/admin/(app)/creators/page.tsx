@@ -1,4 +1,6 @@
 import Link from "next/link";
+import { CreatorAvatar } from "@/components/ops/CreatorAvatar";
+import { creatorIconUrl } from "@/lib/ops/creator-profile";
 import { SubmitButton } from "@/components/ops/client";
 import { Badge, Card, Empty, Field, Flash, inputClass } from "@/components/ops/ui";
 import { fmtNum } from "@/lib/ops/dates";
@@ -23,6 +25,7 @@ export default async function CreatorsPage({ searchParams }: { searchParams: Pro
             {creators.map((c) => (
               <li key={c.id}>
                 <Link href={`/admin/creators/${c.id}`} className="flex flex-wrap items-center gap-x-3 gap-y-1 py-2.5 hover:opacity-80">
+                  <CreatorAvatar name={c.name} src={creatorIconUrl(c)} size={28} />
                   <span className="font-bold">{c.name}</span>
                   {c.account && <span className="text-sm text-muted">@{c.account}</span>}
                   {c.followers && <span className="num text-xs text-muted">{fmtNum(c.followers)}人</span>}

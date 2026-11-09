@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { CheckAll, SubmitButton } from "@/components/ops/client";
+import { CreatorAvatar } from "@/components/ops/CreatorAvatar";
 import { SelectedTotal } from "@/components/ops/SelectedTotal";
+import { creatorIconUrl } from "@/lib/ops/creator-profile";
 import { Badge, Card, Empty, Field, Flash, inputClass } from "@/components/ops/ui";
 import { fmtDate, fmtNum } from "@/lib/ops/dates";
 import { db } from "@/lib/ops/db";
@@ -55,6 +57,7 @@ export default async function ProposalsPage({ searchParams }: { searchParams: Pr
               {active.map((c) => (
                 <label key={c.id} className="flex items-center gap-2 rounded-xl border border-line bg-white px-3 py-2 text-sm has-[:checked]:border-brand has-[:checked]:bg-brand/5">
                   <input type="checkbox" name="creatorId" value={c.id} data-price={c.price ?? 0} className="size-4 accent-[var(--brand)]" />
+                  <CreatorAvatar name={c.name} src={creatorIconUrl(c)} size={28} />
                   <span className="min-w-0 flex-1">
                     <b className="block truncate">{c.name}</b>
                     <span className="block truncate text-xs text-muted">

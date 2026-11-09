@@ -3,7 +3,8 @@
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { checkPassword, endSession, requireAdmin, startSession } from "@/lib/ops/auth";
-import { db, resetDemo } from "@/lib/ops/db";
+import { blobs, db, resetDemo } from "@/lib/ops/db";
+import { iconKey } from "@/lib/ops/creator-profile";
 import { isDemo } from "@/lib/ops/demo-flag";
 import type { BulkResult } from "@/lib/ops/service";
 import {
@@ -90,6 +91,8 @@ export async function saveCreator(fd: FormData) {
   if (!name) back(id ? `/admin/creators/${id}` : "/admin/creators", "!名前を入力してください");
   const email = optStr(fd, "email");
   if (email && !z.email().safeParse(email).success) back(id ? `/admin/creators/${id}` : "/admin/creators", "!メールアドレスの形式が正しくありません");
+  const profileUrl = optStr(fd, "profileUrl");
+  if (profileUrl && !/^https?:\/\/\S+$/.test(profileUrl)) back(id ? `/admin/creators/${id}` : "/admin/creators", "!SNSのURLは https:// から入力してください");
   const patch = {
     name,
     account,
@@ -98,14 +101,32 @@ export async function saveCreator(fd: FormData) {
     email,
     memo: optStr(fd, "memo"),
     price: optNum(fd, "price"),
+    profileUrl,
   };
   if (id) {
-    await db.update("creators", id, (c) => ({ ...c, ...patch }));
+    const iconAt = await saveIcon(id, fd);
+    await db.update("creators", id, (c) => ({ ...c, ...patch, iconAt: iconAt === undefined ? c.iconAt : iconAt || undefined }));
     back(`/admin/creators/${id}`, "保存しました");
   }
-  const creator: Creator = { id: shortId(), ...patch, token: newToken(), lineLinkCode: newLinkCode(), active: true, createdAt: nowIso() };
+  const newId = shortId();
+  const creator: Creator = { id: newId, ...patch, iconAt: (await saveIcon(newId, fd)) || undefined, token: newToken(), lineLinkCode: newLinkCode(), active: true, createdAt: nowIso() };
   await db.put("creators", creator);
   back(`/admin/creators/${creator.id}`, "登録しました。下の「最初の案内文」を本人に送ってください");
+}
+
+/**
+ * フォームのアイコン画像を保存する。
+ * 戻り値：新しい日時（保存した）／""（外した）／undefined（変更なし）
+ */
+async function saveIcon(creatorId: string, fd: FormData): Promise<string | undefined> {
+  if (str(fd, "removeIcon") === "1") {
+    await blobs.del(iconKey(creatorId));
+    return "";
+  }
+  const m = /^data:image\/jpeg;base64,([A-Za-z0-9+/=]+)$/.exec(str(fd, "icon"));
+  if (!m || m[1].length > 400_000) return undefined;
+  await blobs.setForever(iconKey(creatorId), m[1]);
+  return nowIso();
 }
 
 /** 1行1人：名前, アカウント, フォロワー数, メール */
@@ -317,6 +338,7 @@ export async function deleteCreator(id: string) {
   if (!c) back("/admin/creators", "!発信者が見つかりません");
   const list = (await db.list("assignments")).filter((a) => a.creatorId === id);
   await removeAssignments(list);
+  await blobs.del(iconKey(id)).catch(() => {});
   await db.remove("creators", id);
   back("/admin/creators", `「${c.name}」さんを削除しました${list.length ? `（依頼${list.length}件も削除）` : ""}`);
 }

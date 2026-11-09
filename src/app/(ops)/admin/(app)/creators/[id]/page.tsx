@@ -1,7 +1,9 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { CopyButton, SubmitButton } from "@/components/ops/client";
+import { IconPicker } from "@/components/ops/IconPicker";
 import { ProgressSteps } from "@/components/ops/ProgressSteps";
+import { creatorIconUrl, creatorProfileUrl } from "@/lib/ops/creator-profile";
 import { progressOf } from "@/lib/ops/progress";
 import { Badge, Card, Field, Flash, inputClass } from "@/components/ops/ui";
 import { fmtDate, jstDate } from "@/lib/ops/dates";
@@ -97,11 +99,17 @@ export default async function CreatorPage({ params, searchParams }: { params: Pr
             <Field label="名前（呼び名）" required>
               <input name="name" defaultValue={c.name} required className={inputClass} />
             </Field>
+            <Field label="アイコン" hint="SNSのアイコン画像（スクショでOK）。料金表に表示します">
+              <IconPicker name={c.name} current={creatorIconUrl(c)} />
+            </Field>
             <Field label="アカウント">
               <input name="account" defaultValue={c.account} className={inputClass} />
             </Field>
             <Field label="SNS">
               <input name="platform" defaultValue={c.platform} className={inputClass} />
+            </Field>
+            <Field label="SNSのURL" hint={`空欄なら自動：${creatorProfileUrl({ ...c, profileUrl: undefined }) ?? "SNSとアカウントから作れません"}`}>
+              <input name="profileUrl" type="url" defaultValue={c.profileUrl ?? ""} placeholder="https://www.instagram.com/..." className={inputClass} />
             </Field>
             <Field label="フォロワー数">
               <input name="followers" inputMode="numeric" defaultValue={c.followers ?? ""} className={inputClass} />
