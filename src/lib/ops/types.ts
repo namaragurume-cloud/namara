@@ -207,6 +207,9 @@ export type Assignment = {
   previousPostDate?: string;
   /** 確定後に日程を変更して連絡した日時（お店への再共有の目安） */
   scheduleChangedAt?: string;
+  /** 見送りの人にもう一度依頼した日時とひとこと */
+  reRequestedAt?: string;
+  reRequestNote?: string;
   /** 日程の再調整（選び直し）をお願いした日時と理由 */
   rescheduleRequestedAt?: string;
   rescheduleReason?: string;

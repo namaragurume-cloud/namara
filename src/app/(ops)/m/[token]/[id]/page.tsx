@@ -56,6 +56,14 @@ export default async function AssignmentPage({ params, searchParams }: { params:
       </header>
       <Flash text={flash} />
 
+      {a.reRequestedAt && a.status === "sent" && !a.rescheduleRequestedAt && (
+        <div className="rounded-2xl border border-amber-300 bg-amber-50 p-4 text-sm leading-relaxed">
+          <p className="font-bold text-amber-900">改めてのご相談です</p>
+          {a.reRequestNote && <p className="mt-1">{a.reRequestNote}</p>}
+          <p className="mt-1">参加できそうでしたら、下の「ご回答」から選び直してください。今回も難しい場合は「今回は見送る」のままで大丈夫です。</p>
+        </div>
+      )}
+
       {a.rescheduleRequestedAt && a.status === "sent" && (
         <div className="rounded-2xl border border-amber-300 bg-amber-50 p-4 text-sm leading-relaxed">
           <p className="font-bold text-amber-900">撮影日時の再調整をお願いしています</p>

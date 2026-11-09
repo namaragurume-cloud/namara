@@ -142,7 +142,8 @@ export function proposeSlots(campaign: Campaign, rows: Row[]): Map<string, strin
 export type BulkResult = { name: string; result: SendResult }[];
 
 export function prRequestMsg(b: Bundle, creator: Creator, a: Assignment) {
-  return msg("prRequest", {
+  return msg(a.reRequestedAt ? "prRequestAgain" : "prRequest", {
+    ひとこと: a.reRequestNote,
     発信者名: creator.name,
     店舗名: b.restaurant?.name ?? "",
     案件名: b.campaign.title,
@@ -157,15 +158,35 @@ export function prRequestMsg(b: Bundle, creator: Creator, a: Assignment) {
 }
 
 /** 選んだ発信者に依頼を作成し、まだ届いていない人にまとめて送信 */
-export async function sendRequests(campaignId: string, creatorIds: string[], offers: Record<string, string> = {}): Promise<BulkResult> {
+export async function sendRequests(
+  campaignId: string,
+  creatorIds: string[],
+  offers: Record<string, string> = {},
+  notes: Record<string, string> = {},
+): Promise<BulkResult> {
   const before = await loadBundle(campaignId);
   if (!before) throw new Error("案件が見つかりません");
   const existing = new Map(before.rows.map((r) => [r.creator.id, r.a]));
   for (const id of creatorIds) {
     const prev = existing.get(id);
     if (prev) {
-      // 送れなかった依頼を送り直すときに、個別の報酬を変えた場合
-      if (prev.status === "unsent" && offers[id] !== undefined) await db.update("assignments", prev.id, (x) => ({ ...x, offer: offers[id] || undefined }));
+      if (prev.status === "declined") {
+        // 見送りの人にもう一度依頼する：回答画面を開き直して「改めてのご相談」を送る
+        await db.update("assignments", prev.id, (x) => ({
+          ...x,
+          status: "unsent",
+          availableSlotIds: [],
+          respondedAt: undefined,
+          note: undefined,
+          replyRemindedAt: undefined,
+          reRequestedAt: nowIso(),
+          reRequestNote: notes[id] || undefined,
+          offer: offers[id] !== undefined ? offers[id] || undefined : x.offer,
+        }));
+      } else if (prev.status === "unsent" && offers[id] !== undefined) {
+        // 送れなかった依頼を送り直すときに、個別の報酬を変えた場合
+        await db.update("assignments", prev.id, (x) => ({ ...x, offer: offers[id] || undefined }));
+      }
       continue;
     }
     const creator = await db.get("creators", id);
@@ -184,7 +205,8 @@ export async function sendRequests(campaignId: string, creatorIds: string[], off
   const targets = b.rows.filter((r) => r.a.status === "unsent" && creatorIds.includes(r.creator.id));
   const out: BulkResult = [];
   for (const { a, creator } of targets) {
-    const result = await sendToCreator(creator, await prRequestMsg(b, creator, a), `PR依頼：${b.campaign.title}`);
+    const again = Boolean(a.reRequestedAt);
+    const result = await sendToCreator(creator, await prRequestMsg(b, creator, a), `${again ? "再依頼" : "PR依頼"}：${b.campaign.title}`);
     if (result.ok) {
       await db.update("assignments", a.id, (x) => ({ ...x, status: x.status === "unsent" ? "sent" : x.status, sentAt: nowIso(), sentVia: result.channel }));
     }

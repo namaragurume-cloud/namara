@@ -35,6 +35,7 @@ import {
   markConfirmedAction,
   markSentAction,
   removeAssignment,
+  reRequestAction,
   rescheduleAction,
   reopenReport,
   saveReportComment,
@@ -150,8 +151,10 @@ export default async function CampaignPage({ params, searchParams }: { params: P
           ) : (
             <div className="grid max-h-80 gap-1.5 overflow-y-auto sm:grid-cols-2 lg:grid-cols-3">
               {creators.map((cr) => {
-                const already = assignedIds.has(cr.id);
                 const failed = unsent.some((r) => r.creator.id === cr.id);
+                const wasDeclined = declined.some((r) => r.creator.id === cr.id);
+                // 見送りの人は、もう一度選んで送れる
+                const already = assignedIds.has(cr.id) && !wasDeclined;
                 return (
                   <label key={cr.id} className={`flex items-center gap-2 rounded-xl border px-3 py-2 text-sm ${already && !failed ? "border-transparent bg-mist text-muted" : "border-line bg-white"}`}>
                     <input type="checkbox" name="creatorId" value={cr.id} disabled={already && !failed} defaultChecked={failed} className="size-4 accent-[var(--brand)]" />
@@ -161,6 +164,8 @@ export default async function CampaignPage({ params, searchParams }: { params: P
                     </span>
                     {already && !failed ? (
                       <span className="text-xs">依頼済</span>
+                    ) : wasDeclined ? (
+                      <Badge tone="amber">見送り・再依頼可</Badge>
                     ) : cr.lineUserId ? (
                       <Badge tone="green">LINE</Badge>
                     ) : cr.email ? (
@@ -427,6 +432,7 @@ export default async function CampaignPage({ params, searchParams }: { params: P
                         {r.a.replyRemindedAt && "・リマインド済"}
                       </span>
                       {r.a.offer && <span className="text-xs text-sky-800">個別の報酬：{r.a.offer}</span>}
+                      {r.a.reRequestedAt && <span className="text-xs font-bold text-amber-800">再依頼</span>}
                       {r.a.rescheduleRequestedAt && (
                         <span className="text-xs font-bold text-amber-800">
                           再調整中（前：{slotLabel(c, r.a.previousSlotId)}
@@ -443,12 +449,20 @@ export default async function CampaignPage({ params, searchParams }: { params: P
             )}
             {declined.length > 0 && (
               <div className="rounded-xl bg-mist p-3">
-                <p className="text-xs font-bold text-muted">見送り</p>
-                <ul className="mt-1 space-y-1">
+                <p className="text-xs font-bold text-muted">見送り（もう一度依頼できます）</p>
+                <ul className="mt-1 space-y-2">
                   {declined.map((r) => (
                     <li key={r.a.id}>
-                      {r.creator.name}
-                      {r.a.note && <span className="ml-2 text-xs text-muted">💬 {r.a.note}</span>}
+                      <span>
+                        {r.creator.name}
+                        {r.a.note && <span className="ml-2 text-xs text-muted">💬 {r.a.note}</span>}
+                      </span>
+                      <form action={reRequestAction.bind(null, c.id, r.creator.id)} className="mt-1 flex gap-2">
+                        <input name="note" placeholder="ひとこと（例：候補日を追加しました）" className={`${inputClass} py-1.5 text-xs`} />
+                        <SubmitButton variant="outline" size="sm" className="shrink-0" confirm={`${r.creator.name}さんにもう一度依頼します。よろしいですか？`}>
+                          もう一度依頼する
+                        </SubmitButton>
+                      </form>
                     </li>
                   ))}
                 </ul>
