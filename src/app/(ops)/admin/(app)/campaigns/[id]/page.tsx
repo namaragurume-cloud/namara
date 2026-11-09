@@ -24,6 +24,7 @@ import { restaurantPortalUrl } from "@/lib/ops/urls";
 import { fieldLabel, isComplete, platformLabel } from "@/lib/ops/insight-fields";
 import { buildReport, pct, pct1 } from "@/lib/ops/report";
 import { isAiConfigured } from "@/lib/ops/vision";
+import { describeFlex, isFlex, slotsForCampaign } from "@/lib/ops/slots";
 import { videoEnabled, videoStage, videoStageLabel } from "@/lib/ops/video-state";
 import {
   addPastParticipants,
@@ -93,6 +94,7 @@ export default async function CampaignPage({ params, searchParams }: { params: P
   const declined = rows.filter((r) => r.a.status === "declined");
   const unsent = rows.filter((r) => r.a.status === "unsent");
   const proposal = proposeSlots(c, rows);
+  const shownSlots = slotsForCampaign(c, rows.map((r) => r.a));
   const notified = accepted.filter((r) => r.a.confirmedNotifiedAt);
   const confirmed = accepted.filter((r) => r.a.confirmedSlotId && r.a.confirmedNotifiedAt);
   const report = buildReport(b);
@@ -197,7 +199,7 @@ export default async function CampaignPage({ params, searchParams }: { params: P
           <SubmitButton confirm="選んだ発信者に依頼を送信します。よろしいですか？">選んだ人に一括送信</SubmitButton>
         </form>
 
-        <details className="mt-4 rounded-xl border border-line bg-mist p-3" open={rows.length === 0 && c.slots.every((s) => s.date < today)}>
+        <details className="mt-4 rounded-xl border border-line bg-mist p-3" open={rows.length === 0 && (isFlex(c) ? c.flex!.to < today : c.slots.every((s) => s.date < today))}>
           <summary className="cursor-pointer text-sm font-bold">実施済みの案件として記録する（発信者に連絡しない）</summary>
           <p className="mt-2 text-xs leading-relaxed text-muted">
             すでに撮影・投稿が終わった案件のレポートを作るときに使います。選んだ発信者を「参加・撮影済み」として登録します。LINE・メールは送りません。登録後、「インサイトのスクショ回収」から各発信者のスクショを追加するか、提出のお願いを送ってください。
@@ -216,16 +218,29 @@ export default async function CampaignPage({ params, searchParams }: { params: P
               ))}
             </div>
             <div className="grid gap-3 sm:grid-cols-2">
-              <label className="block text-sm">
-                <span className="mb-1 block font-bold">撮影日時</span>
-                <select name="slotId" className={inputClass} defaultValue={c.slots[0]?.id}>
-                  {c.slots.map((s) => (
-                    <option key={s.id} value={s.id}>
-                      {fmtSlot(s)}
-                    </option>
-                  ))}
-                </select>
-              </label>
+              {isFlex(c) ? (
+                <div className="grid grid-cols-2 gap-2 text-sm">
+                  <label className="block">
+                    <span className="mb-1 block font-bold">撮影日</span>
+                    <input type="date" name="pastDate" defaultValue={c.flex!.from} className={inputClass} />
+                  </label>
+                  <label className="block">
+                    <span className="mb-1 block font-bold">開始時刻</span>
+                    <input type="time" name="pastTime" defaultValue={c.flex!.start} className={inputClass} />
+                  </label>
+                </div>
+              ) : (
+                <label className="block text-sm">
+                  <span className="mb-1 block font-bold">撮影日時</span>
+                  <select name="slotId" className={inputClass} defaultValue={c.slots[0]?.id}>
+                    {c.slots.map((s) => (
+                      <option key={s.id} value={s.id}>
+                        {fmtSlot(s)}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              )}
               <label className="block text-sm">
                 <span className="mb-1 block font-bold">投稿日（わかれば）</span>
                 <input type="date" name="postDate" defaultValue={c.postDates?.[0]} className={inputClass} />
@@ -265,9 +280,11 @@ export default async function CampaignPage({ params, searchParams }: { params: P
           <Stat label="確定連絡済み" value={`${notified.length}/${accepted.length}`} />
         </div>
 
-        <h3 className="mt-5 text-sm font-bold">候補日ごとの参加可能者</h3>
+        <h3 className="mt-5 text-sm font-bold">{isFlex(c) ? "希望の日時ごとの人" : "候補日ごとの参加可能者"}</h3>
+        {isFlex(c) && <p className="mt-1 text-xs text-muted">撮影できる期間：{describeFlex(c.flex!)}（発信者の第1〜第3希望が集まります）</p>}
         <div className="mt-2 grid gap-2 md:grid-cols-2">
-          {c.slots.map((s) => {
+          {shownSlots.length === 0 && <p className="text-sm text-muted">まだ希望の日時はありません。</p>}
+          {shownSlots.map((s) => {
             const avail = accepted.filter((r) => r.a.availableSlotIds.includes(s.id));
             const assigned = accepted.filter((r) => proposal.get(r.a.id) === s.id);
             const people = assigned.reduce((n, r) => n + partyOf(r.a), 0);
@@ -279,7 +296,11 @@ export default async function CampaignPage({ params, searchParams }: { params: P
                     {people > s.capacity ? "定員オーバー " : ""}割当 {people}/{s.capacity}名（同伴含む）
                   </span>
                 </div>
-                <p className="mt-1 text-xs leading-relaxed text-muted">{avail.length ? avail.map((r) => `${r.creator.name}${(r.a.partySize ?? 1) > 1 ? `（${r.a.partySize}名）` : ""}`).join("、") : "参加可能な人はまだいません"}</p>
+                <p className="mt-1 text-xs leading-relaxed text-muted">{avail.length
+                    ? avail
+                        .map((r) => `${r.creator.name}${(r.a.partySize ?? 1) > 1 ? `（${r.a.partySize}名）` : ""}${isFlex(c) ? `・第${r.a.availableSlotIds.indexOf(s.id) + 1}希望` : ""}`)
+                        .join("、")
+                    : "参加可能な人はまだいません"}</p>
               </div>
             );
           })}
@@ -312,12 +333,15 @@ export default async function CampaignPage({ params, searchParams }: { params: P
                         <td className="px-2 py-2">
                           <select name={`slot_${r.a.id}`} defaultValue={pick ?? ""} className={inputClass}>
                             <option value="">未定</option>
-                            {c.slots.map((s) => (
-                              <option key={s.id} value={s.id}>
-                                {r.a.availableSlotIds.includes(s.id) ? "◯ " : "× "}
-                                {fmtSlot(s)}
-                              </option>
-                            ))}
+                            {shownSlots.map((s) => {
+                              const rank = r.a.availableSlotIds.indexOf(s.id);
+                              return (
+                                <option key={s.id} value={s.id}>
+                                  {rank < 0 ? "× " : isFlex(c) ? `第${rank + 1}希望 ` : "◯ "}
+                                  {fmtSlot(s)}
+                                </option>
+                              );
+                            })}
                           </select>
                         </td>
                         <td className="px-2 py-2">
@@ -684,6 +708,10 @@ export default async function CampaignPage({ params, searchParams }: { params: P
 
       <Card title="依頼内容（発信者に表示される内容）">
         <dl className="grid gap-3 text-sm md:grid-cols-2">
+          <div className="md:col-span-2">
+            <dt className="text-xs font-bold text-muted">撮影日時</dt>
+            <dd>{isFlex(c) ? `期間と時間帯から選んでもらう：${describeFlex(c.flex!)}・同じ時間${c.flex!.capacity}名まで` : c.slots.map(fmtSlot).join("／")}</dd>
+          </div>
           <div className="md:col-span-2">
             <dt className="text-xs font-bold text-muted">店舗のリンク</dt>
             <dd className="mt-1">

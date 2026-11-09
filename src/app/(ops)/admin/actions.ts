@@ -28,7 +28,8 @@ import { sendToCreator } from "@/lib/ops/notify";
 import { msg as tmsg } from "@/lib/ops/templates";
 import { templateDefs, TEMPLATE_KEYS, unknownPlaceholders, type TemplateKey } from "@/data/ops-templates";
 import { assignmentUrl, creatorPortalUrl } from "@/lib/ops/urls";
-import type { Assignment, Campaign, Creator, Insight, Platform, Restaurant, Slot } from "@/lib/ops/types";
+import { findSlot, flexDates, flexSlotId, flexTimes, isFlex } from "@/lib/ops/slots";
+import type { Assignment, Campaign, Creator, FlexSchedule, Insight, Platform, Restaurant, Slot } from "@/lib/ops/types";
 import { newLinkCode, newToken, nowIso, shortId } from "@/lib/ops/util";
 import { isRateLimited } from "@/lib/spam";
 import { toInstagramUrl } from "@/lib/ops/dates";
@@ -232,8 +233,27 @@ export async function saveCampaign(fd: FormData) {
   if (tabelogUrl || instagramUrl) {
     await db.update("restaurants", restaurantId, (r) => ({ ...r, tabelogUrl: tabelogUrl ?? r.tabelogUrl, instagramUrl: instagramUrl ?? r.instagramUrl }));
   }
+  const scheduling: "fixed" | "flex" = str(fd, "scheduling") === "flex" ? "flex" : "fixed";
   const slots = readSlots(fd, prev?.slots);
-  if (slots.length === 0) back(path, "!撮影候補日を1つ以上入力してください");
+  let flex: FlexSchedule | undefined;
+  if (scheduling === "flex") {
+    const num = (k: string, d: number, min: number, max: number) => Math.min(max, Math.max(min, Number(str(fd, k)) || d));
+    flex = {
+      from: str(fd, "flexFrom"),
+      to: str(fd, "flexTo"),
+      weekdays: fd.getAll("flexWeekdays").map(Number).filter((n) => n >= 0 && n <= 6),
+      start: str(fd, "flexStart") || "11:00",
+      end: str(fd, "flexEnd") || "21:00",
+      durationMin: num("flexDuration", 60, 15, 600),
+      stepMin: num("flexStep", 30, 15, 120),
+      capacity: num("flexCapacity", 2, 1, 50),
+      exclude: [...new Set(fd.getAll("flexExclude").map(String))].filter((d) => ymd.safeParse(d).success),
+    };
+    if (!ymd.safeParse(flex.from).success || !ymd.safeParse(flex.to).success || flex.from > flex.to) back(path, "!撮影できる期間（開始日・終了日）を入力してください");
+    if (flex.weekdays.length === 0) back(path, "!撮影できる曜日を1つ以上選んでください");
+    if (flexTimes(flex).length === 0) back(path, "!時間帯が短すぎます（1回の撮影の長さが入る時間帯にしてください）");
+    if (flexDates(flex).length === 0) back(path, "!期間・曜日・撮影できない日の設定で、選べる日がありません");
+  } else if (slots.length === 0) back(path, "!撮影候補日を1つ以上入力してください");
   const patch = {
     restaurantId,
     title,
@@ -241,6 +261,8 @@ export async function saveCampaign(fd: FormData) {
     offer: str(fd, "offer"),
     conditions: str(fd, "conditions"),
     slots,
+    scheduling,
+    flex: flex ?? prev?.flex,
     replyDeadline,
     postDates,
     postDeadline,
@@ -311,7 +333,14 @@ export async function addPastParticipants(campaignId: string, fd: FormData) {
   if (!c) back("/admin", "!案件が見つかりません");
   const ids = fd.getAll("creatorId").map(String).filter(Boolean);
   if (ids.length === 0) back(`/admin/campaigns/${campaignId}`, "!記録する発信者を選んでください");
-  const slotId = c.slots.find((s) => s.id === str(fd, "slotId"))?.id ?? c.slots[0]?.id;
+  const pastDate = str(fd, "pastDate");
+  const pastTime = str(fd, "pastTime");
+  const slotId = isFlex(c)
+    ? ymd.safeParse(pastDate).success && /^\d{2}:\d{2}$/.test(pastTime)
+      ? flexSlotId(pastDate, pastTime)
+      : undefined
+    : (c.slots.find((s) => s.id === str(fd, "slotId"))?.id ?? c.slots[0]?.id);
+  if (isFlex(c) && !slotId) back(`/admin/campaigns/${campaignId}`, "!撮影日と開始時刻を入力してください");
   const postDate = str(fd, "postDate");
   const existing = new Set((await db.list("assignments")).filter((a) => a.campaignId === campaignId).map((a) => a.creatorId));
   let added = 0;
@@ -458,9 +487,13 @@ export async function saveAssignment(fd: FormData) {
   const a = await db.get("assignments", id);
   if (!a) back("/admin", "!依頼が見つかりません");
   const campaign = await db.get("campaigns", a.campaignId);
-  const valid = new Set(campaign?.slots.map((s) => s.id));
+  const valid = { has: (id: string) => Boolean(campaign && findSlot(campaign, id)) };
   const status = str(fd, "status") as Assignment["status"];
-  const confirmedSlotId = optStr(fd, "confirmedSlotId");
+  const confirmDate = str(fd, "confirmDate");
+  const confirmTime = str(fd, "confirmTime");
+  // 期間と時間帯から選ぶ案件では、日付と時刻を直接指定して確定日時にできる
+  const confirmedSlotId =
+    campaign && isFlex(campaign) && ymd.safeParse(confirmDate).success && /^\d{2}:\d{2}$/.test(confirmTime) ? flexSlotId(confirmDate, confirmTime) : optStr(fd, "confirmedSlotId");
   const plannedPostDate = optStr(fd, "plannedPostDate");
   await db.put("assignments", {
     ...a,

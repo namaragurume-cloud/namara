@@ -1,5 +1,6 @@
 import { SlotEditor, SubmitButton } from "@/components/ops/client";
 import { DateCalendar } from "@/components/ops/DateCalendar";
+import { ScheduleFields } from "@/components/ops/ScheduleFields";
 import { jstDate } from "@/lib/ops/dates";
 import { Field, inputClass } from "@/components/ops/ui";
 import type { Campaign, Restaurant } from "@/lib/ops/types";
@@ -59,9 +60,21 @@ export function CampaignForm({
           <textarea name="conditions" rows={3} defaultValue={v?.conditions} className={inputClass} />
         </Field>
       </div>
-      <Field label="撮影候補日" required hint="発信者は、この中から参加できる日時をすべて選びます。「人まで」＝その時間にお店に入れる人数の上限で、同伴者も含めて数えます（発信者は回答時に1人／2人で来店するかを選びます。2人で来る人は2人分）。">
+      <Field label="撮影日時の決め方" required>
         <span className="block">
-          <SlotEditor initial={c?.slots ?? []} />
+          <ScheduleFields
+            initialMode={c?.scheduling ?? copy?.scheduling ?? "fixed"}
+            flex={c?.flex ?? copy?.flex}
+            fixedEditor={
+              <>
+                <p className="mb-2 text-xs text-muted">
+                  発信者は、この中から参加できる日時をすべて選びます。「人まで」＝その時間にお店に入れる人数の上限で、同伴者も含めて数えます。
+                </p>
+                <SlotEditor initial={c?.slots ?? []} />
+              </>
+            }
+            excludeCalendar={<DateCalendar name="flexExclude" mode="multi" initial={c?.flex?.exclude ?? []} today={today} allowPast />}
+          />
         </span>
       </Field>
       <div className="grid gap-4 md:grid-cols-2">

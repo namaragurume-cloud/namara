@@ -175,6 +175,23 @@ export function demoSeed(): Seed {
       createdAt: iso(-40),
     },
     {
+      id: "k-bonen",
+      restaurantId: "r-taiyo",
+      title: "年末の宴会コースPR",
+      description: "12月限定の宴会コース（飲み放題付き）を、グループでの来店シーンで紹介してください。",
+      offer: "コース無料（2名様まで）＋謝礼 5,000円",
+      conditions: "リール1本 or TikTok1本／#PR 表記",
+      slots: [],
+      scheduling: "flex",
+      flex: { from: d(5), to: d(30), weekdays: [1, 2, 3, 4, 5], start: "17:00", end: "21:00", durationMin: 90, stepMin: 30, capacity: 2, exclude: [] },
+      replyDeadline: d(4),
+      postDates: [d(32), d(33), d(34)],
+      postDeadline: d(34),
+      shareToken: "demo-report-bonen",
+      liveShare: true,
+      createdAt: iso(-1),
+    },
+    {
       id: "k-shiokaze",
       restaurantId: "r-shiokaze",
       title: "秋の海鮮丼PR",
@@ -199,7 +216,7 @@ export function demoSeed(): Seed {
 
   let n = 0;
   // 依頼した日（月別の進捗に使う）
-  const sentDay: Record<string, number> = { "k-kotori": -2, "k-hare": -12, "k-taiyo": -38, "k-shiokaze": -68 };
+  const sentDay: Record<string, number> = { "k-bonen": -1, "k-kotori": -2, "k-hare": -12, "k-taiyo": -38, "k-shiokaze": -68 };
   const as = (campaignId: string, creatorId: string, p: Partial<Assignment>): Assignment => ({
     id: `demo-a${++n}`,
     campaignId,
@@ -233,7 +250,23 @@ export function demoSeed(): Seed {
     ...extra,
   });
 
+  // 期間と時間帯から選ぶ案件の希望（平日だけになるよう、今日から数えて土日を避ける）
+  const weekday = (n: number) => {
+    let k = n;
+    while ([0, 6].includes(new Date(`${d(k)}T00:00:00Z`).getUTCDay())) k++;
+    return d(k);
+  };
+  const flexIds = (...p: (number | string)[]) => {
+    const out: string[] = [];
+    for (let i = 0; i < p.length; i += 2) out.push(`f:${weekday(p[i] as number)}:${p[i + 1]}`);
+    return out;
+  };
+
   const assignments: Assignment[] = [
+    // 焼肉 たいよう 年末：期間と時間帯から選ぶ（第1〜第3希望）
+    as("k-bonen", "c1", { status: "accepted", availableSlotIds: flexIds(8, "18:00", 9, "18:00"), plannedPostDate: d(32), respondedAt: iso(0, 9) }),
+    as("k-bonen", "c3", { status: "accepted", partySize: 2, availableSlotIds: flexIds(8, "18:00", 12, "19:00"), plannedPostDate: d(33), respondedAt: iso(0, 10) }),
+    as("k-bonen", "c5", {}),
     // カフェ ことり：回答受付中
     as("k-kotori", "c1", { status: "accepted", availableSlotIds: ["s1", "s2"], plannedPostDate: d(15), respondedAt: iso(-1) }),
     as("k-kotori", "c3", { status: "accepted", availableSlotIds: ["s1"], plannedPostDate: d(14), partySize: 2, respondedAt: iso(-1), note: "友人と2名で伺います" }),

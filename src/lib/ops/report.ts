@@ -1,5 +1,6 @@
 import { fmtDateLong } from "./dates";
 import { isComplete } from "./insight-fields";
+import { findSlot } from "./slots";
 import type { Assignment, Campaign, Creator, Dist, Insight, MetricKey, Platform, Slot } from "./types";
 
 /**
@@ -153,7 +154,7 @@ export function buildReport(input: { campaign: Campaign; rows: { a: Assignment; 
       return {
         a,
         creator,
-        slot: campaign.slots.find((s) => s.id === a.confirmedSlotId),
+        slot: findSlot(campaign, a.confirmedSlotId),
         platform: insight?.platform ?? a.platform,
         insight,
         views,
