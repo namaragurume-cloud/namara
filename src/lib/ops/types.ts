@@ -179,6 +179,14 @@ export type Assignment = {
   note?: string;
   respondedAt?: string;
   confirmedNotifiedAt?: string;
+  /** 一度連絡した撮影日時・投稿日（変更・再調整の連絡で「変更前」として使う） */
+  previousSlotId?: string;
+  previousPostDate?: string;
+  /** 確定後に日程を変更して連絡した日時（お店への再共有の目安） */
+  scheduleChangedAt?: string;
+  /** 日程の再調整（選び直し）をお願いした日時と理由 */
+  rescheduleRequestedAt?: string;
+  rescheduleReason?: string;
   replyRemindedAt?: string;
   shootRemindedAt?: string;
   postUrl?: string;

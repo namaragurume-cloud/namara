@@ -7,6 +7,7 @@ import { db, resetDemo } from "@/lib/ops/db";
 import { isDemo } from "@/lib/ops/demo-flag";
 import type { BulkResult } from "@/lib/ops/service";
 import {
+  requestReschedule,
   loadBundle,
   confirmSchedule,
   markConfirmedManually,
@@ -360,6 +361,22 @@ export async function confirmScheduleAction(campaignId: string, fd: FormData) {
   }
   const result = await confirmSchedule(campaignId, picks);
   back(`/admin/campaigns/${campaignId}`, summarize("撮影日の確定連絡", result));
+}
+
+export async function rescheduleAction(campaignId: string, assignmentId: string, fd: FormData) {
+  await requireAdmin();
+  try {
+    const r = await requestReschedule(assignmentId, str(fd, "reason") || undefined);
+    back(
+      `/admin/campaigns/${campaignId}`,
+      r.ok
+        ? "日程の再調整をお願いしました。選び直した結果は「回答の集計」に集まります"
+        : `!回答画面は開きましたが、自動で連絡できませんでした（${r.error}）。本人に直接ご連絡ください`,
+    );
+  } catch (e) {
+    if (e instanceof Error && !("digest" in e)) back(`/admin/campaigns/${campaignId}`, `!${e.message}`);
+    throw e;
+  }
 }
 
 export async function markConfirmedAction(campaignId: string, assignmentId: string) {

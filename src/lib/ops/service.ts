@@ -219,6 +219,7 @@ export async function recordResponse(
       availableSlotIds: locked ? x.availableSlotIds : input.accept ? input.slotIds.filter((id) => valid.has(id)) : [],
       plannedPostDate: input.accept ? input.plannedPostDate || x.plannedPostDate : undefined,
       partySize: input.accept ? (input.partySize ?? x.partySize) : undefined,
+      rescheduleRequestedAt: undefined,
       note: input.note,
       respondedAt: nowIso(),
       sentAt: x.sentAt ?? nowIso(),
@@ -256,23 +257,98 @@ export async function confirmSchedule(
     if (a.status !== "accepted") continue;
     const pick = picks[a.id];
     if (!pick?.slotId || !slotById(b.campaign, pick.slotId)) continue;
-    const changed = pick.slotId !== a.confirmedSlotId || (pick.postDate || a.plannedPostDate) !== a.plannedPostDate;
-    const updated = (await db.update("assignments", a.id, (x) => ({
-      ...x,
-      confirmedSlotId: pick.slotId,
-      plannedPostDate: pick.postDate || x.plannedPostDate,
-    })))!;
-    if (a.confirmedNotifiedAt && !changed) continue;
-    const result = await sendToCreator(creator, await confirmedMsg(b, creator, updated), `撮影日確定：${b.campaign.title}`);
-    if (result.ok) await db.update("assignments", a.id, (x) => ({ ...x, confirmedNotifiedAt: nowIso() }));
+    const newPost = pick.postDate || a.plannedPostDate;
+    // 前に連絡した日程（確定済みなら今の日程、再調整中なら再調整前の日程）
+    const prevSlot = a.confirmedNotifiedAt ? a.confirmedSlotId : a.previousSlotId;
+    const prevPost = a.confirmedNotifiedAt ? a.plannedPostDate : a.previousPostDate;
+    const changedFromNotified = Boolean(prevSlot) && (pick.slotId !== prevSlot || newPost !== prevPost);
+    if (a.confirmedNotifiedAt && !changedFromNotified) {
+      continue; // 連絡済みで変更なし
+    }
+    const updated = (await db.update("assignments", a.id, (x) => ({ ...x, confirmedSlotId: pick.slotId, plannedPostDate: newPost })))!;
+    const isChange = Boolean(prevSlot);
+    const message = isChange
+      ? await scheduleChangedMsg(b, creator, updated, prevSlot, prevPost)
+      : await confirmedMsg(b, creator, updated);
+    const result = await sendToCreator(creator, message, `${isChange ? "日程変更" : "撮影日確定"}：${b.campaign.title}`);
+    await db.update("assignments", a.id, (x) =>
+      result.ok
+        ? { ...x, confirmedNotifiedAt: nowIso(), previousSlotId: undefined, previousPostDate: undefined, scheduleChangedAt: isChange ? nowIso() : x.scheduleChangedAt }
+        : // 送れなかったら「連絡できず」にして、管理画面から手動で送れるようにする（変更前の日程は残す）
+          { ...x, confirmedNotifiedAt: undefined, previousSlotId: prevSlot, previousPostDate: prevPost },
+    );
     out.push({ name: creator.name, result });
   }
   return out;
 }
 
+export function scheduleChangedMsg(b: Bundle, creator: Creator, a: Assignment, prevSlotId?: string, prevPost?: string) {
+  const postLabel = (d?: string) => (d ? fmtDateLong(d) : `${fmtPostDates(b.campaign)}のいずれか`);
+  return msg("scheduleChanged", {
+    発信者名: creator.name,
+    店舗名: b.restaurant?.name ?? "",
+    撮影日時: slotLabel(b.campaign, a.confirmedSlotId),
+    撮影日時の変更: prevSlotId && prevSlotId !== a.confirmedSlotId ? `（変更前：${slotLabel(b.campaign, prevSlotId)}）` : "（変更なし）",
+    投稿日: postLabel(a.plannedPostDate),
+    投稿日の変更: prevPost !== a.plannedPostDate ? `（変更前：${postLabel(prevPost)}）` : "（変更なし）",
+    住所: b.restaurant?.address,
+    URL: assignmentUrl(creator, a),
+  });
+}
+
+/** 手動送信用：その依頼に今送るべき連絡（初めての確定か、変更か） */
+export function confirmOrChangeMsg(b: Bundle, creator: Creator, a: Assignment) {
+  return a.previousSlotId ? scheduleChangedMsg(b, creator, a, a.previousSlotId, a.previousPostDate) : confirmedMsg(b, creator, a);
+}
+
+/**
+ * 日程の再調整をお願いする：その人の回答画面をもう一度開き、撮影日時を選び直してもらう。
+ * 今の日程は「変更前」として残し、選び直した後に確定すると「日程変更」の連絡が届く。
+ */
+export async function requestReschedule(assignmentId: string, reason?: string): Promise<SendResult> {
+  const a = await db.get("assignments", assignmentId);
+  if (!a || a.status !== "accepted") throw new Error("参加が決まっている依頼だけ再調整をお願いできます");
+  const b = (await loadBundle(a.campaignId))!;
+  const creator = b.rows.find((r) => r.a.id === a.id)!.creator;
+  const prevSlot = a.confirmedSlotId ?? a.previousSlotId;
+  const prevPost = a.confirmedNotifiedAt ? a.plannedPostDate : a.previousPostDate ?? a.plannedPostDate;
+  const updated = (await db.update("assignments", a.id, (x) => ({
+    ...x,
+    status: "sent" as const,
+    availableSlotIds: [],
+    confirmedSlotId: undefined,
+    confirmedNotifiedAt: undefined,
+    previousSlotId: prevSlot,
+    previousPostDate: prevPost,
+    respondedAt: undefined,
+    rescheduleRequestedAt: nowIso(),
+    rescheduleReason: reason,
+  })))!;
+  const today = jstDate();
+  return sendToCreator(
+    creator,
+    await msg("rescheduleRequest", {
+      発信者名: creator.name,
+      店舗名: b.restaurant?.name ?? "",
+      理由: reason,
+      変更前の撮影日時: prevSlot ? slotLabel(b.campaign, prevSlot) : undefined,
+      回答期限: b.campaign.replyDeadline >= today ? fmtDateLong(b.campaign.replyDeadline) : "なるべくお早めに",
+      URL: assignmentUrl(creator, updated),
+      撮影候補日: b.campaign.slots.filter((s) => s.date >= today).map((s) => `・${fmtSlot(s)}`).join("\n"),
+    }),
+    `日程の再調整のお願い：${b.campaign.title}`,
+  );
+}
+
 /** 手動で確定連絡をしたことにする */
 export async function markConfirmedManually(assignmentId: string): Promise<void> {
-  await db.update("assignments", assignmentId, (x) => ({ ...x, confirmedNotifiedAt: x.confirmedNotifiedAt ?? nowIso() }));
+  await db.update("assignments", assignmentId, (x) => ({
+    ...x,
+    confirmedNotifiedAt: x.confirmedNotifiedAt ?? nowIso(),
+    scheduleChangedAt: x.previousSlotId ? nowIso() : x.scheduleChangedAt,
+    previousSlotId: undefined,
+    previousPostDate: undefined,
+  }));
 }
 
 export function scheduleLines(b: Bundle): string[] {

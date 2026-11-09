@@ -34,6 +34,11 @@ export default async function AdminHome({ searchParams }: { searchParams: Promis
       if (unsent) todo.push(`手動送信が必要な依頼 ${unsent}件`);
       if (phase === "confirming") todo.push("回答が集まりました → 日程を確定");
       if (accepted.some((r) => r.a.confirmedNotifiedAt) && !campaign.scheduleSharedAt) todo.push("飲食店へ撮影日を共有");
+      if (
+        campaign.scheduleSharedAt &&
+        rows.some((r) => (r.a.scheduleChangedAt ?? "") > campaign.scheduleSharedAt! || (r.a.rescheduleRequestedAt ?? "") > campaign.scheduleSharedAt!)
+      )
+        todo.push("日程の変更をお店に再共有");
       const ownerVideo = accepted.filter((r) => videoStage(r.a, campaign) === "owner_review").length;
       if (ownerVideo) todo.push(`動画の確認 ${ownerVideo}件`);
       const shopUnsent = accepted.filter((r) => videoStage(r.a, campaign) === "shop_review" && !latestVideo(r.a)?.sentToShopAt).length;

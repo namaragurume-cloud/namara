@@ -9,7 +9,7 @@ import { db } from "@/lib/ops/db";
 import { isEmailConfigured } from "@/lib/ops/email";
 import { lineShareUrl } from "@/lib/ops/line";
 import {
-  confirmedMsg,
+  confirmOrChangeMsg,
   loadBundle,
   phaseLabel,
   phaseOf,
@@ -34,6 +34,7 @@ import {
   markConfirmedAction,
   markSentAction,
   removeAssignment,
+  rescheduleAction,
   reopenReport,
   saveReportComment,
   sendReportAction,
@@ -98,10 +99,13 @@ export default async function CampaignPage({ params, searchParams }: { params: P
   const portal = restaurantPortalUrl(c);
   const canEmail = isEmailConfigured() && Boolean(restaurant?.email);
   const scheduleText = (await restaurantScheduleMsg(b)).text;
+  const needsReshare = Boolean(
+    c.scheduleSharedAt && rows.some((r) => (r.a.scheduleChangedAt && r.a.scheduleChangedAt > c.scheduleSharedAt!) || (r.a.rescheduleRequestedAt && r.a.rescheduleRequestedAt > c.scheduleSharedAt!)),
+  );
   const reportText = (await restaurantReportMsg(b)).text;
   const requestTexts = new Map(await Promise.all(unsent.map(async (r) => [r.a.id, (await prRequestMsg(b, r.creator, r.a)).text] as const)));
   const confirmTexts = new Map(
-    await Promise.all(accepted.filter((r) => r.a.confirmedSlotId && !r.a.confirmedNotifiedAt).map(async (r) => [r.a.id, (await confirmedMsg(b, r.creator, r.a)).text] as const)),
+    await Promise.all(accepted.filter((r) => r.a.confirmedSlotId && !r.a.confirmedNotifiedAt).map(async (r) => [r.a.id, (await confirmOrChangeMsg(b, r.creator, r.a)).text] as const)),
   );
 
   return (
@@ -356,6 +360,30 @@ export default async function CampaignPage({ params, searchParams }: { params: P
           </form>
         )}
 
+        {notified.length > 0 && (
+          <details className="mt-5 rounded-xl border border-line bg-mist p-3">
+            <summary className="cursor-pointer text-sm font-bold">お店の都合などで、発信者に日程を選び直してもらう（再調整）</summary>
+            <p className="mt-2 text-xs leading-relaxed text-muted">
+              お店の希望日時が撮影候補日にない場合は、先に「内容・候補日を編集」で候補日を追加してください。押すと、その人の回答画面がもう一度開き、「日程の再調整のお願い」がLINEで届きます。選び直した結果はいつもどおり上に集まるので、確定すると「日程変更」の連絡が届きます。
+              （候補日の中で日時を変えるだけなら、上の表で日時を変えて「確定して発信者に連絡」を押せば「日程変更」の連絡が届きます）
+            </p>
+            <ul className="mt-3 space-y-2">
+              {notified.map((r) => (
+                <li key={r.a.id}>
+                  <form action={rescheduleAction.bind(null, c.id, r.a.id)} className="flex flex-wrap items-center gap-2 text-sm">
+                    <span className="w-24 shrink-0 truncate font-bold">{r.creator.name}</span>
+                    <span className="w-44 shrink-0 text-xs text-muted">今：{slotLabel(c, r.a.confirmedSlotId)}</span>
+                    <input name="reason" placeholder="理由（例：お店の都合により）" className={`${inputClass} min-w-48 flex-1`} />
+                    <SubmitButton variant="outline" size="sm" confirm={`${r.creator.name}さんに日程の選び直しをお願いします。よろしいですか？`}>
+                      日程の再調整をお願いする
+                    </SubmitButton>
+                  </form>
+                </li>
+              ))}
+            </ul>
+          </details>
+        )}
+
         {(waiting.length > 0 || declined.length > 0) && (
           <div className="mt-5 grid gap-3 text-sm md:grid-cols-2">
             {waiting.length > 0 && (
@@ -370,6 +398,12 @@ export default async function CampaignPage({ params, searchParams }: { params: P
                         {r.a.replyRemindedAt && "・リマインド済"}
                       </span>
                       {r.a.offer && <span className="text-xs text-sky-800">個別の報酬：{r.a.offer}</span>}
+                      {r.a.rescheduleRequestedAt && (
+                        <span className="text-xs font-bold text-amber-800">
+                          再調整中（前：{slotLabel(c, r.a.previousSlotId)}
+                          {r.a.rescheduleReason ? `／${r.a.rescheduleReason}` : ""}）
+                        </span>
+                      )}
                       <Link href={`/admin/assignments/${r.a.id}`} className="text-xs underline">
                         代理で回答
                       </Link>
@@ -402,6 +436,11 @@ export default async function CampaignPage({ params, searchParams }: { params: P
         done={Boolean(c.scheduleSharedAt)}
         actions={c.scheduleSharedAt && <span className="text-xs text-muted">共有 {fmtDateTime(c.scheduleSharedAt)}</span>}
       >
+        {needsReshare && (
+          <p className="mb-4 rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 text-sm font-bold text-amber-900">
+            お店に共有したあとに、日程の変更・再調整がありました。最新の内容をお店に送ってください（下の「再送」またはLINEで送る）。
+          </p>
+        )}
         <div className="mb-4 flex flex-wrap items-center gap-3 rounded-xl border border-line bg-mist px-4 py-3 text-sm">
           <span className="min-w-0 flex-1">
             <b>撮影・投稿の状況をリアルタイム公開</b>
