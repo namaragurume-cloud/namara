@@ -109,11 +109,8 @@ export default async function CreatorPage({ params, searchParams }: { params: Pr
             <Field label="メールアドレス">
               <input name="email" type="email" defaultValue={c.email ?? ""} className={inputClass} />
             </Field>
-            <Field label="料金（1投稿・税別・円）" hint="飲食店への提案の料金表に使います。本人や他の発信者には表示されません">
+            <Field label="料金（1投稿・税別・円）" hint="飲食店に送る料金表に使います。本人や他の発信者には表示されません">
               <input name="price" inputMode="numeric" defaultValue={c.price ?? ""} placeholder="例：30000" className={inputClass} />
-            </Field>
-            <Field label="提案用の紹介文" hint="提案資料に載せる紹介文（得意ジャンル・エリア・特徴など）。AIが「このお店に合う理由」を書くときにも使います">
-              <textarea name="pitch" rows={3} defaultValue={c.pitch ?? ""} placeholder="例：札幌のラーメン・居酒屋が中心。30〜40代の男性フォロワーが多く、保存されやすいメニュー紹介が得意。" className={inputClass} />
             </Field>
             <Field label="メモ（本人には表示されません）">
               <textarea name="memo" rows={3} defaultValue={c.memo ?? ""} className={inputClass} />

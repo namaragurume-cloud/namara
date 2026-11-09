@@ -8,10 +8,10 @@ import { db } from "@/lib/ops/db";
 import { isEmailConfigured } from "@/lib/ops/email";
 import { isLineConfigured, lineShareUrl } from "@/lib/ops/line";
 import { buildPlan } from "@/lib/ops/proposal";
-import { proposalShareMsg, proposalUrl, proposalValidUntil } from "@/lib/ops/proposal-msg";
+import { proposalShareMsg, proposalTitle, proposalUrl, proposalValidUntil } from "@/lib/ops/proposal-msg";
 import { proposalSettings } from "@/lib/ops/proposal-store";
 import type { Creator } from "@/lib/ops/types";
-import { deleteProposal, regenerateProposal, saveProposalCreators, saveProposalText, sendProposal } from "../../../actions";
+import { deleteProposal, saveProposalCreators, saveProposalText, sendProposal } from "../../../actions";
 
 export const metadata = { title: "提案" };
 
@@ -39,7 +39,7 @@ export default async function ProposalPage({ params, searchParams }: { params: P
           <Link href="/admin/proposals" className="text-sm text-muted">
             ← 提案
           </Link>
-          <h1 className="text-xl font-extrabold md:text-2xl">{t?.title ?? `${r?.name}様への提案`}</h1>
+          <h1 className="text-xl font-extrabold md:text-2xl">{proposalTitle(p)}</h1>
           <p className="mt-1 flex flex-wrap items-center gap-2 text-sm text-muted">
             <Link href={`/admin/restaurants/${r?.id}`} className="font-bold hover:text-brand">
               {r?.name}
@@ -50,7 +50,7 @@ export default async function ProposalPage({ params, searchParams }: { params: P
         </div>
         <div className="flex flex-wrap gap-2">
           <ButtonLink href={`/proposal/${p.shareToken}`} target="_blank" variant="dark" size="sm">
-            提案資料を見る
+            料金表を見る
           </ButtonLink>
           {p.campaignId ? (
             <ButtonLink href={`/admin/campaigns/${p.campaignId}`} variant="outline" size="sm">
@@ -106,60 +106,26 @@ export default async function ProposalPage({ params, searchParams }: { params: P
       </Card>
 
       <Card title="料金（自動計算）">
-        <PlanTable plan={plan} title={light ? "おすすめプラン" : "ご提案プラン"} taxRate={settings.taxRate} />
+        <PlanTable plan={plan} title={light ? "プランA" : "お見積り"} taxRate={settings.taxRate} />
         {light && (
           <div className="mt-6">
-            <PlanTable plan={light} title="ライトプラン" taxRate={settings.taxRate} />
+            <PlanTable plan={light} title="プランB" taxRate={settings.taxRate} />
             {t?.lightPlan?.reason && <p className="mt-2 text-xs text-muted">{t.lightPlan.reason}</p>}
           </div>
         )}
-        <p className="mt-3 text-xs text-muted">料金は各発信者の設定（税別）と「設定」の消費税・固定費から計算しています。AIは料金を書きません。</p>
+        <p className="mt-3 text-xs text-muted">料金は各発信者の設定（税別）と「設定」の消費税・固定費から計算しています。</p>
       </Card>
 
-      <Card
-        title="提案資料の文章"
-        actions={
-          <form action={regenerateProposal.bind(null, p.id)}>
-            <SubmitButton variant="outline" size="sm" confirm="今の文章をAIで作り直します。よろしいですか？">
-              AIで作り直す
-            </SubmitButton>
-          </form>
-        }
-      >
+      <Card title="料金表の見出し・プランB">
         <form action={saveProposalText.bind(null, p.id)} className="space-y-3">
-          <div className="grid gap-3 md:grid-cols-2">
-            <Field label="タイトル">
-              <input name="title" defaultValue={t?.title} className={inputClass} />
-            </Field>
-            <Field label="ひとこと（表紙）">
-              <input name="catchcopy" defaultValue={t?.catchcopy} className={inputClass} />
-            </Field>
-          </div>
-          <Field label="概要">
-            <textarea name="summary" rows={3} defaultValue={t?.summary} className={inputClass} />
+          <Field label="タイトル" hint="空欄なら「SNSプロモーション 料金のご案内」">
+            <input name="title" defaultValue={t?.title} placeholder={proposalTitle({})} className={inputClass} />
           </Field>
-          <Field label="提案のポイント" hint="1行に1つ「見出し｜説明」">
-            <textarea name="points" rows={4} defaultValue={t?.points.map((x) => `${x.title}｜${x.body}`).join("\n")} className={inputClass} />
-          </Field>
-          <div className="space-y-2">
-            <p className="text-sm font-bold">発信者ごとのおすすめ理由</p>
-            {creators.map((c) => (
-              <label key={c.id} className="grid gap-1 text-sm md:grid-cols-[10rem_1fr] md:items-start">
-                <span className="font-bold">
-                  {c.name}
-                  <span className="block text-xs font-normal text-muted">
-                    {c.followers ? `${fmtNum(c.followers)}人` : ""} {c.price ? `・${fmtNum(c.price)}円` : ""}
-                  </span>
-                </span>
-                <textarea name={`reason_${c.id}`} rows={2} defaultValue={t?.reasons[c.id]} className={inputClass} />
-              </label>
-            ))}
-          </div>
           {creators.length >= 2 && (
             <fieldset className="rounded-xl border border-line p-3">
               <label className="flex items-center gap-2 text-sm font-bold">
                 <input type="checkbox" name="useLight" defaultChecked={Boolean(t?.lightPlan)} className="accent-[var(--brand)]" />
-                ライトプラン（人数を絞った安いプラン）も載せる
+                人数を絞ったプランBも載せる
               </label>
               <div className="mt-2 flex flex-wrap gap-2">
                 {creators.map((c) => (
@@ -169,14 +135,14 @@ export default async function ProposalPage({ params, searchParams }: { params: P
                   </label>
                 ))}
               </div>
-              <input name="lightReason" defaultValue={t?.lightPlan?.reason} placeholder="ライトプランの説明（例：フォロワーの多い2名で、予算を抑えたプランです）" className={`${inputClass} mt-2`} />
+              <input name="lightReason" defaultValue={t?.lightPlan?.reason} placeholder="プランBの説明（任意。例：フォロワーの多い2名で、予算を抑えたプランです）" className={`${inputClass} mt-2`} />
             </fieldset>
           )}
-          <SubmitButton>文章を保存</SubmitButton>
+          <SubmitButton>保存</SubmitButton>
         </form>
       </Card>
 
-      <Card title="発信者を変える（変えるとAIで資料を作り直します）">
+      <Card title="発信者を変える">
         <form action={saveProposalCreators.bind(null, p.id)} className="space-y-3">
           <div className="grid max-h-72 gap-1.5 overflow-y-auto sm:grid-cols-2 lg:grid-cols-3">
             {active.map((c) => (
@@ -187,11 +153,11 @@ export default async function ProposalPage({ params, searchParams }: { params: P
               </label>
             ))}
           </div>
-          <Field label="提案のメモ">
+          <Field label="メモ（お店には見えません）">
             <textarea name="request" rows={2} defaultValue={p.request} className={inputClass} />
           </Field>
-          <SubmitButton variant="outline" size="sm" confirm="発信者を変えて、AIで資料を作り直します。今の文章の編集は消えます。よろしいですか？">
-            発信者を変えて作り直す
+          <SubmitButton variant="outline" size="sm">
+            発信者を保存
           </SubmitButton>
         </form>
       </Card>

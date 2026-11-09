@@ -17,8 +17,6 @@ export type Creator = {
   memo?: string;
   /** 飲食店への提案に使う料金（1投稿・税別・円） */
   price?: number;
-  /** 提案資料に載せる紹介文（得意ジャンル・エリア・特徴など） */
-  pitch?: string;
   active: boolean;
   createdAt: string;
 };
@@ -276,16 +274,12 @@ export type ProposalSettings = {
   notes: string;
 };
 
-/** AIが作る提案資料の文章 */
+/** 料金表の見出しとライトプラン（あなたが編集） */
 export type ProposalText = {
-  title: string;
-  catchcopy: string;
-  summary: string;
-  points: { title: string; body: string }[];
-  /** 発信者ごとのおすすめ理由（キーは発信者ID） */
-  reasons: Record<string, string>;
-  /** 少人数のプラン（AIが選んだ発信者と理由。なければ1プランだけ） */
-  lightPlan?: { creatorIds: string[]; reason: string };
+  /** 料金表のタイトル（空なら「〇〇様 SNSプロモーション 料金のご案内」） */
+  title?: string;
+  /** 人数を絞ったプランも載せる場合の発信者と説明 */
+  lightPlan?: { creatorIds: string[]; reason?: string };
 };
 
 /** 飲食店への提案 */
@@ -293,7 +287,7 @@ export type Proposal = {
   id: string;
   restaurantId: string;
   creatorIds: string[];
-  /** あなたのメモ（提案の狙い・お店の要望など。AIへの指示） */
+  /** あなたのメモ（提案の狙い・お店の要望など。お店には見えません） */
   request?: string;
   text?: ProposalText;
   shareToken: string;

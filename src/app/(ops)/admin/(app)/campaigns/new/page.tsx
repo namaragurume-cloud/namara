@@ -36,7 +36,7 @@ export default async function NewCampaign({ searchParams }: { searchParams: Prom
           <Card>
             {prop && (
               <p className="mb-4 rounded-xl bg-brand/5 px-4 py-2 text-sm">
-                提案「{prop.text?.title ?? "提案"}」から案件をつくります。保存すると、提案で選んだ発信者に依頼を送る画面に進みます（発信者にはチェックが入っています）。
+                提案（料金表）から案件をつくります。保存すると、提案で選んだ発信者に依頼を送る画面に進みます（発信者にはチェックが入っています）。
               </p>
             )}
             <CampaignForm restaurants={restaurants} restaurantId={restaurant ?? prop?.restaurantId} copy={copy} proposal={prop ? { id: prop.id, title: campaignTitle(prop.text?.title, restaurants.find((r) => r.id === prop.restaurantId)?.name) } : undefined} />
@@ -50,10 +50,10 @@ export default async function NewCampaign({ searchParams }: { searchParams: Prom
   );
 }
 
-/** 「〇〇様 冬の新メニューPRのご提案」→「冬の新メニューPR」 */
+/** 「〇〇様 冬の新メニューPR 料金のご案内」→「冬の新メニューPR」 */
 function campaignTitle(title?: string, shop?: string): string | undefined {
   if (!title) return undefined;
-  let t = title.replace(/の?ご提案$/, "").trim();
+  let t = title.replace(/\s*(の?ご提案|料金のご案内|のお見積り)$/, "").trim();
   if (shop && t.startsWith(shop)) t = t.slice(shop.length).replace(/^\s*(様|御中)?\s*/, "");
   return t || title;
 }
