@@ -372,6 +372,9 @@ export default async function CampaignPage({ params, searchParams }: { params: P
                           <Link href={`/admin/assignments/${r.a.id}`} className="mt-1 block text-xs text-muted underline">
                             詳細・代理入力
                           </Link>
+                          <a href="#reschedule" className="mt-0.5 block text-xs text-amber-800 underline">
+                            日程を選び直してもらう
+                          </a>
                         </td>
                       </tr>
                     );
@@ -384,19 +387,21 @@ export default async function CampaignPage({ params, searchParams }: { params: P
           </form>
         )}
 
-        {notified.length > 0 && (
-          <details className="mt-5 rounded-xl border border-line bg-mist p-3">
-            <summary className="cursor-pointer text-sm font-bold">お店の都合などで、発信者に日程を選び直してもらう（再調整）</summary>
+        {accepted.length > 0 && (
+          <div id="reschedule" className="mt-5 scroll-mt-20 rounded-xl border border-amber-200 bg-amber-50/60 p-3">
+            <h3 className="text-sm font-bold">日程の再調整（お店の都合などで、発信者に日時を選び直してもらう）</h3>
             <p className="mt-2 text-xs leading-relaxed text-muted">
               お店の希望日時が撮影候補日にない場合は、先に「内容・候補日を編集」で候補日を追加してください。押すと、その人の回答画面がもう一度開き、「日程の再調整のお願い」がLINEで届きます。選び直した結果はいつもどおり上に集まるので、確定すると「日程変更」の連絡が届きます。
               （候補日の中で日時を変えるだけなら、上の表で日時を変えて「確定して発信者に連絡」を押せば「日程変更」の連絡が届きます）
             </p>
             <ul className="mt-3 space-y-2">
-              {notified.map((r) => (
+              {accepted.map((r) => (
                 <li key={r.a.id}>
                   <form action={rescheduleAction.bind(null, c.id, r.a.id)} className="flex flex-wrap items-center gap-2 text-sm">
                     <span className="w-24 shrink-0 truncate font-bold">{r.creator.name}</span>
-                    <span className="w-44 shrink-0 text-xs text-muted">今：{slotLabel(c, r.a.confirmedSlotId)}</span>
+                    <span className="w-44 shrink-0 text-xs text-muted">
+                      {r.a.confirmedNotifiedAt ? `確定：${slotLabel(c, r.a.confirmedSlotId)}` : "まだ確定していません"}
+                    </span>
                     <input name="reason" placeholder="理由（例：お店の都合により）" className={`${inputClass} min-w-48 flex-1`} />
                     <SubmitButton variant="outline" size="sm" confirm={`${r.creator.name}さんに日程の選び直しをお願いします。よろしいですか？`}>
                       日程の再調整をお願いする
@@ -405,7 +410,7 @@ export default async function CampaignPage({ params, searchParams }: { params: P
                 </li>
               ))}
             </ul>
-          </details>
+          </div>
         )}
 
         {(waiting.length > 0 || declined.length > 0) && (
