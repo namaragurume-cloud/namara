@@ -5,11 +5,13 @@ import { followerScales, type Creator, type CreatorView } from "@/data/creators"
 import { showFollowerCounts } from "@/data/site";
 import { cn } from "@/lib/utils";
 import { CreatorCard } from "@/components/ui/CreatorCard";
+import { CreatorMini } from "@/components/ui/CreatorMini";
 
 /** 絞り込みを表示する最低掲載人数 */
 const FILTER_THRESHOLD = 6;
 
-export function CreatorList({ creators }: { creators: CreatorView[] }) {
+/** creators：大きいカード、network：小さいカード（そのほかのネットワーク発信者）。絞り込みは両方に適用 */
+export function CreatorList({ creators, network = [] }: { creators: CreatorView[]; network?: CreatorView[] }) {
   const [area, setArea] = useState("");
   const [genre, setGenre] = useState("");
   const [scale, setScale] = useState("");
@@ -17,18 +19,19 @@ export function CreatorList({ creators }: { creators: CreatorView[] }) {
   const areas = useMemo(() => [...new Set(creators.flatMap((c) => c.areas))], [creators]);
   const genres = useMemo(() => [...new Set(creators.flatMap((c) => c.genres))], [creators]);
 
-  const filtered = creators.filter((c) => {
-    const s = followerScales.find((x) => x.id === scale);
-    return (
+  const s = followerScales.find((x) => x.id === scale);
+  const matches = (c: CreatorView) => (
       (!area || c.areas.includes(area as Creator["areas"][number])) &&
       (!genre || c.genres.includes(genre as Creator["genres"][number])) &&
       (!s || (c.followers !== undefined && c.followers >= s.min && c.followers <= s.max))
-    );
-  });
+  );
+  const filtered = creators.filter(matches);
+  const filteredNetwork = network.filter(matches);
+  const total = filtered.length + filteredNetwork.length;
 
   // 絞り込みに使える情報（エリア・ジャンル・フォロワー数）が登録されている場合のみ表示
   const showFilter =
-    creators.length >= FILTER_THRESHOLD && (areas.length > 0 || genres.length > 0 || showFollowerCounts);
+    creators.length + network.length >= FILTER_THRESHOLD && (areas.length > 0 || genres.length > 0 || showFollowerCounts);
   const select = "field-input min-h-12! py-2! text-sm";
 
   return (
@@ -70,10 +73,10 @@ export function CreatorList({ creators }: { creators: CreatorView[] }) {
       )}
 
       <p className="sr-only" aria-live="polite">
-        {filtered.length}人の発信者を表示しています
+        {total}人の発信者を表示しています
       </p>
 
-      {filtered.length > 0 ? (
+      {filtered.length > 0 && (
         <ul className="grid grid-cols-2 gap-3 sm:gap-5 lg:grid-cols-3">
           {filtered.map((c) => (
             <li key={c.id}>
@@ -81,7 +84,20 @@ export function CreatorList({ creators }: { creators: CreatorView[] }) {
             </li>
           ))}
         </ul>
-      ) : (
+      )}
+      {filteredNetwork.length > 0 && (
+        <div className={filtered.length > 0 ? "mt-12" : undefined}>
+          <p className="text-sm font-bold">そのほかのネットワーク発信者</p>
+          <ul className="mt-4 grid grid-cols-2 gap-2.5 sm:gap-3 lg:grid-cols-4">
+            {filteredNetwork.map((c) => (
+              <li key={c.id}>
+                <CreatorMini creator={c} />
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+      {total === 0 && (
         <p className="rounded-2xl bg-mist p-10 text-center text-sm text-muted">
           条件に合う発信者が見つかりませんでした。条件を変更するか、お問い合わせからご相談ください。
         </p>
