@@ -1,5 +1,6 @@
 import { fmtDate, fmtSlot } from "./dates";
 import { isComplete, missingLabels } from "./insight-fields";
+import { findSlot } from "./slots";
 import type { Assignment, Campaign } from "./types";
 import { latestVideo, revisionComment, videoEnabled, videoStage } from "./video-state";
 
@@ -60,7 +61,7 @@ export function progressOf(a: Assignment, c: Campaign, today: string): Progress 
     };
   }
   // 参加
-  const slot = c.slots.find((s) => s.id === a.confirmedSlotId);
+  const slot = findSlot(c, a.confirmedSlotId);
   if (!slot || !a.confirmedNotifiedAt) {
     return { steps: build("shoot"), status: "撮影日の調整中", tone: "blue", next: { who: "admin", text: "撮影日を確定して連絡" }, actionNeeded: false };
   }

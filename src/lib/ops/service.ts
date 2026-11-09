@@ -4,6 +4,7 @@ import { db } from "./db";
 import { sendToCreator, sendToRestaurant, type SendResult } from "./notify";
 import { needsInsight } from "./insights";
 import { msg } from "./templates";
+import { candidatesText, findSlot, isFlex } from "./slots";
 import { cleanupVideos } from "./video";
 import { latestVideo, videoEnabled, videoStage } from "./video-state";
 import { fieldLabel, isComplete, platformLabel, screenshotGuide } from "./insight-fields";
@@ -56,7 +57,7 @@ export async function findCreatorByToken(token: string): Promise<Creator | null>
 /** その人の報酬・特典（個別に決めたものがあればそれ、なければ案件の共通の報酬） */
 export const offerOf = (a: Pick<Assignment, "offer">, c: Pick<Campaign, "offer">) => a.offer?.trim() || c.offer;
 
-export const slotById = (c: Campaign, id?: string): Slot | undefined => c.slots.find((s) => s.id === id);
+export const slotById = (c: Campaign, id?: string): Slot | undefined => findSlot(c, id);
 export const slotLabel = (c: Campaign, id?: string) => {
   const s = slotById(c, id);
   return s ? fmtSlot(s) : "未定";
@@ -115,16 +116,18 @@ export function proposeSlots(campaign: Campaign, rows: Row[]): Map<string, strin
       used.set(r.a.confirmedSlotId, (used.get(r.a.confirmedSlotId) ?? 0) + partyOf(r.a));
     }
   }
-  const valid = new Set(campaign.slots.map((s) => s.id));
+  const flex = isFlex(campaign);
+  const valid = { has: (id: string) => Boolean(findSlot(campaign, id)) };
   const pending = accepted
     .filter((r) => !r.a.confirmedSlotId)
     .map((r) => ({ r, opts: r.a.availableSlotIds.filter((id) => valid.has(id)) }))
     .sort((x, y) => x.opts.length - y.opts.length || (x.r.a.respondedAt ?? "").localeCompare(y.r.a.respondedAt ?? ""));
   for (const { r, opts } of pending) {
     const free = opts
-      .map((id) => ({ id, left: (slotById(campaign, id)?.capacity ?? 1) - (used.get(id) ?? 0) }))
+      .map((id, order) => ({ id, order, left: (slotById(campaign, id)?.capacity ?? 1) - (used.get(id) ?? 0) }))
       .filter((o) => o.left >= partyOf(r.a))
-      .sort((x, y) => y.left - x.left);
+      // 期間と時間帯から選ぶ案件は希望の順番どおり、候補日の案件は空きの多い枠から
+      .sort((x, y) => (flex ? x.order - y.order : y.left - x.left));
     const pick = free[0]?.id;
     result.set(r.a.id, pick);
     if (pick) used.set(pick, (used.get(pick) ?? 0) + partyOf(r.a));
@@ -146,7 +149,7 @@ export function prRequestMsg(b: Bundle, creator: Creator, a: Assignment) {
     食べログ: b.restaurant?.tabelogUrl,
     Instagram: b.restaurant?.instagramUrl,
     報酬: offerOf(a, b.campaign),
-    撮影候補日: b.campaign.slots.map((s) => `・${fmtSlot(s)}`).join("\n"),
+    撮影候補日: candidatesText(b.campaign, jstDate()),
     投稿日: fmtPostDates(b.campaign),
     回答期限: fmtDateLong(b.campaign.replyDeadline),
     URL: assignmentUrl(creator, a),
@@ -209,7 +212,7 @@ export async function recordResponse(
   campaign: Campaign,
   input: { accept: boolean; slotIds: string[]; plannedPostDate?: string; partySize?: number; note?: string },
 ): Promise<void> {
-  const valid = new Set(campaign.slots.map((s) => s.id));
+  const valid = { has: (id: string) => Boolean(findSlot(campaign, id)) };
   await db.update("assignments", a.id, (x) => {
     // 確定・通知済みの後は日程を変えさせない（変更は担当者に連絡）
     const locked = Boolean(x.confirmedNotifiedAt);
@@ -334,7 +337,7 @@ export async function requestReschedule(assignmentId: string, reason?: string): 
       変更前の撮影日時: prevSlot ? slotLabel(b.campaign, prevSlot) : undefined,
       回答期限: b.campaign.replyDeadline >= today ? fmtDateLong(b.campaign.replyDeadline) : "なるべくお早めに",
       URL: assignmentUrl(creator, updated),
-      撮影候補日: b.campaign.slots.filter((s) => s.date >= today).map((s) => `・${fmtSlot(s)}`).join("\n"),
+      撮影候補日: candidatesText(b.campaign, today),
     }),
     `日程の再調整のお願い：${b.campaign.title}`,
   );

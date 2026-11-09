@@ -80,6 +80,7 @@ export default async function AdminHome({ searchParams }: { searchParams: Promis
               ["/p/demo-report-shiokaze", "③ 飲食店に送るレポート", "完了した案件の16:9レポート（PDF保存可）"],
               ["/m/demo-creator-1", "④ 発信者に見えるページ", "やること・月ごとの進捗・スクショ送信（はなこさん）"],
               ["/admin/monthly", "⑤ 月別の進捗", "発信者ごとに、今月の案件がどこまで進んだか"],
+              ["/admin/campaigns/k-bonen", "⑧ 期間と時間帯から選んでもらう案件", "発信者が第1〜第3希望を選ぶ形（希望の順に自動で割り当て）"],
               ["/admin/campaigns/k-hare", "⑦ 投稿前の動画チェック", "あなたの確認 → お店の確認（お店のページは「飲食店用ページを見る」）"],
               ["/admin/campaigns/new", "⑥ 新しい案件をつくる", "店舗・PR内容・撮影候補日・投稿日の入力"],
             ].map(([href, title, sub]) => (

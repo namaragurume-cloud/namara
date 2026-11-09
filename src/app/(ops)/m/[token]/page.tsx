@@ -8,6 +8,7 @@ import { db } from "@/lib/ops/db";
 import { lineOaMessageUrl } from "@/lib/ops/line";
 import { fmtMonth, monthOf, progressOf, type Progress } from "@/lib/ops/progress";
 import { findCreatorByToken, offerOf, slotLabel } from "@/lib/ops/service";
+import { findSlot } from "@/lib/ops/slots";
 import type { Assignment, Campaign } from "@/lib/ops/types";
 
 export const metadata = { title: "PRのご依頼" };
@@ -37,7 +38,7 @@ export default async function CreatorHome({ params, searchParams }: { params: Pr
   const lineUrl = !creator.lineUserId ? lineOaMessageUrl(`連携 ${creator.lineLinkCode}`) : undefined;
 
   const card = (i: Item) => {
-    const slot = i.c.slots.find((s) => s.id === i.a.confirmedSlotId);
+    const slot = findSlot(i.c, i.a.confirmedSlotId);
     return (
       <li key={i.a.id}>
         <Link href={`/m/${token}/${i.a.id}`} className="block rounded-xl border border-line bg-white p-3 hover:border-zinc-400">

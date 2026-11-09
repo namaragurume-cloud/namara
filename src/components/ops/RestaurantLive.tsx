@@ -1,5 +1,6 @@
 import { CalendarClock, Camera, Clapperboard } from "lucide-react";
 import { addDays, fmtDate, fmtParty, fmtSlot } from "@/lib/ops/dates";
+import { findSlot } from "@/lib/ops/slots";
 import type { Assignment, Campaign, Creator, Slot } from "@/lib/ops/types";
 import { cn } from "@/lib/utils";
 
@@ -55,7 +56,7 @@ export function RestaurantLive({ campaign: c, rows: all, today, updatedAt }: { c
   const accepted = all.filter((r) => r.a.status === "accepted");
   const rows: Row[] = accepted
     .filter((r) => r.a.confirmedNotifiedAt && r.a.confirmedSlotId)
-    .map((r) => ({ ...r, slot: c.slots.find((s) => s.id === r.a.confirmedSlotId)! }))
+    .map((r) => ({ ...r, slot: findSlot(c, r.a.confirmedSlotId)! }))
     .filter((r) => r.slot)
     .sort((x, y) => `${x.slot.date}${x.slot.start}`.localeCompare(`${y.slot.date}${y.slot.start}`));
   const pending = accepted.length - rows.length;

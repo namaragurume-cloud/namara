@@ -51,6 +51,26 @@ export type Slot = {
   capacity: number;
 };
 
+/** 期間と時間帯から選んでもらう場合の設定 */
+export type FlexSchedule = {
+  /** 期間 YYYY-MM-DD */
+  from: string;
+  to: string;
+  /** 撮影できる曜日（0=日〜6=土） */
+  weekdays: number[];
+  /** 時間帯 HH:mm（この時間の中で撮影が終わる開始時刻を選べる） */
+  start: string;
+  end: string;
+  /** 1回の撮影の長さ（分） */
+  durationMin: number;
+  /** 開始時刻の刻み（分） */
+  stepMin: number;
+  /** 同じ時間にお店に入れる人数（同伴者を含む） */
+  capacity: number;
+  /** 撮影できない日 */
+  exclude: string[];
+};
+
 export type Campaign = {
   id: string;
   restaurantId: string;
@@ -62,6 +82,9 @@ export type Campaign = {
   /** 投稿条件（形式・タグ・メンションなど） */
   conditions: string;
   slots: Slot[];
+  /** 日時の決め方：fixed＝候補日を決める（既定）／flex＝期間と時間帯から発信者が希望日時を選ぶ */
+  scheduling?: "fixed" | "flex";
+  flex?: FlexSchedule;
   /** 回答期限 YYYY-MM-DD */
   replyDeadline: string;
   /** 投稿日の候補 YYYY-MM-DD（発信者はこの中から選ぶ） */

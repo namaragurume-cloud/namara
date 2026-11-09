@@ -9,9 +9,10 @@ import { VideoView } from "@/components/ops/VideoView";
 import { latestVideo, revisionComment, videoEnabled, videoStage, videoStageLabel } from "@/lib/ops/video-state";
 import { blobAccess, blobAuth, videoStorage } from "@/lib/ops/video-store";
 import { Badge, Card, Field, Flash, inputClass } from "@/components/ops/ui";
-import { fmtDateLong, fmtPostDates, fmtSlot, jstDate } from "@/lib/ops/dates";
+import { fmtDate, fmtDateLong, fmtPostDates, fmtSlot, jstDate } from "@/lib/ops/dates";
 import { db } from "@/lib/ops/db";
 import { findCreatorByToken, offerOf, slotLabel } from "@/lib/ops/service";
+import { describeFlex, findSlot, flexDates, flexTimes, isFlex } from "@/lib/ops/slots";
 import { InsightView } from "@/components/ops/InsightView";
 import { ShotUploader } from "@/components/ops/ShotUploader";
 import { isComplete, platformLabel, screenshotGuide } from "@/lib/ops/insight-fields";
@@ -135,7 +136,43 @@ export default async function AssignmentPage({ params, searchParams }: { params:
               </fieldset>
             )}
             {locked && <input type="hidden" name="answer" value="yes" />}
-            {!locked && (
+            {!locked && isFlex(c) && (
+              <fieldset>
+                <legend className="mb-1 text-sm font-bold">ご希望の撮影日時を選んでください（第3希望まで）</legend>
+                <p className="mb-2 text-xs leading-relaxed text-muted">
+                  撮影できる期間：{describeFlex(c.flex!)}
+                  <br />
+                  第1希望から順に調整して、撮影日時をご連絡します。第2・第3希望は空欄でもOKです（見送る場合は選ばなくてOK）。
+                </p>
+                <div className="space-y-2">
+                  {[0, 1, 2].map((n) => {
+                    const cur = findSlot(c, a.availableSlotIds[n]);
+                    return (
+                      <div key={n} className="grid grid-cols-[4.5rem_1fr_6.5rem] items-center gap-2">
+                        <span className="text-sm font-bold">第{n + 1}希望</span>
+                        <select name={`pref${n}Date`} defaultValue={cur?.date ?? ""} className={inputClass} aria-label={`第${n + 1}希望の日付`}>
+                          <option value="">日付を選ぶ</option>
+                          {flexDates(c.flex!, today).map((d) => (
+                            <option key={d} value={d}>
+                              {fmtDate(d)}
+                            </option>
+                          ))}
+                        </select>
+                        <select name={`pref${n}Time`} defaultValue={cur?.start ?? ""} className={inputClass} aria-label={`第${n + 1}希望の時刻`}>
+                          <option value="">時刻</option>
+                          {flexTimes(c.flex!).map((t) => (
+                            <option key={t} value={t}>
+                              {t}〜
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    );
+                  })}
+                </div>
+              </fieldset>
+            )}
+            {!locked && !isFlex(c) && (
               <fieldset>
                 <legend className="mb-1 text-sm font-bold">参加できる日時をすべて選んでください</legend>
                 <p className="mb-2 text-xs text-muted">選んだ中から撮影日を決めてご連絡します（見送る場合は選ばなくてOK）。</p>

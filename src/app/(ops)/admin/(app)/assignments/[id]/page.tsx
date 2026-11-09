@@ -15,6 +15,7 @@ import { latestVideo, videoEnabled, videoStage, videoStageLabel } from "@/lib/op
 import { blobAccess, blobAuth, videoStorage } from "@/lib/ops/video-store";
 import { insightFields, isComplete } from "@/lib/ops/insight-fields";
 import { listShots } from "@/lib/ops/insights";
+import { findSlot, isFlex } from "@/lib/ops/slots";
 import type { DistKey, MetricKey, Platform } from "@/lib/ops/types";
 import { isAiConfigured } from "@/lib/ops/vision";
 import { markVideoSentAction, notifyMissingAction, ownerVideoAction, saveAssignment, saveInsightManual, shopVideoAsAdmin } from "../../../actions";
@@ -74,6 +75,23 @@ export default async function AssignmentPage({ params, searchParams }: { params:
               <input type="date" name="plannedPostDate" defaultValue={a.plannedPostDate} className={inputClass} />
             </Field>
           </div>
+          {isFlex(c) ? (
+            <div className="mt-4 text-sm">
+              <p className="mb-1.5 font-bold">希望の日時</p>
+              {a.availableSlotIds.length ? (
+                <ol className="space-y-1">
+                  {a.availableSlotIds.map((id, i) => (
+                    <li key={id}>
+                      <input type="hidden" name="availableSlotIds" value={id} />
+                      第{i + 1}希望：{fmtSlot(findSlot(c, id)!)}
+                    </li>
+                  ))}
+                </ol>
+              ) : (
+                <p className="text-muted">まだ希望はありません</p>
+              )}
+            </div>
+          ) : (
           <fieldset className="mt-4">
             <legend className="mb-1.5 text-sm font-bold">参加できる日時</legend>
             <div className="grid gap-1.5 sm:grid-cols-2">
@@ -85,16 +103,24 @@ export default async function AssignmentPage({ params, searchParams }: { params:
               ))}
             </div>
           </fieldset>
+          )}
           <div className="mt-4 grid gap-4 md:grid-cols-2">
             <Field label="確定した撮影日時" hint="ここで変えても本人には連絡されません。連絡する場合は案件ページの「確定して発信者に連絡」から">
-              <select name="confirmedSlotId" defaultValue={a.confirmedSlotId ?? ""} className={inputClass}>
-                <option value="">未定</option>
-                {c.slots.map((s) => (
-                  <option key={s.id} value={s.id}>
-                    {fmtSlot(s)}
-                  </option>
-                ))}
-              </select>
+              {isFlex(c) ? (
+                <span className="grid grid-cols-2 gap-2">
+                  <input type="date" name="confirmDate" defaultValue={findSlot(c, a.confirmedSlotId)?.date} className={inputClass} aria-label="撮影日" />
+                  <input type="time" name="confirmTime" defaultValue={findSlot(c, a.confirmedSlotId)?.start} className={inputClass} aria-label="開始時刻" />
+                </span>
+              ) : (
+                <select name="confirmedSlotId" defaultValue={a.confirmedSlotId ?? ""} className={inputClass}>
+                  <option value="">未定</option>
+                  {c.slots.map((s) => (
+                    <option key={s.id} value={s.id}>
+                      {fmtSlot(s)}
+                    </option>
+                  ))}
+                </select>
+              )}
             </Field>
             <Field label="この人の報酬・特典" hint={`空欄なら案件の共通の報酬「${c.offer || "未設定"}」。この人にだけ表示されます（変えても本人への連絡はしません）`}>
               <input name="offer" defaultValue={a.offer} placeholder={c.offer} className={inputClass} />
