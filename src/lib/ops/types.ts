@@ -282,6 +282,8 @@ export type ProposalSettings = {
   validDays: number;
   /** 料金の下に載せる共通の備考（例：二次利用は別途ご相談） */
   notes: string;
+  /** 料金表に予想リーチ（インサイト実績からの推計）を載せる */
+  showReach?: boolean;
 };
 
 /** 料金表の見出しとライトプラン（あなたが編集） */

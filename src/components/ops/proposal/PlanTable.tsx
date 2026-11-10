@@ -1,6 +1,7 @@
 import { CreatorAvatar } from "@/components/ops/CreatorAvatar";
 import type { Plan } from "@/lib/ops/proposal";
 import { yen } from "@/lib/ops/proposal";
+import { fmtReach, fmtReachRange } from "@/lib/ops/reach";
 
 /** 料金表（明細・小計・消費税・合計） */
 export function PlanTable({ plan, title, taxRate, compact }: { plan: Plan; title: string; taxRate: number; compact?: boolean }) {
@@ -22,6 +23,14 @@ export function PlanTable({ plan, title, taxRate, compact }: { plan: Plan; title
                   <span className="min-w-0">
                     {l.label}
                     {l.sub && !compact && <span className="block text-xs text-muted">{l.sub}</span>}
+                    {l.reach && (
+                      <span className="block text-xs font-bold text-emerald-700">
+                        予想リーチ 約{fmtReach(l.reach.value)}人
+                        <span className="font-normal text-muted">
+                          （{fmtReachRange(l.reach)}・{l.reach.basis === "history" ? `実績${l.reach.posts}投稿から` : "フォロワー数からの参考値"}）
+                        </span>
+                      </span>
+                    )}
                     {l.creator?.url && (
                       <a href={l.creator.url} target="_blank" rel="noopener" className="block text-xs text-[#1f5fbf] underline">
                         {l.creator.url.replace(/^https?:\/\/(www\.)?/, "").replace(/\/$/, "")}
@@ -45,6 +54,26 @@ export function PlanTable({ plan, title, taxRate, compact }: { plan: Plan; title
             <td className="px-4 py-2.5 font-sans font-bold">合計（税込）</td>
             <td className="whitespace-nowrap px-4 py-2.5 text-right text-lg font-extrabold">{yen(plan.total)}</td>
           </tr>
+          {plan.reach && (
+            <>
+              <tr className="bg-emerald-50">
+                <td className="px-4 py-2.5 font-sans font-bold text-emerald-800">
+                  予想リーチ合計
+                  <span className="block text-xs font-normal text-muted">
+                    {fmtReachRange(plan.reach)}
+                    {plan.reach.missing.length > 0 && `・${plan.reach.missing.length}名は実績がないため含みません`}
+                  </span>
+                </td>
+                <td className="whitespace-nowrap px-4 py-2.5 text-right text-lg font-extrabold text-emerald-800">約{fmtReach(plan.reach.value)}人</td>
+              </tr>
+              {plan.costPerReach !== undefined && (
+                <tr className="bg-emerald-50 text-emerald-800">
+                  <td className="px-4 pb-2.5 font-sans text-xs">1リーチあたりの料金（税別）</td>
+                  <td className="whitespace-nowrap px-4 pb-2.5 text-right text-sm font-bold">約{plan.costPerReach.toLocaleString("ja-JP", { maximumFractionDigits: plan.costPerReach < 10 ? 1 : 0 })}円</td>
+                </tr>
+              )}
+            </>
+          )}
         </tbody>
       </table>
     </div>
