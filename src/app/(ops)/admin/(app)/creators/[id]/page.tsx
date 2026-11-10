@@ -4,9 +4,10 @@ import { CopyButton, SubmitButton } from "@/components/ops/client";
 import { IconPicker } from "@/components/ops/IconPicker";
 import { ProgressSteps } from "@/components/ops/ProgressSteps";
 import { creatorIconUrl, creatorProfileUrl } from "@/lib/ops/creator-profile";
+import { isOnSite } from "@/lib/ops/follower-sync";
 import { progressOf } from "@/lib/ops/progress";
 import { Badge, Card, Field, Flash, inputClass } from "@/components/ops/ui";
-import { fmtDate, jstDate } from "@/lib/ops/dates";
+import { fmtDate, fmtDateTime, jstDate } from "@/lib/ops/dates";
 import { db } from "@/lib/ops/db";
 import { isLineConfigured, lineOaMessageUrl } from "@/lib/ops/line";
 import { text } from "@/lib/ops/templates";
@@ -111,7 +112,14 @@ export default async function CreatorPage({ params, searchParams }: { params: Pr
             <Field label="SNSのURL" hint={`空欄なら自動：${creatorProfileUrl({ ...c, profileUrl: undefined }) ?? "SNSとアカウントから作れません"}`}>
               <input name="profileUrl" type="url" defaultValue={c.profileUrl ?? ""} placeholder="https://www.instagram.com/..." className={inputClass} />
             </Field>
-            <Field label="フォロワー数">
+            <Field
+              label="フォロワー数"
+              hint={
+                isOnSite(c.account)
+                  ? `ホームページと連動中（${c.followersSyncedAt ? `${fmtDateTime(c.followersSyncedAt)}に取り込み` : "保存すると取り込みます"}）。手で変えても次の取り込みで上書きされます`
+                  : undefined
+              }
+            >
               <input name="followers" inputMode="numeric" defaultValue={c.followers ?? ""} className={inputClass} />
             </Field>
             <Field label="メールアドレス">

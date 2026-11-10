@@ -5,7 +5,8 @@ import { SubmitButton } from "@/components/ops/client";
 import { Badge, Card, Empty, Field, Flash, inputClass } from "@/components/ops/ui";
 import { fmtNum } from "@/lib/ops/dates";
 import { db } from "@/lib/ops/db";
-import { importCreators, saveCreator } from "../../actions";
+import { isOnSite } from "@/lib/ops/follower-sync";
+import { importCreators, saveCreator, syncFollowersAction } from "../../actions";
 
 export const metadata = { title: "発信者" };
 
@@ -16,7 +17,17 @@ export default async function CreatorsPage({ searchParams }: { searchParams: Pro
   return (
     <>
       <Flash text={flash} />
-      <h1 className="text-xl font-extrabold md:text-2xl">発信者</h1>
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <h1 className="text-xl font-extrabold md:text-2xl">発信者</h1>
+        <form action={syncFollowersAction}>
+          <SubmitButton variant="outline" size="sm">
+            ホームページからフォロワー数を取り込む
+          </SubmitButton>
+        </form>
+      </div>
+      <p className="text-xs text-muted">
+        ホームページ（/creators）に載っている発信者と同じアカウント名の人は、フォロワー数が自動で連動します（毎朝・発信者の保存時・料金表をつくるとき）。
+      </p>
       <Card title={`登録済み ${creators.length}人（LINE連携 ${linked}人）`}>
         {creators.length === 0 ? (
           <Empty>まだ登録がありません。下のフォームから登録してください。</Empty>
@@ -29,6 +40,7 @@ export default async function CreatorsPage({ searchParams }: { searchParams: Pro
                   <span className="font-bold">{c.name}</span>
                   {c.account && <span className="text-sm text-muted">@{c.account}</span>}
                   {c.followers && <span className="num text-xs text-muted">{fmtNum(c.followers)}人</span>}
+                  {isOnSite(c.account) && <Badge tone="blue">HPと連動</Badge>}
                   {c.price ? <span className="num text-xs text-muted">料金 {fmtNum(c.price)}円</span> : <span className="text-xs text-amber-700">料金未設定</span>}
                   <span className="ml-auto flex gap-1.5">
                     {!c.active && <Badge>依頼対象外</Badge>}

@@ -5,6 +5,7 @@ import { z } from "zod";
 import { checkPassword, endSession, requireAdmin, startSession } from "@/lib/ops/auth";
 import { blobs, db, resetDemo } from "@/lib/ops/db";
 import { iconKey } from "@/lib/ops/creator-profile";
+import { isOnSite, syncFollowersFromSite } from "@/lib/ops/follower-sync";
 import { isDemo } from "@/lib/ops/demo-flag";
 import type { BulkResult } from "@/lib/ops/service";
 import {
@@ -106,11 +107,13 @@ export async function saveCreator(fd: FormData) {
   if (id) {
     const iconAt = await saveIcon(id, fd);
     await db.update("creators", id, (c) => ({ ...c, ...patch, iconAt: iconAt === undefined ? c.iconAt : iconAt || undefined }));
+    if (isOnSite(account)) await syncFollowersFromSite().catch(() => null);
     back(`/admin/creators/${id}`, "保存しました");
   }
   const newId = shortId();
   const creator: Creator = { id: newId, ...patch, iconAt: (await saveIcon(newId, fd)) || undefined, token: newToken(), lineLinkCode: newLinkCode(), active: true, createdAt: nowIso() };
   await db.put("creators", creator);
+  if (isOnSite(account)) await syncFollowersFromSite().catch(() => null);
   back(`/admin/creators/${creator.id}`, "登録しました。下の「最初の案内文」を本人に送ってください");
 }
 
@@ -127,6 +130,18 @@ async function saveIcon(creatorId: string, fd: FormData): Promise<string | undef
   if (!m || m[1].length > 400_000) return undefined;
   await blobs.setForever(iconKey(creatorId), m[1]);
   return nowIso();
+}
+
+export async function syncFollowersAction() {
+  await requireAdmin();
+  const r = await syncFollowersFromSite().catch(() => null);
+  if (!r) back("/admin/creators", "!ホームページのフォロワー数を取り込めませんでした。時間をおいてもう一度お試しください");
+  back(
+    "/admin/creators",
+    r.matched === 0
+      ? "!ホームページと同じアカウント名の発信者がいませんでした（アカウント名を @なしで登録してください）"
+      : `ホームページと連動している${r.matched}人のフォロワー数を取り込みました（変わった人：${r.updated}人）`,
+  );
 }
 
 /** 1行1人：名前, アカウント, フォロワー数, メール */
@@ -693,6 +708,8 @@ export async function saveProposalSettings(fd: FormData) {
 
 export async function createProposal(fd: FormData) {
   await requireAdmin();
+  // 料金表に最新のフォロワー数を載せる（ホームページと連動している人だけ）
+  await syncFollowersFromSite().catch(() => null);
   let restaurantId = str(fd, "restaurantId");
   const newName = str(fd, "newRestaurant");
   if (!restaurantId && newName) {
