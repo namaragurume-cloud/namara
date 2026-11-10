@@ -3,7 +3,8 @@
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { checkPassword, endSession, requireAdmin, startSession } from "@/lib/ops/auth";
-import { db, resetDemo } from "@/lib/ops/db";
+import { blobs, db, resetDemo } from "@/lib/ops/db";
+import { iconKey } from "@/lib/ops/creator-profile";
 import { isDemo } from "@/lib/ops/demo-flag";
 import type { BulkResult } from "@/lib/ops/service";
 import {
@@ -20,7 +21,6 @@ import {
 } from "@/lib/ops/service";
 import { fieldLabel, insightFields, missingKeys, missingLabels, parseDistText } from "@/lib/ops/insight-fields";
 import { draftReportText } from "@/lib/ops/ai-report";
-import { draftProposal } from "@/lib/ops/ai-proposal";
 import { proposalShareMsg } from "@/lib/ops/proposal-msg";
 import { deleteShot } from "@/lib/ops/insights";
 import { deleteAllVideoFiles, markSentToShop, ownerDecide, shopDecide, VideoError } from "@/lib/ops/video";
@@ -91,6 +91,8 @@ export async function saveCreator(fd: FormData) {
   if (!name) back(id ? `/admin/creators/${id}` : "/admin/creators", "!名前を入力してください");
   const email = optStr(fd, "email");
   if (email && !z.email().safeParse(email).success) back(id ? `/admin/creators/${id}` : "/admin/creators", "!メールアドレスの形式が正しくありません");
+  const profileUrl = optStr(fd, "profileUrl");
+  if (profileUrl && !/^https?:\/\/\S+$/.test(profileUrl)) back(id ? `/admin/creators/${id}` : "/admin/creators", "!SNSのURLは https:// から入力してください");
   const patch = {
     name,
     account,
@@ -99,15 +101,32 @@ export async function saveCreator(fd: FormData) {
     email,
     memo: optStr(fd, "memo"),
     price: optNum(fd, "price"),
-    pitch: optStr(fd, "pitch"),
+    profileUrl,
   };
   if (id) {
-    await db.update("creators", id, (c) => ({ ...c, ...patch }));
+    const iconAt = await saveIcon(id, fd);
+    await db.update("creators", id, (c) => ({ ...c, ...patch, iconAt: iconAt === undefined ? c.iconAt : iconAt || undefined }));
     back(`/admin/creators/${id}`, "保存しました");
   }
-  const creator: Creator = { id: shortId(), ...patch, token: newToken(), lineLinkCode: newLinkCode(), active: true, createdAt: nowIso() };
+  const newId = shortId();
+  const creator: Creator = { id: newId, ...patch, iconAt: (await saveIcon(newId, fd)) || undefined, token: newToken(), lineLinkCode: newLinkCode(), active: true, createdAt: nowIso() };
   await db.put("creators", creator);
   back(`/admin/creators/${creator.id}`, "登録しました。下の「最初の案内文」を本人に送ってください");
+}
+
+/**
+ * フォームのアイコン画像を保存する。
+ * 戻り値：新しい日時（保存した）／""（外した）／undefined（変更なし）
+ */
+async function saveIcon(creatorId: string, fd: FormData): Promise<string | undefined> {
+  if (str(fd, "removeIcon") === "1") {
+    await blobs.del(iconKey(creatorId));
+    return "";
+  }
+  const m = /^data:image\/jpeg;base64,([A-Za-z0-9+/=]+)$/.exec(str(fd, "icon"));
+  if (!m || m[1].length > 400_000) return undefined;
+  await blobs.setForever(iconKey(creatorId), m[1]);
+  return nowIso();
 }
 
 /** 1行1人：名前, アカウント, フォロワー数, メール */
@@ -319,6 +338,7 @@ export async function deleteCreator(id: string) {
   if (!c) back("/admin/creators", "!発信者が見つかりません");
   const list = (await db.list("assignments")).filter((a) => a.creatorId === id);
   await removeAssignments(list);
+  await blobs.del(iconKey(id)).catch(() => {});
   await db.remove("creators", id);
   back("/admin/creators", `「${c.name}」さんを削除しました${list.length ? `（依頼${list.length}件も削除）` : ""}`);
 }
@@ -671,22 +691,6 @@ export async function saveProposalSettings(fd: FormData) {
   back("/admin/settings", "提案の設定を保存しました");
 }
 
-async function draftAndSave(proposalId: string): Promise<string | null> {
-  const p = await db.get("proposals", proposalId);
-  if (!p) return "提案が見つかりません";
-  const restaurant = await db.get("restaurants", p.restaurantId);
-  const creators = (await Promise.all(p.creatorIds.map((id) => db.get("creators", id)))).filter((c): c is Creator => Boolean(c));
-  if (!restaurant) return "店舗が見つかりません";
-  try {
-    const text = await draftProposal({ restaurant, request: p.request, creators });
-    await db.update("proposals", proposalId, (x) => ({ ...x, text, updatedAt: nowIso() }));
-    return null;
-  } catch (e) {
-    console.error("[proposal] draft failed", e);
-    return "AIで資料を作れませんでした。時間をおいて「AIで作り直す」を押すか、文章を手で入力してください";
-  }
-}
-
 export async function createProposal(fd: FormData) {
   await requireAdmin();
   let restaurantId = str(fd, "restaurantId");
@@ -701,52 +705,44 @@ export async function createProposal(fd: FormData) {
   if (creatorIds.length === 0) back("/admin/proposals", "!提案する発信者を選んでください");
   const p = { id: shortId(), restaurantId, creatorIds, request: optStr(fd, "request"), shareToken: newToken(), createdAt: nowIso() };
   await db.put("proposals", p);
-  const err = await draftAndSave(p.id);
-  back(`/admin/proposals/${p.id}`, err ? `!${err}` : "AIで提案資料を作りました。内容を確認して、飲食店に送ってください");
-}
-
-export async function regenerateProposal(id: string) {
-  await requireAdmin();
-  const err = await draftAndSave(id);
-  back(`/admin/proposals/${id}`, err ? `!${err}` : "AIで作り直しました");
+  back(`/admin/proposals/${p.id}`, "料金表を作りました。内容を確認して、飲食店に送ってください");
 }
 
 export async function saveProposalCreators(id: string, fd: FormData) {
   await requireAdmin();
   const creatorIds = fd.getAll("creatorId").map(String).filter(Boolean);
   if (creatorIds.length === 0) back(`/admin/proposals/${id}`, "!発信者を1人以上選んでください");
-  await db.update("proposals", id, (p) => ({ ...p, creatorIds, request: optStr(fd, "request"), updatedAt: nowIso() }));
-  const err = await draftAndSave(id);
-  back(`/admin/proposals/${id}`, err ? `!発信者は保存しました。${err}` : "発信者を変えて、AIで資料を作り直しました");
+  await db.update("proposals", id, (p) => ({
+    ...p,
+    creatorIds,
+    request: optStr(fd, "request"),
+    // ライトプランは、今の発信者に含まれる人だけ残す
+    text: p.text?.lightPlan ? { ...p.text, lightPlan: lightOf(p.text.lightPlan.creatorIds.filter((x) => creatorIds.includes(x)), creatorIds, p.text.lightPlan.reason) } : p.text,
+    updatedAt: nowIso(),
+  }));
+  back(`/admin/proposals/${id}`, "発信者を変えました（料金表も更新されています）");
+}
+
+/** ライトプランは「全員より少ない1人以上」のときだけ有効 */
+function lightOf(ids: string[], all: string[], reason?: string) {
+  const list = ids.filter((x) => all.includes(x));
+  return list.length > 0 && list.length < all.length ? { creatorIds: list, reason } : undefined;
 }
 
 export async function saveProposalText(id: string, fd: FormData) {
   await requireAdmin();
   const p = await db.get("proposals", id);
   if (!p) back("/admin/proposals", "!提案が見つかりません");
-  const points = str(fd, "points")
-    .split(/\r?\n/)
-    .map((l) => l.trim())
-    .filter(Boolean)
-    .map((l) => {
-      const [title, ...rest] = l.split(/[｜|]/);
-      return { title: title.trim(), body: rest.join("｜").trim() };
-    });
-  const reasons = Object.fromEntries(p.creatorIds.map((cid) => [cid, str(fd, `reason_${cid}`)]).filter(([, v]) => v));
-  const lightIds = fd.getAll("lightId").map(String).filter((x) => p.creatorIds.includes(x));
+  const lightIds = fd.getAll("lightId").map(String);
   await db.update("proposals", id, (x) => ({
     ...x,
     text: {
-      title: str(fd, "title"),
-      catchcopy: str(fd, "catchcopy"),
-      summary: str(fd, "summary"),
-      points,
-      reasons,
-      lightPlan: str(fd, "useLight") === "on" && lightIds.length && lightIds.length < p.creatorIds.length ? { creatorIds: lightIds, reason: str(fd, "lightReason") } : undefined,
+      title: optStr(fd, "title"),
+      lightPlan: str(fd, "useLight") === "on" ? lightOf(lightIds, p.creatorIds, optStr(fd, "lightReason")) : undefined,
     },
     updatedAt: nowIso(),
   }));
-  back(`/admin/proposals/${id}`, "提案資料を保存しました");
+  back(`/admin/proposals/${id}`, "料金表を保存しました");
 }
 
 export async function sendProposal(id: string, manual: boolean) {
@@ -758,7 +754,7 @@ export async function sendProposal(id: string, manual: boolean) {
     await db.update("proposals", id, (x) => ({ ...x, sentAt: nowIso() }));
     back(`/admin/proposals/${id}`, "送付済みにしました");
   }
-  const res = await sendToRestaurant(r, await proposalShareMsg(p, r), `提案：${p.text?.title ?? r.name}`);
+  const res = await sendToRestaurant(r, await proposalShareMsg(p, r), `料金のご案内：${r.name}`);
   if (res.ok) await db.update("proposals", id, (x) => ({ ...x, sentAt: nowIso() }));
   back(
     `/admin/proposals/${id}`,

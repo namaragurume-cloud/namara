@@ -1,3 +1,4 @@
+import { creatorIconUrl, creatorProfileUrl } from "./creator-profile";
 import type { Creator, ProposalSettings } from "./types";
 
 /** 提案の料金計算（AIは使わず、設定した料金から計算する） */
@@ -11,7 +12,7 @@ export const DEFAULT_PROPOSAL_SETTINGS: ProposalSettings = {
   notes: "撮影時の飲食代は別途ご相談となります。投稿の二次利用（広告利用など）は別途お見積りいたします。",
 };
 
-export type PlanLine = { label: string; sub?: string; amount: number };
+export type PlanLine = { label: string; sub?: string; amount: number; creator?: { name: string; url?: string; icon?: string } };
 export type Plan = {
   creators: Creator[];
   lines: PlanLine[];
@@ -28,6 +29,7 @@ export function buildPlan(creators: Creator[], s: ProposalSettings): Plan {
     label: `${c.name}${c.account ? `（@${c.account}）` : ""}`,
     sub: `${c.platform}${c.followers ? `・フォロワー ${c.followers.toLocaleString("ja-JP")}` : ""}`,
     amount: c.price ?? 0,
+    creator: { name: c.name, url: creatorProfileUrl(c), icon: creatorIconUrl(c) },
   }));
   if (s.directionFee > 0) lines.push({ label: s.directionFeeLabel || "ディレクション費", amount: s.directionFee });
   const subtotal = lines.reduce((n, l) => n + l.amount, 0);

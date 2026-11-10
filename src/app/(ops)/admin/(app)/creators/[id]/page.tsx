@@ -1,7 +1,9 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { CopyButton, SubmitButton } from "@/components/ops/client";
+import { IconPicker } from "@/components/ops/IconPicker";
 import { ProgressSteps } from "@/components/ops/ProgressSteps";
+import { creatorIconUrl, creatorProfileUrl } from "@/lib/ops/creator-profile";
 import { progressOf } from "@/lib/ops/progress";
 import { Badge, Card, Field, Flash, inputClass } from "@/components/ops/ui";
 import { fmtDate, jstDate } from "@/lib/ops/dates";
@@ -97,11 +99,17 @@ export default async function CreatorPage({ params, searchParams }: { params: Pr
             <Field label="名前（呼び名）" required>
               <input name="name" defaultValue={c.name} required className={inputClass} />
             </Field>
+            <Field label="アイコン" hint="SNSのアイコン画像（スクショでOK）。料金表に表示します">
+              <IconPicker name={c.name} current={creatorIconUrl(c)} />
+            </Field>
             <Field label="アカウント">
               <input name="account" defaultValue={c.account} className={inputClass} />
             </Field>
             <Field label="SNS">
               <input name="platform" defaultValue={c.platform} className={inputClass} />
+            </Field>
+            <Field label="SNSのURL" hint={`空欄なら自動：${creatorProfileUrl({ ...c, profileUrl: undefined }) ?? "SNSとアカウントから作れません"}`}>
+              <input name="profileUrl" type="url" defaultValue={c.profileUrl ?? ""} placeholder="https://www.instagram.com/..." className={inputClass} />
             </Field>
             <Field label="フォロワー数">
               <input name="followers" inputMode="numeric" defaultValue={c.followers ?? ""} className={inputClass} />
@@ -109,11 +117,8 @@ export default async function CreatorPage({ params, searchParams }: { params: Pr
             <Field label="メールアドレス">
               <input name="email" type="email" defaultValue={c.email ?? ""} className={inputClass} />
             </Field>
-            <Field label="料金（1投稿・税別・円）" hint="飲食店への提案の料金表に使います。本人や他の発信者には表示されません">
+            <Field label="料金（1投稿・税別・円）" hint="飲食店に送る料金表に使います。本人や他の発信者には表示されません">
               <input name="price" inputMode="numeric" defaultValue={c.price ?? ""} placeholder="例：30000" className={inputClass} />
-            </Field>
-            <Field label="提案用の紹介文" hint="提案資料に載せる紹介文（得意ジャンル・エリア・特徴など）。AIが「このお店に合う理由」を書くときにも使います">
-              <textarea name="pitch" rows={3} defaultValue={c.pitch ?? ""} placeholder="例：札幌のラーメン・居酒屋が中心。30〜40代の男性フォロワーが多く、保存されやすいメニュー紹介が得意。" className={inputClass} />
             </Field>
             <Field label="メモ（本人には表示されません）">
               <textarea name="memo" rows={3} defaultValue={c.memo ?? ""} className={inputClass} />

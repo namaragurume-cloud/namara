@@ -14,11 +14,13 @@ export async function proposalValidUntil(p: Pick<Proposal, "createdAt">): Promis
   return addDays(created, s.validDays);
 }
 
+export const proposalTitle = (p: Pick<Proposal, "text">) => p.text?.title || "SNSプロモーション 料金のご案内";
+
 export async function proposalShareMsg(p: Proposal, r: Restaurant) {
   return msg("proposalShare", {
     店舗名: r.name,
     宛名: r.contactName ? `${r.contactName}様` : "ご担当者様",
-    タイトル: p.text?.title ?? `${r.name}様 SNSプロモーションのご提案`,
+    タイトル: proposalTitle(p),
     URL: proposalUrl(p),
     有効期限: fmtDateLong(await proposalValidUntil(p)),
   });

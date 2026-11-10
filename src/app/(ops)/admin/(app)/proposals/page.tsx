@@ -1,12 +1,13 @@
 import Link from "next/link";
 import { CheckAll, SubmitButton } from "@/components/ops/client";
+import { CreatorAvatar } from "@/components/ops/CreatorAvatar";
 import { SelectedTotal } from "@/components/ops/SelectedTotal";
+import { creatorIconUrl } from "@/lib/ops/creator-profile";
 import { Badge, Card, Empty, Field, Flash, inputClass } from "@/components/ops/ui";
 import { fmtDate, fmtNum } from "@/lib/ops/dates";
 import { db } from "@/lib/ops/db";
 import { buildPlan, yen } from "@/lib/ops/proposal";
 import { proposalSettings } from "@/lib/ops/proposal-store";
-import { isAiConfigured } from "@/lib/ops/vision";
 import { createProposal } from "../../actions";
 
 export const metadata = { title: "提案" };
@@ -23,7 +24,7 @@ export default async function ProposalsPage({ searchParams }: { searchParams: Pr
     <>
       <Flash text={flash} />
       <h1 className="text-xl font-extrabold md:text-2xl">飲食店への提案</h1>
-      <p className="text-sm text-muted">発信者を選ぶだけで、AIが提案資料（紹介文・おすすめ理由・プラン）を作り、設定した料金から料金表を自動で計算します。</p>
+      <p className="text-sm text-muted">発信者を選ぶだけで、設定した料金から料金表を自動で作ります。URLを送ると、お店は料金表を見てPDFで保存できます。</p>
 
       <Card title="新しい提案をつくる">
         <form id="proposal-form" action={createProposal} className="space-y-4">
@@ -44,7 +45,7 @@ export default async function ProposalsPage({ searchParams }: { searchParams: Pr
               <input name="newRestaurant" placeholder="例：らーめん 北のいち" className={inputClass} />
             </Field>
           </div>
-          <Field label="提案のメモ（任意）" hint="お店の要望や狙いを書くと、AIが資料に反映します（例：12月の新メニュー「味噌バター」を若い女性に広めたい）">
+          <Field label="メモ（任意・お店には見えません）" hint="例：12月の新メニュー「味噌バター」を若い女性に広めたい">
             <textarea name="request" rows={2} className={inputClass} />
           </Field>
           <div>
@@ -56,6 +57,7 @@ export default async function ProposalsPage({ searchParams }: { searchParams: Pr
               {active.map((c) => (
                 <label key={c.id} className="flex items-center gap-2 rounded-xl border border-line bg-white px-3 py-2 text-sm has-[:checked]:border-brand has-[:checked]:bg-brand/5">
                   <input type="checkbox" name="creatorId" value={c.id} data-price={c.price ?? 0} className="size-4 accent-[var(--brand)]" />
+                  <CreatorAvatar name={c.name} src={creatorIconUrl(c)} size={28} />
                   <span className="min-w-0 flex-1">
                     <b className="block truncate">{c.name}</b>
                     <span className="block truncate text-xs text-muted">
@@ -71,9 +73,8 @@ export default async function ProposalsPage({ searchParams }: { searchParams: Pr
           <SelectedTotal formId="proposal-form" />
           <p className="text-xs text-muted">
             消費税{settings.taxRate}%{settings.directionFee ? `・${settings.directionFeeLabel} ${yen(settings.directionFee)}` : ""}は自動で加えます（設定から変更できます）。
-            {!isAiConfigured() && " ※ AIが未設定のため、文章はひな形が入ります（あとで編集できます）。"}
           </p>
-          <SubmitButton>AIで提案資料をつくる</SubmitButton>
+          <SubmitButton>料金表をつくる</SubmitButton>
         </form>
       </Card>
 
@@ -88,7 +89,7 @@ export default async function ProposalsPage({ searchParams }: { searchParams: Pr
                 <li key={p.id}>
                   <Link href={`/admin/proposals/${p.id}`} className="flex flex-wrap items-center gap-x-3 gap-y-1 py-2.5 hover:opacity-80">
                     <b>{rMap.get(p.restaurantId) ?? "（店舗不明）"}</b>
-                    <span className="text-sm text-muted">{p.text?.title}</span>
+                    {p.request && <span className="truncate text-sm text-muted">{p.request}</span>}
                     <span className="num text-xs text-muted">
                       {p.creatorIds.length}名・{yen(plan.total)}（税込）
                     </span>
