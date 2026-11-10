@@ -5,7 +5,7 @@ import { ScrollReveal } from "@/components/animation/ScrollReveal";
 import { Photo } from "@/components/ui/Photo";
 import { SectionHeading } from "@/components/ui/SectionHeading";
 
-/** トップページ：MIRATSUMUが選ばれる理由（3つの強み） */
+/** トップページ：MIRATSUMUが選ばれる理由（自ら発信者・独自の発信者ネットワーク・飲食店経営） */
 export function Reasons() {
   return (
     <section aria-labelledby="reasons-title" className="section bg-white">
@@ -19,7 +19,7 @@ export function Reasons() {
               <span className="inline-block">選ばれるのか。</span>
             </span>
           }
-          lead="北海道の食材・店舗・発信者をつなぐ。グルメメディアを運営し、飲食店の現場も知るMIRATSUMUだからこその、3つの強みがあります。"
+          lead="自ら発信し、発信者とつながり、飲食店も経営する。この3つを兼ね備えているのが、MIRATSUMUの強みです。"
         />
 
         <ol className="mt-12 grid gap-6 md:mt-16 lg:grid-cols-3 lg:gap-8">
