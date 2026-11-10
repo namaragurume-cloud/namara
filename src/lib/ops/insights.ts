@@ -94,7 +94,8 @@ export async function analyzeAssignment(assignmentId: string, opts: { notify: bo
     platform,
     metrics: { ...ex.metrics, ...(base?.metrics ?? {}) },
     dists: { ...ex.dists, ...(base?.dists ?? {}) },
-    isVideo: base?.isVideo ?? ex.isVideo,
+    // 平均再生時間が写っていれば動画
+    isVideo: base?.isVideo ?? ex.isVideo ?? (ex.metrics.avgWatchSec !== undefined ? true : undefined),
     missing: [],
     source: base ? "manual" : "ai",
     analyzedShots: images.length,

@@ -5,6 +5,8 @@ import { IconPicker } from "@/components/ops/IconPicker";
 import { ProgressSteps } from "@/components/ops/ProgressSteps";
 import { creatorIconUrl, creatorProfileUrl } from "@/lib/ops/creator-profile";
 import { isOnSite } from "@/lib/ops/follower-sync";
+import { fmtReach, fmtReachRange } from "@/lib/ops/reach";
+import { reachEstimates } from "@/lib/ops/reach-store";
 import { progressOf } from "@/lib/ops/progress";
 import { Badge, Card, Field, Flash, inputClass } from "@/components/ops/ui";
 import { fmtDate, fmtDateTime, jstDate } from "@/lib/ops/dates";
@@ -20,6 +22,7 @@ export default async function CreatorPage({ params, searchParams }: { params: Pr
   const [{ id }, { flash }] = await Promise.all([params, searchParams]);
   const c = await db.get("creators", id);
   if (!c) notFound();
+  const est = (await reachEstimates()).get(c.id);
   const [assignments, campaigns, restaurants] = await Promise.all([db.list("assignments"), db.list("campaigns"), db.list("restaurants")]);
   const mine = assignments.filter((a) => a.creatorId === c.id).sort((a, b) => b.createdAt.localeCompare(a.createdAt));
   const cMap = new Map(campaigns.map((x) => [x.id, x]));
@@ -125,6 +128,11 @@ export default async function CreatorPage({ params, searchParams }: { params: Pr
             <Field label="メールアドレス">
               <input name="email" type="email" defaultValue={c.email ?? ""} className={inputClass} />
             </Field>
+            <p className="rounded-xl bg-emerald-50 px-3 py-2 text-xs text-emerald-900">
+              {est
+                ? `予想リーチ 約${fmtReach(est.value)}人（${fmtReachRange(est)}）・${est.basis === "history" ? `このツールの実績${est.posts}投稿から推計` : "実績がないため、フォロワー数からの参考値"}`
+                : "予想リーチ：まだ推計できません（インサイトが集まると自動で計算します）"}
+            </p>
             <Field label="料金（1投稿・税別・円）" hint="飲食店に送る料金表に使います。本人や他の発信者には表示されません">
               <input name="price" inputMode="numeric" defaultValue={c.price ?? ""} placeholder="例：30000" className={inputClass} />
             </Field>

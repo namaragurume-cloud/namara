@@ -10,6 +10,7 @@ import { isLineConfigured, lineShareUrl } from "@/lib/ops/line";
 import { buildPlan } from "@/lib/ops/proposal";
 import { proposalShareMsg, proposalTitle, proposalUrl, proposalValidUntil } from "@/lib/ops/proposal-msg";
 import { proposalSettings } from "@/lib/ops/proposal-store";
+import { reachEstimates } from "@/lib/ops/reach-store";
 import type { Creator } from "@/lib/ops/types";
 import { deleteProposal, saveProposalCreators, saveProposalText, sendProposal } from "../../../actions";
 
@@ -19,11 +20,11 @@ export default async function ProposalPage({ params, searchParams }: { params: P
   const [{ id }, { flash }] = await Promise.all([params, searchParams]);
   const p = await db.get("proposals", id);
   if (!p) notFound();
-  const [r, allCreators, settings] = await Promise.all([db.get("restaurants", p.restaurantId), db.list("creators"), proposalSettings()]);
+  const [r, allCreators, settings, reach] = await Promise.all([db.get("restaurants", p.restaurantId), db.list("creators"), proposalSettings(), reachEstimates()]);
   const cMap = new Map(allCreators.map((c) => [c.id, c]));
   const creators = p.creatorIds.map((cid) => cMap.get(cid)).filter((c): c is Creator => Boolean(c));
-  const plan = buildPlan(creators, settings);
-  const light = p.text?.lightPlan ? buildPlan(creators.filter((c) => p.text!.lightPlan!.creatorIds.includes(c.id)), settings) : null;
+  const plan = buildPlan(creators, settings, reach);
+  const light = p.text?.lightPlan ? buildPlan(creators.filter((c) => p.text!.lightPlan!.creatorIds.includes(c.id)), settings, reach) : null;
   const t = p.text;
   const shareText = r ? (await proposalShareMsg(p, r)).text : "";
   const shopLine = isLineConfigured() && Boolean(r?.lineGroupId || r?.lineUserId);
@@ -113,7 +114,7 @@ export default async function ProposalPage({ params, searchParams }: { params: P
             {t?.lightPlan?.reason && <p className="mt-2 text-xs text-muted">{t.lightPlan.reason}</p>}
           </div>
         )}
-        <p className="mt-3 text-xs text-muted">料金は各発信者の設定（税別）と「設定」の消費税・固定費から計算しています。</p>
+        <p className="mt-3 text-xs text-muted">料金は各発信者の設定（税別）と「設定」の消費税・固定費から計算しています。予想リーチは集まったインサイトからの推計です{settings.showReach === false ? "（今は「設定」で料金表に載せない設定です）" : "（料金表にも載ります）"}。</p>
       </Card>
 
       <Card title="料金表の見出し・プランB">

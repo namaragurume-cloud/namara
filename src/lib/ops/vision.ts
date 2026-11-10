@@ -46,14 +46,14 @@ const SYSTEM = `あなたはSNSの投稿インサイト画面のスクリーン�
 複数枚の画像は、すべて同じ1つの投稿のインサイトです。画像に実際に写っている値だけを書き写し、写っていない項目は推測せず null（内訳は空配列）にしてください。
 
 項目の対応:
-- Instagram: 閲覧数→views、閲覧者→viewers、平均再生時間→avg_watch_sec（秒。「1分5秒」は65）、フォロー数→follows、いいね→likes、コメント→comments、シェア（紙飛行機）→shares、保存→saves、「フォロワー以外」の割合→non_follower_pct（「フォロワー」の割合しか写っていなければ 100 から引く）、「閲覧数の上位のソース」→sources、年齢→age、性別→gender。
+- Instagram: 閲覧数（画面によっては「再生数」「Views」）→views、閲覧者（「Viewers」「Accounts reached」「リーチしたアカウント」）→viewers、平均再生時間（「Average watch time」）→avg_watch_sec（秒。「1分5秒」は65）、フォロー数（「Follows」）→follows、いいね→likes、コメント→comments、シェア（紙飛行機）→shares、保存→saves、「フォロワー以外」の割合→non_follower_pct（「フォロワー」の割合しか写っていなければ 100 から引く）、「閲覧数の上位のソース」（「Top sources of views」）→sources、年齢→age、性別→gender。「Profile visits（プロフィールへのアクセス）」など、ここにない項目は使わない。英語と日本語が混ざった画面でも同じように対応させる。
 - TikTok: 総視聴数（または再生数）→views、いいね→likes、コメント→comments、シェア→shares、保存（お気に入り）→saves、「新しい視聴者」の割合→new_viewer_pct、「非フォロワー」の割合→non_follower_pct、性別→gender、年齢→age、平均視聴時間→avg_watch_sec。TikTokでは viewers・follows・sources は null。
 
 数値のルール:
 - 「18K」「1.2万」などの省略表記は数値に直す（18K→18000、1.2万→12000）。同じ項目が省略表記と詳しい表記の両方で写っていれば、詳しい方（例 17.1K より 17,100 が写っていればそちら、18K と 17.1K なら 17.1K）を使う。
 - 割合は % を除いた数値（72.7% → 72.7）。内訳の label は画面の表記のまま（例「フィード」「25-34」「女性」）。
 - 数字が読めない・グラフしかなく値がない項目は null。
-- platform は画面の見た目から判断。is_video は再生時間や再生ボタンがあれば true、写真・カルーセル投稿なら false、判断できなければ null。
+- platform は画面の見た目から判断。is_video は「平均再生時間」「視聴時間」やリールの再生アイコンなど動画とわかる表示があれば true、写真・カルーセル投稿なら false、判断できなければ null。Instagramの新しい画面は写真でも「再生数」と表示されるので、「再生数」という表記だけで動画と判断しない。
 - posted_on は投稿日が写っていれば YYYY-MM-DD、なければ null。
 - インサイト以外の画像（関係ない写真など）の枚数を unrelated_images に入れる。
 - note には読み取りで気になった点（ぼやけて読めない、別の投稿が混ざっている可能性など）を日本語で短く。なければ空文字。`;

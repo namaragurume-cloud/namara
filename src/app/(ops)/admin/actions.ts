@@ -704,6 +704,7 @@ export async function saveProposalSettings(fd: FormData) {
     directionFeeLabel: str(fd, "directionFeeLabel") || "ディレクション費",
     validDays: Math.min(365, Math.max(1, Number(str(fd, "validDays")) || 14)),
     notes: str(fd, "notes"),
+    showReach: str(fd, "showReach") === "on",
   });
   back("/admin/settings", "提案の設定を保存しました");
 }

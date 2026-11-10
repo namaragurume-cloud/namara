@@ -7,7 +7,9 @@ import { site } from "@/data/site";
 import { isAdmin } from "@/lib/ops/auth";
 import { fmtDateLong } from "@/lib/ops/dates";
 import { db } from "@/lib/ops/db";
-import { buildPlan } from "@/lib/ops/proposal";
+import { buildPlan, yen } from "@/lib/ops/proposal";
+import { fmtReach, fmtReachRange } from "@/lib/ops/reach";
+import { reachEstimates } from "@/lib/ops/reach-store";
 import { proposalTitle, proposalValidUntil } from "@/lib/ops/proposal-msg";
 import { findProposalByToken, proposalSettings } from "@/lib/ops/proposal-store";
 import type { Creator } from "@/lib/ops/types";
@@ -29,9 +31,11 @@ export default async function ProposalDoc({ params }: { params: Promise<{ token:
   const [r, all, settings, admin] = await Promise.all([db.get("restaurants", p.restaurantId), db.list("creators"), proposalSettings(), isAdmin()]);
   const cMap = new Map(all.map((c) => [c.id, c]));
   const creators = p.creatorIds.map((id) => cMap.get(id)).filter((c): c is Creator => Boolean(c));
-  const plan = buildPlan(creators, settings);
+  const reach = settings.showReach !== false ? await reachEstimates() : undefined;
+  const plan = buildPlan(creators, settings, reach);
   const lightCreators = creators.filter((c) => p.text?.lightPlan?.creatorIds.includes(c.id));
-  const light = lightCreators.length > 0 && lightCreators.length < creators.length ? buildPlan(lightCreators, settings) : null;
+  const light = lightCreators.length > 0 && lightCreators.length < creators.length ? buildPlan(lightCreators, settings, reach) : null;
+  const plans = [{ name: light ? "プランA" : "", plan }, ...(light ? [{ name: "プランB", plan: light }] : [])].filter((x) => x.plan.reach);
 
   return (
     <>
@@ -64,6 +68,26 @@ export default async function ProposalDoc({ params }: { params: Promise<{ token:
             <div className="space-y-2">
               <PlanTable plan={light} title="プランB" taxRate={settings.taxRate} />
               {p.text?.lightPlan?.reason && <p className="text-xs text-muted">{p.text.lightPlan.reason}</p>}
+            </div>
+          )}
+
+          {plans.length > 0 && (
+            <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm leading-relaxed">
+              <p className="font-bold text-emerald-900">ご予算と予想リーチの目安</p>
+              <ul className="mt-1 space-y-0.5">
+                {plans.map((x) => (
+                  <li key={x.name}>
+                    {x.name && <b>{x.name}：</b>}
+                    ご予算 <b className="num">{yen(x.plan.total)}</b>（税込）で、約<b className="num text-emerald-800">{fmtReach(x.plan.reach!.value)}人</b>
+                    （{fmtReachRange(x.plan.reach!)}）へのリーチが見込まれます。
+                  </li>
+                ))}
+              </ul>
+              <p className="mt-2 text-xs text-muted">
+                ※ 予想リーチは、各発信者がこれまでに投稿したPRのインサイト（Instagramは閲覧者数、TikTokは視聴数）から算出した推計です。
+                {plan.reach!.fromFollowers > 0 && "実績のない発信者は、フォロワー数をもとにした参考値です。"}
+                投稿内容や時期により変動し、成果を保証するものではありません。
+              </p>
             </div>
           )}
 

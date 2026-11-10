@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { CheckAll, SubmitButton } from "@/components/ops/client";
 import { CreatorAvatar } from "@/components/ops/CreatorAvatar";
+import { BudgetPicker } from "@/components/ops/BudgetPicker";
 import { SelectedTotal } from "@/components/ops/SelectedTotal";
 import { creatorIconUrl } from "@/lib/ops/creator-profile";
 import { Badge, Card, Empty, Field, Flash, inputClass } from "@/components/ops/ui";
@@ -8,13 +9,15 @@ import { fmtDate, fmtNum } from "@/lib/ops/dates";
 import { db } from "@/lib/ops/db";
 import { buildPlan, yen } from "@/lib/ops/proposal";
 import { proposalSettings } from "@/lib/ops/proposal-store";
+import { fmtReach } from "@/lib/ops/reach";
+import { reachEstimates } from "@/lib/ops/reach-store";
 import { createProposal } from "../../actions";
 
 export const metadata = { title: "提案" };
 
 export default async function ProposalsPage({ searchParams }: { searchParams: Promise<{ flash?: string; restaurant?: string }> }) {
   const { flash, restaurant } = await searchParams;
-  const [proposals, restaurants, creators, settings] = await Promise.all([db.list("proposals"), db.list("restaurants"), db.list("creators"), proposalSettings()]);
+  const [proposals, restaurants, creators, settings, reach] = await Promise.all([db.list("proposals"), db.list("restaurants"), db.list("creators"), proposalSettings(), reachEstimates()]);
   const rMap = new Map(restaurants.map((r) => [r.id, r.name]));
   const cMap = new Map(creators.map((c) => [c.id, c]));
   const active = creators.filter((c) => c.active).sort((a, b) => (b.followers ?? 0) - (a.followers ?? 0));
@@ -56,13 +59,16 @@ export default async function ProposalsPage({ searchParams }: { searchParams: Pr
             <div className="grid max-h-96 gap-1.5 overflow-y-auto sm:grid-cols-2 lg:grid-cols-3">
               {active.map((c) => (
                 <label key={c.id} className="flex items-center gap-2 rounded-xl border border-line bg-white px-3 py-2 text-sm has-[:checked]:border-brand has-[:checked]:bg-brand/5">
-                  <input type="checkbox" name="creatorId" value={c.id} data-price={c.price ?? 0} className="size-4 accent-[var(--brand)]" />
+                  <input type="checkbox" name="creatorId" value={c.id} data-price={c.price ?? 0} data-reach={reach.get(c.id)?.value ?? 0} className="size-4 accent-[var(--brand)]" />
                   <CreatorAvatar name={c.name} src={creatorIconUrl(c)} size={28} />
                   <span className="min-w-0 flex-1">
                     <b className="block truncate">{c.name}</b>
                     <span className="block truncate text-xs text-muted">
                       {c.platform}
                       {c.followers ? `・${fmtNum(c.followers)}人` : ""}
+                    </span>
+                    <span className="block truncate text-xs text-emerald-700">
+                      {reach.get(c.id) ? `予想リーチ 約${fmtReach(reach.get(c.id)!.value)}人${reach.get(c.id)!.basis === "followers" ? "（参考値）" : ""}` : "予想リーチ：実績なし"}
                     </span>
                   </span>
                   {c.price ? <span className="num shrink-0 text-xs font-bold">{fmtNum(c.price)}円</span> : <Badge tone="amber">料金未設定</Badge>}
@@ -71,6 +77,7 @@ export default async function ProposalsPage({ searchParams }: { searchParams: Pr
             </div>
           </div>
           <SelectedTotal formId="proposal-form" />
+          <BudgetPicker formId="proposal-form" taxRate={settings.taxRate} fixedFee={settings.directionFee} />
           <p className="text-xs text-muted">
             消費税{settings.taxRate}%{settings.directionFee ? `・${settings.directionFeeLabel} ${yen(settings.directionFee)}` : ""}は自動で加えます（設定から変更できます）。
           </p>

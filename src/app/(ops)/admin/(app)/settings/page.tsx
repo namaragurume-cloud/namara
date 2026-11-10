@@ -56,6 +56,13 @@ export default async function SettingsPage({ searchParams }: { searchParams: Pro
               <textarea name="notes" rows={2} defaultValue={ps.notes} className={inputClass} />
             </Field>
           </div>
+          <label className="flex items-start gap-2 text-sm md:col-span-4">
+            <input type="checkbox" name="showReach" defaultChecked={ps.showReach !== false} className="mt-1 accent-[var(--brand)]" />
+            <span>
+              <b>料金表に予想リーチを載せる</b>
+              <span className="block text-xs text-muted">集まったインサイト（Instagramは閲覧者、TikTokは総視聴数）から、発信者ごとの予想リーチを推計して載せます。推計であること・成果を保証しないことも料金表に明記します。</span>
+            </span>
+          </label>
           <div className="md:col-span-4">
             <SubmitButton variant="outline" size="sm">
               保存
