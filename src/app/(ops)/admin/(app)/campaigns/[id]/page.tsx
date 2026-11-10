@@ -341,6 +341,12 @@ export default async function CampaignPage({ params, searchParams }: { params: P
                           <span className="ml-1 text-xs text-muted">来店 {fmtParty(r.a.partySize)}</span>
                           {r.a.offer && <p className="mt-0.5 max-w-56 text-xs text-sky-800">個別の報酬：{r.a.offer}</p>}
                           {r.a.note && <p className="mt-0.5 max-w-56 text-xs text-muted">💬 {r.a.note}</p>}
+                          <input
+                            name={`note_${r.a.id}`}
+                            placeholder="この人だけへのひとこと（任意）"
+                            aria-label={`${r.creator.name}さんへのひとこと`}
+                            className={`${inputClass} mt-1.5 max-w-56 !py-1.5 text-xs`}
+                          />
                         </td>
                         <td className="px-2 py-2">
                           <select name={`slot_${r.a.id}`} defaultValue={pick ?? ""} className={inputClass}>
@@ -395,6 +401,9 @@ export default async function CampaignPage({ params, searchParams }: { params: P
               </table>
             </div>
             <p className="text-xs text-muted">◯＝本人が参加できると回答した日時。確定すると、本人に撮影日時・住所・投稿条件が自動で届きます（変更した人にだけ再送します）。</p>
+            <Field label="発信者へのひとこと（任意）" hint="今回連絡する全員の連絡文に入ります（例：当日は裏口からお入りください）。表の「この人だけへのひとこと」は、その人にだけ追加されます">
+              <textarea name="note" rows={3} className={inputClass} />
+            </Field>
             <SubmitButton confirm="この内容で確定し、発信者に連絡します。よろしいですか？">この内容で確定して発信者に連絡</SubmitButton>
           </form>
         )}

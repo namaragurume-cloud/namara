@@ -203,6 +203,8 @@ export type Assignment = {
   availableSlotIds: string[];
   /** 確定した枠 */
   confirmedSlotId?: string;
+  /** 確定・日程変更の連絡に添えた、あなたからのひとこと */
+  confirmNote?: string;
   /** 投稿予定日 YYYY-MM-DD */
   plannedPostDate?: string;
   /** この人だけの報酬・特典（空なら案件の共通の報酬） */
