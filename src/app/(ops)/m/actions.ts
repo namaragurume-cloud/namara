@@ -58,11 +58,18 @@ export async function respond(token: string, id: string, fd: FormData) {
   back(token, id, accept ? "回答ありがとうございます！撮影日が決まったらお知らせします。" : "ご回答ありがとうございました。またよろしくお願いします！");
 }
 
-/** 投稿URL（任意） */
+/** 投稿URL（任意）と、本人が入力する投稿日 */
 export async function savePostUrl(token: string, id: string, fd: FormData) {
   const { a } = await load(token, id);
   const url = String(fd.get("postUrl") ?? "").trim();
   if (url && !z.url().safeParse(url).success) back(token, id, "!URLの形式が正しくありません");
-  await db.update("assignments", a.id, (x) => ({ ...x, postUrl: url || undefined }));
-  back(token, id, "投稿URLを保存しました");
+  let postDate = a.plannedPostDate;
+  if (a.postDateByCreator) {
+    const d = String(fd.get("postDate") ?? "");
+    if (!ymd.test(d)) back(token, id, "!投稿した日を入力してください");
+    if (d > jstDate()) back(token, id, "!投稿した日は今日までの日付を入力してください");
+    postDate = d;
+  }
+  await db.update("assignments", a.id, (x) => ({ ...x, postUrl: url || undefined, plannedPostDate: postDate }));
+  back(token, id, a.postDateByCreator ? "投稿日を保存しました" : "投稿URLを保存しました");
 }

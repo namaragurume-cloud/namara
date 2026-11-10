@@ -508,7 +508,8 @@ export async function sendInsightRequests(opts: { today?: string; campaignId?: s
     // 投稿ごとに専用のリンクを付ける（どの投稿のスクショか迷わないように）
     const posts = list.map((a) => {
       const c = ctx.campaigns.get(a.campaignId)!;
-      return `・${ctx.restaurants.get(c.restaurantId)?.name ?? c.title}（撮影 ${slotLabel(c, a.confirmedSlotId)}）\n${assignmentUrl(creator, a)}`;
+      const askDate = a.postDateByCreator && !a.plannedPostDate ? "\n※ リンク先で投稿した日も入力してください" : "";
+      return `・${ctx.restaurants.get(c.restaurantId)?.name ?? c.title}（撮影 ${slotLabel(c, a.confirmedSlotId)}）\n${assignmentUrl(creator, a)}${askDate}`;
     });
     const result = await sendToCreator(
       creator,

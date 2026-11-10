@@ -77,7 +77,9 @@ export default async function AssignmentPage({ params, searchParams }: { params:
         <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4">
           <p className="text-xs font-bold text-emerald-800">撮影日が確定しました</p>
           <p className="mt-1 text-lg font-extrabold">{slotLabel(c, a.confirmedSlotId)}</p>
-          <p className="mt-1 text-sm">投稿日：{a.plannedPostDate ? fmtDateLong(a.plannedPostDate) : `${fmtPostDates(c)}のいずれか`}</p>
+          <p className="mt-1 text-sm">
+            投稿日：{a.plannedPostDate ? fmtDateLong(a.plannedPostDate) : a.postDateByCreator ? "下の「投稿のインサイト」で入力してください" : `${fmtPostDates(c)}のいずれか`}
+          </p>
           {r?.address && <p className="mt-1 text-sm">住所：{r.address}</p>}
           <p className="mt-2 text-xs text-muted">日程の変更が必要な場合は、担当者に直接ご連絡ください。</p>
         </div>
@@ -122,7 +124,8 @@ export default async function AssignmentPage({ params, searchParams }: { params:
         </dl>
       </Card>
 
-      {!closed && (
+      {/* 実施済みとして記録した投稿（あなたが登録）は、参加の回答がいらない */}
+      {!closed && a.sentVia !== "manual" && (
         <Card
           title={locked ? "あなたの回答" : "ご回答"}
           actions={a.respondedAt && <Badge tone={a.status === "accepted" ? "green" : "gray"}>{a.status === "accepted" ? "参加で回答済み" : a.status === "declined" ? "見送りで回答済み" : ""}</Badge>}
@@ -283,8 +286,17 @@ export default async function AssignmentPage({ params, searchParams }: { params:
           )}
           {!closed && (
             <>
-            <p className="mt-4 text-xs text-muted">投稿したらURLを貼っておくと、お店にもすぐ「投稿済み」と伝わります（任意）。</p>
-            <form action={savePostUrl.bind(null, token, a.id)} className="mt-1 flex gap-2">
+            {a.postDateByCreator ? (
+              <p className={`mt-4 text-xs ${a.plannedPostDate ? "text-muted" : "font-bold text-rose-700"}`}>
+                {a.plannedPostDate ? "投稿した日（変更もできます）" : "投稿した日を入力して「保存」を押してください（投稿のURLは任意です）"}
+              </p>
+            ) : (
+              <p className="mt-4 text-xs text-muted">投稿したらURLを貼っておくと、お店にもすぐ「投稿済み」と伝わります（任意）。</p>
+            )}
+            <form action={savePostUrl.bind(null, token, a.id)} className="mt-1 flex flex-wrap gap-2 sm:flex-nowrap">
+              {a.postDateByCreator && (
+                <input type="date" name="postDate" required max={jstDate()} defaultValue={a.plannedPostDate} aria-label="投稿した日" className={`${inputClass} sm:w-44`} />
+              )}
               <input name="postUrl" type="url" defaultValue={a.postUrl} placeholder="投稿のURL（任意）https://..." className={inputClass} />
               <SubmitButton variant="outline" size="sm" className="shrink-0">
                 保存
