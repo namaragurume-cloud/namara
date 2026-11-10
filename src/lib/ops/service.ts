@@ -5,6 +5,7 @@ import { db } from "./db";
 import { sendToCreator, sendToRestaurant, type SendResult } from "./notify";
 import { needsInsight } from "./insights";
 import { msg } from "./templates";
+import type { Msg } from "@/data/ops-templates";
 import { candidatesText, findSlot, isFlex } from "./slots";
 import { cleanupVideos } from "./video";
 import { latestVideo, videoEnabled, videoStage } from "./video-state";
@@ -258,8 +259,21 @@ export async function recordResponse(
 /* 日程確定 → 発信者へ通知 / 飲食店へ共有                                  */
 /* ------------------------------------------------------------------ */
 
+/** あなたからのひとこと（前後に空行を入れて本文に差し込む） */
+const noteVar = (a: Assignment) => (a.confirmNote?.trim() ? `\n${a.confirmNote.trim()}\n` : undefined);
+
+/** 文面を編集して {ひとこと} を消していても、ひとことは必ず届ける（宛名の段落のあとに入れる） */
+async function withNote(m: Promise<Msg>, a: Assignment): Promise<Msg> {
+  const r = await m;
+  const note = a.confirmNote?.trim();
+  if (!note || r.text.includes(note)) return r;
+  const i = r.text.indexOf("\n\n");
+  return { ...r, text: i < 0 ? `${note}\n\n${r.text}` : `${r.text.slice(0, i)}\n\n${note}${r.text.slice(i)}` };
+}
+
 export function confirmedMsg(b: Bundle, creator: Creator, a: Assignment) {
-  return msg("confirmed", {
+  const m = msg("confirmed", {
+    ひとこと: noteVar(a),
     発信者名: creator.name,
     店舗名: b.restaurant?.name ?? "",
     住所: b.restaurant?.address,
@@ -270,11 +284,14 @@ export function confirmedMsg(b: Bundle, creator: Creator, a: Assignment) {
     投稿条件: b.campaign.conditions,
     URL: assignmentUrl(creator, a),
   });
+  return withNote(m, a);
 }
 
 export async function confirmSchedule(
   campaignId: string,
-  picks: Record<string, { slotId?: string; postDate?: string }>,
+  picks: Record<string, { slotId?: string; postDate?: string; note?: string }>,
+  /** 連絡する全員に添えるひとこと */
+  commonNote?: string,
 ): Promise<BulkResult> {
   const b = await loadBundle(campaignId);
   if (!b) throw new Error("案件が見つかりません");
@@ -291,7 +308,8 @@ export async function confirmSchedule(
     if (a.confirmedNotifiedAt && !changedFromNotified) {
       continue; // 連絡済みで変更なし
     }
-    const updated = (await db.update("assignments", a.id, (x) => ({ ...x, confirmedSlotId: pick.slotId, plannedPostDate: newPost })))!;
+    const confirmNote = [commonNote, pick.note].map((s) => s?.trim()).filter(Boolean).join("\n") || undefined;
+    const updated = (await db.update("assignments", a.id, (x) => ({ ...x, confirmedSlotId: pick.slotId, plannedPostDate: newPost, confirmNote })))!;
     const isChange = Boolean(prevSlot);
     const message = isChange
       ? await scheduleChangedMsg(b, creator, updated, prevSlot, prevPost)
@@ -310,7 +328,8 @@ export async function confirmSchedule(
 
 export function scheduleChangedMsg(b: Bundle, creator: Creator, a: Assignment, prevSlotId?: string, prevPost?: string) {
   const postLabel = (d?: string) => (d ? fmtDateLong(d) : `${fmtPostDates(b.campaign)}のいずれか`);
-  return msg("scheduleChanged", {
+  const m = msg("scheduleChanged", {
+    ひとこと: noteVar(a),
     発信者名: creator.name,
     店舗名: b.restaurant?.name ?? "",
     撮影日時: slotLabel(b.campaign, a.confirmedSlotId),
@@ -320,6 +339,7 @@ export function scheduleChangedMsg(b: Bundle, creator: Creator, a: Assignment, p
     住所: b.restaurant?.address,
     URL: assignmentUrl(creator, a),
   });
+  return withNote(m, a);
 }
 
 /** 手動送信用：その依頼に今送るべき連絡（初めての確定か、変更か） */

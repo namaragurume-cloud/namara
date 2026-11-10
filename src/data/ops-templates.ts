@@ -148,6 +148,7 @@ export const templateDefs: Record<TemplateKey, TemplateDef> = {
     body: `{発信者名}さん
 
 撮影日が確定しました！
+{ひとこと}
 ■ 店舗：{店舗名}
 ■ 住所：{住所}
 ■ 食べログ：{食べログ}
@@ -166,6 +167,7 @@ export const templateDefs: Record<TemplateKey, TemplateDef> = {
       住所: "札幌市中央区南5条西3丁目",
       食べログ: "https://tabelog.com/hokkaido/…",
       Instagram: "https://www.instagram.com/shop_account/",
+      ひとこと: "\n当日は裏口からお入りください。駐車場は2台分あります。\n",
       撮影日時: "12/5(金) 18:00〜20:00",
       投稿日: "2026年12月10日(水)",
       投稿条件: "リール1本／店舗アカウントをタグ付け／#PR 表記",
@@ -181,6 +183,7 @@ export const templateDefs: Record<TemplateKey, TemplateDef> = {
     body: `{発信者名}さん
 
 {店舗名}さんの撮影の日程が変更になりました。お手数ですがご確認をお願いします🙏
+{ひとこと}
 ■ 撮影日時：{撮影日時}{撮影日時の変更}
 ■ 投稿日：{投稿日}{投稿日の変更}
 ■ 住所：{住所}
@@ -194,6 +197,7 @@ export const templateDefs: Record<TemplateKey, TemplateDef> = {
       店舗名: "焼肉 たいよう",
       撮影日時: "12/6(土) 18:00〜20:00",
       撮影日時の変更: "（変更前：12/5(金) 18:00〜20:00）",
+      ひとこと: "",
       投稿日: "2026年12月10日(水)",
       投稿日の変更: "",
       住所: "札幌市中央区南5条西3丁目",

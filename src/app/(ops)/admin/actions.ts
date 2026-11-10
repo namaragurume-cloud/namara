@@ -429,15 +429,16 @@ export async function removeAssignment(campaignId: string, assignmentId: string)
 
 export async function confirmScheduleAction(campaignId: string, fd: FormData) {
   await requireAdmin();
-  const picks: Record<string, { slotId?: string; postDate?: string }> = {};
+  const picks: Record<string, { slotId?: string; postDate?: string; note?: string }> = {};
   for (const [k, v] of fd.entries()) {
-    const m = k.match(/^(slot|post)_(.+)$/);
+    const m = k.match(/^(slot|post|note)_(.+)$/);
     if (!m) continue;
     const entry = (picks[m[2]] ??= {});
     if (m[1] === "slot") entry.slotId = String(v) || undefined;
+    else if (m[1] === "note") entry.note = String(v).trim().slice(0, 1000) || undefined;
     else entry.postDate = ymd.safeParse(String(v)).success ? String(v) : undefined;
   }
-  const result = await confirmSchedule(campaignId, picks);
+  const result = await confirmSchedule(campaignId, picks, str(fd, "note").slice(0, 2000) || undefined);
   back(`/admin/campaigns/${campaignId}`, summarize("撮影日の確定連絡", result));
 }
 
