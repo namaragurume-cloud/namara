@@ -1,5 +1,5 @@
 import { followerNote, showFollowerCounts, site } from "@/data/site";
-import { getCreatorsWithFollowers } from "@/lib/creators";
+import { getCreatorsWithFollowers, splitCreators } from "@/lib/creators";
 import { ScrollReveal } from "@/components/animation/ScrollReveal";
 import { CTAButton } from "@/components/ui/CTAButton";
 import { Carousel } from "@/components/ui/Carousel";
@@ -10,8 +10,7 @@ import { SectionHeading } from "@/components/ui/SectionHeading";
 
 export async function CreatorsSection() {
   const all = await getCreatorsWithFollowers();
-  const creators = all.filter((c) => c.size !== "compact");
-  const network = all.filter((c) => c.size === "compact");
+  const { creators, network } = splitCreators(all);
   return (
     <section aria-label="インフルエンサー紹介" className="section overflow-hidden bg-mist">
       <div className="container-x">

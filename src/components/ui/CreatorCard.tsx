@@ -96,9 +96,8 @@ export function CreatorCard({ creator }: { creator: CreatorView }) {
           params={{ location: "creator_card", creator: creator.id }}
           className="group/btn mt-auto flex min-h-11 items-center justify-between gap-1 border-t border-line pt-3 text-xs font-bold transition-colors hover:text-brand sm:min-h-12 sm:gap-2 sm:pt-5 sm:text-sm"
         >
-          <span>
-            この発信者<span className="hidden sm:inline">を含めて</span>で相談
-          </span>
+          <span className="sm:hidden">この発信者で相談</span>
+          <span className="hidden sm:inline">この発信者を含めて相談する</span>
           <ArrowRight size={16} aria-hidden="true" className="shrink-0 transition-transform group-hover/btn:translate-x-1" />
         </TrackedLink>
       </div>

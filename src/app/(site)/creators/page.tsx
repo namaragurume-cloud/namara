@@ -1,4 +1,4 @@
-import { getCreatorsWithFollowers } from "@/lib/creators";
+import { getCreatorsWithFollowers, splitCreators } from "@/lib/creators";
 import { followerNote, showFollowerCounts, site } from "@/data/site";
 import { pageMetadata } from "@/lib/metadata";
 import { ScrollReveal } from "@/components/animation/ScrollReveal";
@@ -20,8 +20,7 @@ export const metadata = pageMetadata({
 
 export default async function CreatorsPage() {
   const all = await getCreatorsWithFollowers();
-  const creators = all.filter((c) => c.size !== "compact");
-  const network = all.filter((c) => c.size === "compact");
+  const { creators, network } = splitCreators(all);
   return (
     <>
       <PageHero
