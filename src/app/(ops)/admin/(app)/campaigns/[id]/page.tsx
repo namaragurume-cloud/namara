@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { CheckAll, CopyButton, SubmitButton } from "@/components/ops/client";
+import { AdminShotDrop } from "@/components/ops/AdminShotDrop";
 import { channelLabel, phaseTone } from "@/components/ops/phase";
 import { ShopLinks } from "@/components/ops/ShopLinks";
 import { Badge, ButtonLink, Card, Empty, Field, Flash, Stat, buttonClass, inputClass } from "@/components/ops/ui";
@@ -25,6 +26,7 @@ import { restaurantPortalUrl } from "@/lib/ops/urls";
 import { fieldLabel, isComplete, platformLabel } from "@/lib/ops/insight-fields";
 import { buildReport, pct, pct1 } from "@/lib/ops/report";
 import { isAiConfigured } from "@/lib/ops/vision";
+import type { Shot } from "@/lib/ops/types";
 import { describeFlex, isFlex, slotsForCampaign } from "@/lib/ops/slots";
 import { videoEnabled, videoStage, videoStageLabel } from "@/lib/ops/video-state";
 import {
@@ -90,6 +92,10 @@ export default async function CampaignPage({ params, searchParams }: { params: P
   const phase = phaseOf(b, today);
   const creators = (await db.list("creators")).filter((x) => x.active).sort((x, y) => (y.followers ?? 0) - (x.followers ?? 0));
   const assignedIds = new Set(rows.map((r) => r.creator.id));
+  const shotsBy = new Map<string, Shot[]>();
+  for (const s of (await db.list("shots")).filter((s) => rows.some((r) => r.a.id === s.assignmentId)).sort((x, y) => x.createdAt.localeCompare(y.createdAt))) {
+    shotsBy.set(s.assignmentId, [...(shotsBy.get(s.assignmentId) ?? []), s]);
+  }
   // 提案から作った案件は、提案で選んだ発信者（まだ依頼していない人）にチェックを入れておく
   const fromProposal = c.proposalId && rows.length === 0 ? new Set((await db.get("proposals", c.proposalId))?.creatorIds ?? []) : new Set<string>();
 
@@ -657,6 +663,22 @@ export default async function CampaignPage({ params, searchParams }: { params: P
                   ))}
                 </tbody>
               </table>
+            </div>
+            <div className="mt-4 rounded-xl border border-line bg-mist p-3">
+              <h3 className="text-sm font-bold">DMなどで受け取ったスクショを追加する</h3>
+              <p className="mt-1 text-xs text-muted">
+                発信者を選んで画像を追加すると、本人が送ったときと同じように{isAiConfigured() ? "AIが数字を読み取ります" : "記録されます"}。本人への連絡はしません（足りない項目があれば、その人の「詳細」から連絡できます）。
+              </p>
+              <div className="mt-3">
+                <AdminShotDrop
+                  canAnalyze={isAiConfigured()}
+                  rows={confirmed.map((r) => ({
+                    id: r.a.id,
+                    label: `${r.creator.name}（${isComplete(r.a.insight) ? "そろっています" : r.a.insight ? "足りない項目あり" : "未提出"}）`,
+                    shots: (shotsBy.get(r.a.id) ?? []).map((s) => ({ id: s.id, url: `/api/ops/shots/${s.id}` })),
+                  }))}
+                />
+              </div>
             </div>
             <form action={insightRequestAction.bind(null, c.id)} className="mt-3">
               <SubmitButton variant="outline" size="sm" confirm="投稿予定日を過ぎていて、まだ依頼していない人に今すぐ送ります。よろしいですか？">

@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
 import { buttonClass } from "./ui";
 
@@ -29,6 +29,7 @@ export function ShotUploader({
   shots,
   canAnalyze,
   disabled,
+  pasteAndDrop,
 }: {
   assignmentId: string;
   token?: string;
@@ -36,6 +37,8 @@ export function ShotUploader({
   /** AIでの読み取りが使えるか */
   canAnalyze: boolean;
   disabled?: boolean;
+  /** 画像の貼り付け（Ctrl+V / ⌘V）とドラッグ＆ドロップでも追加できるようにする（管理画面用） */
+  pasteAndDrop?: boolean;
 }) {
   const router = useRouter();
   const input = useRef<HTMLInputElement>(null);
@@ -53,9 +56,27 @@ export function ShotUploader({
     if (!body.ok) setError(body.message ?? "読み取りに失敗しました");
   }
 
-  async function upload(files: FileList) {
+  const [dragging, setDragging] = useState(false);
+  const uploadRef = useRef<(files: File[]) => void>(() => {});
+
+  // 貼り付け：DMの画像をコピーして、このページで Ctrl+V / ⌘V
+  useEffect(() => {
+    if (!pasteAndDrop || disabled) return;
+    const onPaste = (e: ClipboardEvent) => {
+      const files = [...(e.clipboardData?.files ?? [])].filter((f) => f.type.startsWith("image/"));
+      if (files.length) {
+        e.preventDefault();
+        uploadRef.current(files);
+      }
+    };
+    window.addEventListener("paste", onPaste);
+    return () => window.removeEventListener("paste", onPaste);
+  }, [pasteAndDrop, disabled]);
+
+  async function upload(files: FileList | File[]) {
     setError(null);
-    const list = [...files];
+    const list = [...files].filter((f) => f.type.startsWith("image/") || !f.type);
+    if (list.length === 0) return setError("画像ファイルを選んでください");
     try {
       for (let i = 0; i < list.length; i++) {
         setBusy(`画像を送信中… ${i + 1}/${list.length}`);
@@ -78,6 +99,13 @@ export function ShotUploader({
     }
   }
 
+  // 貼り付け・ドロップからは最新の upload を呼ぶ
+  useEffect(() => {
+    uploadRef.current = (files) => {
+      if (!busy) void upload(files);
+    };
+  });
+
   async function remove(id: string) {
     if (!window.confirm("この画像を削除しますか？")) return;
     setBusy("削除中…");
@@ -90,10 +118,25 @@ export function ShotUploader({
     router.refresh();
   }
 
+  const dropProps = pasteAndDrop && !disabled
+    ? {
+        onDragOver: (e: React.DragEvent) => {
+          e.preventDefault();
+          setDragging(true);
+        },
+        onDragLeave: () => setDragging(false),
+        onDrop: (e: React.DragEvent) => {
+          e.preventDefault();
+          setDragging(false);
+          if (e.dataTransfer.files.length) uploadRef.current([...e.dataTransfer.files]);
+        },
+      }
+    : {};
+
   return (
-    <div className="space-y-3">
+    <div className={cn("space-y-3", pasteAndDrop && "rounded-xl border-2 border-dashed p-3", pasteAndDrop && (dragging ? "border-brand bg-brand/5" : "border-line"))} {...dropProps}>
       {shots.length > 0 && (
-        <ul className="grid grid-cols-3 gap-2 sm:grid-cols-4">
+        <ul className={cn("grid grid-cols-3 gap-2 sm:grid-cols-4", pasteAndDrop && "md:grid-cols-6 lg:grid-cols-8")}>
           {shots.map((s) => (
             <li key={s.id} className="relative overflow-hidden rounded-xl border border-line bg-mist">
               <a href={s.url} target="_blank" rel="noopener">
@@ -129,6 +172,7 @@ export function ShotUploader({
           <label htmlFor={`shot-${assignmentId}`} className={cn(buttonClass("primary"), "w-full cursor-pointer", busy && "pointer-events-none opacity-50")}>
             {busy ?? (shots.length ? "＋ スクショを追加する" : "スクショを選んで送る（複数枚OK）")}
           </label>
+          {pasteAndDrop && <p className="text-center text-xs text-muted">ここに画像をドラッグ、またはDMの画像をコピーしてこのページで貼り付け（Ctrl+V / ⌘V）もできます</p>}
           {canAnalyze && shots.length > 0 && !busy && (
             <button type="button" className={cn(buttonClass("outline", "sm"), "w-full")} onClick={async () => { setError(null); await analyze(); setBusy(null); router.refresh(); }}>
               もう一度読み取る
