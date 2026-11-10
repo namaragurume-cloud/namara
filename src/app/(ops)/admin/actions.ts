@@ -398,13 +398,14 @@ export async function addPastParticipants(campaignId: string, fd: FormData) {
       availableSlotIds: slotId ? [slotId] : [],
       confirmedSlotId: slotId,
       plannedPostDate: ymd.safeParse(postDate).success ? postDate : undefined,
+      postDateByCreator: ymd.safeParse(postDate).success ? undefined : true,
       respondedAt: t,
       confirmedNotifiedAt: t,
       createdAt: t,
     });
     added++;
   }
-  back(`/admin/campaigns/${campaignId}`, `${added}人を実施済みとして記録しました（連絡はしていません）。下の「インサイトのスクショ回収」から各発信者のスクショを追加するか、提出のお願いを送ってください`);
+  back(`/admin/campaigns/${campaignId}`, `${added}人を実施済みとして記録しました（連絡はしていません）。下の「インサイトのスクショ回収」から各発信者のスクショを追加するか、提出のお願いを送ってください${ymd.safeParse(postDate).success ? "" : "。投稿日は、提出のときに各発信者に入力してもらいます"}`);
 }
 
 /** 見送りの人にもう一度依頼する */

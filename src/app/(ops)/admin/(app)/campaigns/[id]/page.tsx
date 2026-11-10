@@ -254,11 +254,11 @@ export default async function CampaignPage({ params, searchParams }: { params: P
                 </label>
               )}
               <label className="block text-sm">
-                <span className="mb-1 block font-bold">投稿日（わかれば）</span>
-                <input type="date" name="postDate" defaultValue={c.postDates?.[0]} className={inputClass} />
+                <span className="mb-1 block font-bold">投稿日（空欄なら各発信者に入力してもらう）</span>
+                <input type="date" name="postDate" className={inputClass} />
               </label>
             </div>
-            <p className="text-xs text-muted">人によって撮影日・投稿日が違う場合は、登録後に各発信者の「詳細・代理入力」で直せます。</p>
+            <p className="text-xs text-muted">投稿日を空欄にすると、インサイト提出のお願いに「投稿日も入力してください」と入り、各発信者が提出ページで入力します。撮影日が人によって違う場合は、登録後に各発信者の「詳細・代理入力」で直せます。</p>
             <SubmitButton variant="outline">選んだ人を実施済みとして記録</SubmitButton>
           </form>
         </details>

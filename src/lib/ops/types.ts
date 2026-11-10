@@ -207,6 +207,8 @@ export type Assignment = {
   confirmNote?: string;
   /** 投稿予定日 YYYY-MM-DD */
   plannedPostDate?: string;
+  /** 投稿日は本人に入力してもらう（実施済みの案件として記録し、投稿日を空にしたとき） */
+  postDateByCreator?: boolean;
   /** この人だけの報酬・特典（空なら案件の共通の報酬） */
   offer?: string;
   /** 来店人数（本人を含む。1＝本人のみ、2＝同伴1名） */
