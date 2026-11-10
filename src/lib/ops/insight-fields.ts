@@ -44,7 +44,7 @@ export const insightFields: Record<Platform, FieldDef[]> = {
 /** スクショの撮り方（依頼文・発信者ページに表示） */
 export const screenshotGuide: Record<Platform, string[]> = {
   instagram: [
-    "投稿の「インサイトを見る」→「概要」（閲覧数・閲覧者・平均再生時間・フォロー数）",
+    "投稿の「インサイトを見る」→「概要」（閲覧数（再生数）・閲覧者・フォロー数。動画は平均再生時間も）",
     "同じ画面の「閲覧数の上位のソース」",
     "「オーディエンス」の「フォロワー／フォロワー以外」",
     "「オーディエンス詳細」の「年齢」と「性別」（タブを切り替えて2枚）",
@@ -65,7 +65,8 @@ function has(i: Pick<Insight, "metrics" | "dists">, f: FieldDef): boolean {
 /** 必須なのに値がない項目のキー */
 export function missingKeys(i: Pick<Insight, "platform" | "metrics" | "dists" | "isVideo">): string[] {
   return insightFields[i.platform]
-    .filter((f) => f.required && !(f.kind !== "dist" && f.videoOnly && i.isVideo === false))
+    // 動画だけの項目（平均再生時間）は、動画とわかったときだけ必須（写真・判断できないときは求めない）
+    .filter((f) => f.required && !(f.kind !== "dist" && f.videoOnly && i.isVideo !== true))
     .filter((f) => !has(i, f))
     .map((f) => f.key);
 }
