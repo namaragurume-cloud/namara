@@ -1,4 +1,5 @@
 import "server-only";
+import { syncFollowersFromSite } from "./follower-sync";
 import { addDays, fmtDate, fmtDateLong, fmtNum, fmtParty, fmtPostDates, fmtSlot, isLastDayOfMonth, jstDate } from "./dates";
 import { db } from "./db";
 import { sendToCreator, sendToRestaurant, type SendResult } from "./notify";
@@ -642,5 +643,9 @@ export async function runDaily(today = jstDate()) {
   const reminders = await runReminders(today);
   await cleanupVideos(today).catch((e) => console.error("[video] cleanup", e));
   const insights = isInsightDay(today) ? await sendInsightRequests({ today }) : [];
-  return { today, reminders, insights };
+  const followers = await syncFollowersFromSite().catch((e) => {
+    console.error("[followers] sync", e);
+    return null;
+  });
+  return { today, reminders, insights, followers };
 }

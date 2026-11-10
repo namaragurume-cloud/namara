@@ -15,6 +15,8 @@ export type Creator = {
   /** 発信者専用ページ（/m/[token]）のトークン */
   token: string;
   memo?: string;
+  /** ホームページからフォロワー数を取り込んだ日時（アカウント名が同じ発信者と連動） */
+  followersSyncedAt?: string;
   /** SNSのプロフィールURL（空ならSNSとアカウントから自動で作る） */
   profileUrl?: string;
   /** アイコン画像を保存した日時（あればアイコンあり。URLのキャッシュ更新にも使う） */
