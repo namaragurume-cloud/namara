@@ -3,6 +3,7 @@ import { addDays, fmtDate, fmtParty, fmtSlot } from "@/lib/ops/dates";
 import { findSlot } from "@/lib/ops/slots";
 import type { Assignment, Campaign, Creator, Slot } from "@/lib/ops/types";
 import { cn } from "@/lib/utils";
+import { ShopCalendar } from "./ShopCalendar";
 
 /**
  * 飲食店向け：撮影・投稿の状況（リアルタイム）。
@@ -123,6 +124,8 @@ export function RestaurantLive({ campaign: c, rows: all, today, updatedAt }: { c
           </ul>
         )}
       </div>
+
+      <ShopCalendar rows={rows} today={today} />
 
       <div className="rounded-2xl border border-line bg-white p-4">
         <p className="text-sm font-bold">発信者ごとの状況</p>
