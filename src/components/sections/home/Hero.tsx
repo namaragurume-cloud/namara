@@ -78,7 +78,7 @@ export function Hero() {
               北海道のグルメメディア「なまらグルメ」が培ってきた発信力とネットワークを活かし、店舗集客・新商品PR・認知拡大をサポート。インフルエンサーの選定から企画・投稿管理・効果報告まで、ワンストップで対応します。
             </p>
             <ul className="anim-fade-up mt-6 flex flex-wrap gap-2.5" style={{ animationDelay: "500ms" }} aria-label="ご相談の条件">
-              {["5名5万円〜", "無料お見積もり"].map((t) => (
+              {["5名5万円〜（税別）", "無料お見積もり"].map((t) => (
                 <li key={t} className="glass inline-flex items-center gap-1.5 rounded-full px-4 py-2 text-[13px] font-bold text-ink">
                   <Check size={15} aria-hidden="true" className="text-brand" />
                   {t}

@@ -2,7 +2,7 @@
  * 料金に関する情報（オーナー確認済みの料金表に基づく）。
  *
  * - 未確定の金額は入力しないでください。
- * - 税込・税別の表記は未決定です。決まったら taxNote に入力してください。
+ * - 表示価格は税別（taxNote）。
  */
 
 import type { BudgetParam } from "@/lib/validation";
@@ -10,9 +10,8 @@ import type { BudgetParam } from "@/lib/validation";
 export const pricingPolicy = {
   /** 最低料金（マイクロインフルエンサー5名） */
   minimumOrder: "5万円〜",
-  minimumOrderNote: "マイクロインフルエンサー5名の調整で5万円から。",
-  /** 例: "表示価格はすべて税別です。" 未決定のため空欄 */
-  taxNote: "",
+  minimumOrderNote: "マイクロインフルエンサー5名の調整で5万円（税別）から。",
+  taxNote: "表示価格はすべて税別です。",
   points: [
     "インフルエンサーへの報酬を含んだ料金です",
     "フォロワー1万人未満のマイクロインフルエンサーは、人数に応じた定額",

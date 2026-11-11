@@ -27,7 +27,7 @@ export function FinalCTA() {
             目的やご予算をお伺いし、最適なプランをご提案します。
           </p>
           <ul className="mt-8 flex flex-wrap justify-center gap-2.5" aria-label="ご相談の条件">
-            {["5名5万円〜", "無料お見積もり", "企画が未定でもOK"].map((t) => (
+            {["5名5万円〜（税別）", "無料お見積もり", "企画が未定でもOK"].map((t) => (
               <li key={t} className="rounded-full border border-white/40 bg-white/15 px-4 py-2 text-[13px] font-bold backdrop-blur">
                 {t}
               </li>
