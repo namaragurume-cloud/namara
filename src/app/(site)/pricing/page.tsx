@@ -1,18 +1,18 @@
 import { Check, Info } from "lucide-react";
-import { plans, pricingPolicy } from "@/data/pricing";
+import { pricingPolicy } from "@/data/pricing";
 import { pageMetadata } from "@/lib/metadata";
 import { ScrollReveal } from "@/components/animation/ScrollReveal";
 import { CTAButton } from "@/components/ui/CTAButton";
 import { PageHero } from "@/components/ui/PageHero";
-import { PricingCard } from "@/components/ui/PricingCard";
+import { PricingTable } from "@/components/ui/PricingTable";
 import { SectionHeading } from "@/components/ui/SectionHeading";
 import { FAQAccordion } from "@/components/ui/FAQAccordion";
 import { faq } from "@/data/faq";
 
 export const metadata = pageMetadata({
-  title: "料金・プラン｜ご予算3万円から相談可能",
+  title: "料金・プラン｜マイクロインフルエンサー5名5万円から",
   description:
-    "北海道のグルメインフルエンサーPRの料金・プラン。ご予算3万円からご相談いただけます。インフルエンサー1名からのPR、複数人の起用、イベントを含む個別設計まで、ご予算に合わせてご提案します。",
+    "北海道のグルメインフルエンサーPRの料金。フォロワー1万人未満のマイクロインフルエンサーは5名5万円・10名8万円・15名12万円。フォロワー1万人以上のインフルエンサーは別途お見積もりします。",
   path: "/pricing",
 });
 
@@ -28,16 +28,16 @@ export default function PricingPage() {
             柔軟なインフルエンサーPR。
           </>
         }
-        lead="起用する発信者のフォロワー規模・人数・投稿形式・PR内容に応じて、ご予算に合わせたプランをご提案します。"
+        lead="マイクロインフルエンサーは人数に応じた定額。フォロワー1万人以上のインフルエンサーは、条件に応じて個別にお見積もりします。"
         breadcrumb={[{ label: "料金", href: "/pricing" }]}
       />
 
       <section aria-label="料金の考え方" className="section pb-0!">
         <div className="container-x grid gap-8 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] lg:gap-16">
           <ScrollReveal className="flex flex-col justify-center bg-gradient-brand rounded-[28px] p-8 text-white shadow-[0_30px_60px_-30px_rgba(217,83,58,0.6)] md:p-12">
-            <p className="text-sm font-bold text-white/80">ご予算の目安</p>
+            <p className="text-sm font-bold text-white/80">料金</p>
             <p className="mt-2 flex items-baseline gap-1 font-extrabold">
-              <span className="num text-7xl text-white md:text-8xl">3</span>
+              <span className="num text-7xl text-white md:text-8xl">5</span>
               <span className="text-2xl md:text-3xl">万円〜</span>
             </p>
             <p className="mt-4 text-sm leading-relaxed text-white/90">{pricingPolicy.minimumOrderNote}</p>
@@ -60,16 +60,12 @@ export default function PricingPage() {
         <div className="container-x">
           <SectionHeading
             en="PLAN"
-            title="ご予算別のプラン"
-            lead="ご予算の目安ごとに、よくあるご相談内容をまとめました。気になるプランの「この予算でPRを相談する」から、お問い合わせフォームにご予算を引き継いでご相談いただけます。"
+            title="料金プラン"
+            lead="ご予算や目的に応じて、最適な発信者プランをご提案します。料金をクリックすると、お問い合わせフォームにプランを引き継いでご相談いただけます。"
           />
-          <ul className="mt-12 grid gap-5 lg:grid-cols-3 md:mt-16">
-            {plans.map((p, i) => (
-              <ScrollReveal as="li" key={p.id} delay={i * 0.1}>
-                <PricingCard plan={p} featured={i === 1} />
-              </ScrollReveal>
-            ))}
-          </ul>
+          <ScrollReveal className="mt-12 md:mt-16">
+            <PricingTable />
+          </ScrollReveal>
         </div>
       </section>
 
@@ -81,7 +77,6 @@ export default function PricingPage() {
               ご注意事項
             </h2>
             <ul className="mt-5 list-disc space-y-2 pl-5 text-sm leading-[1.95] text-muted">
-              <li>{pricingPolicy.budgetNote}</li>
               <li>{pricingPolicy.disclaimer}</li>
               {pricingPolicy.taxNote && <li>{pricingPolicy.taxNote}</li>}
               <li>料金に含まれる作業範囲は、ご契約前に明示いたします。</li>
@@ -92,13 +87,13 @@ export default function PricingPage() {
           <div className="mt-16">
             <h2 className="heading-md">料金に関するよくある質問</h2>
             <div className="mt-6">
-              <FAQAccordion items={faq.filter((f) => /予算3万円|複数人|二次利用/.test(f.q))} />
+              <FAQAccordion items={faq.filter((f) => /いくらから|複数人|二次利用/.test(f.q))} />
             </div>
           </div>
 
           <div className="mt-16 flex flex-col items-center gap-4 rounded-[28px] bg-mist p-8 text-center md:p-14">
             <p className="text-xl font-bold md:text-2xl">ご予算に合わせて、最適な組み合わせをご提案します。</p>
-            <p className="text-sm text-muted">「この予算で何ができる？」というご相談も歓迎です。</p>
+            <p className="text-sm text-muted">「どのプランが合う？」というご相談も歓迎です。</p>
             <CTAButton href="/contact" size="lg" trackLocation="pricing" className="mt-4">
               無料でPRプランを相談する
             </CTAButton>

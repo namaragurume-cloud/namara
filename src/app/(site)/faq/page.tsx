@@ -8,7 +8,7 @@ import { PageHero } from "@/components/ui/PageHero";
 export const metadata = pageMetadata({
   title: "よくある質問",
   description:
-    "MIRATSUMUのインフルエンサーPRに関するよくある質問。予算3万円での依頼、インフルエンサーの指定、投稿までの期間、道外企業や飲食店以外の商品PR、実施後のレポートなどにお答えします。",
+    "MIRATSUMUのインフルエンサーPRに関するよくある質問。料金、インフルエンサーの指定、投稿までの期間、道外企業や飲食店以外の商品PR、実施後のレポートなどにお答えします。",
   path: "/faq",
 });
 

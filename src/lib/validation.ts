@@ -3,13 +3,14 @@ import { z } from "zod";
 /** フォームの選択肢（フォーム表示とサーバー検証で共通） */
 export const industryOptions = ["飲食店", "食品メーカー", "ホテル・宿泊施設", "観光施設", "その他"] as const;
 
-export const budgetOptions = ["3万〜10万円", "10万〜30万円", "30万円以上", "まだ決まっていない"] as const;
+export const budgetOptions = ["5万円（5名）", "8万円（10名）", "12万円（15名）", "それ以外・未定"] as const;
 
 /** 料金ページなどから ?budget= で予算を引き継ぐためのキー */
 export const budgetParams = {
-  "3-10": "3万〜10万円",
-  "10-30": "10万〜30万円",
-  "30": "30万円以上",
+  "5": "5万円（5名）",
+  "8": "8万円（10名）",
+  "12": "12万円（15名）",
+  other: "それ以外・未定",
 } as const satisfies Record<string, (typeof budgetOptions)[number]>;
 export type BudgetParam = keyof typeof budgetParams;
 

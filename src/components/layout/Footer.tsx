@@ -58,7 +58,7 @@ export function Footer() {
         <div className="glass mt-16 flex flex-col gap-6 rounded-2xl p-6 md:flex-row md:items-center md:justify-between md:p-8">
           <div>
             <p className="font-bold">北海道のグルメPR、まずはご相談ください。</p>
-            <p className="mt-1 text-sm text-muted">ご予算3万円からご相談いただけます。</p>
+            <p className="mt-1 text-sm text-muted">マイクロインフルエンサー5名5万円から。</p>
           </div>
           <CTAButton href="/contact" trackLocation="footer">
             無料でPRプランを相談する

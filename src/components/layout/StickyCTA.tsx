@@ -52,7 +52,7 @@ export function StickyCTA() {
         className="bg-gradient-brand flex min-h-12 items-center justify-center gap-2 rounded-full text-[15px] font-bold tracking-wider text-white"
       >
         {site.cta}
-        <span className="text-xs font-normal opacity-80">｜3万円〜</span>
+        <span className="text-xs font-normal opacity-80">｜5万円〜</span>
       </Link>
     </div>
   );
