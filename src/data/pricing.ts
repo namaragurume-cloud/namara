@@ -22,6 +22,8 @@ export const pricingPolicy = {
 };
 
 export type MicroOption = {
+  /** マイクロインフルエンサーのみで依頼する場合のおすすめ */
+  recommended?: boolean;
   /** 調整する発信者の人数 */
   people: number;
   /** 料金（万円） */
@@ -36,8 +38,8 @@ export const microPlan = {
   condition: "フォロワー1万人未満",
   options: [
     { people: 5, price: 5, param: "5" },
-    { people: 10, price: 8, param: "8" },
-    { people: 15, price: 12, param: "12" },
+    { people: 10, price: 8, param: "8", recommended: true },
+    { people: 15, price: 10, param: "15" },
   ] satisfies MicroOption[],
   suitedFor: "店舗PR・新商品告知・認知拡大におすすめ",
 };
@@ -49,5 +51,19 @@ export const influencerPlan = {
   condition: "フォロワー1万人以上",
   price: "別途お見積もり",
   note: "発信者の条件・投稿内容・企画規模に応じてご提案します。",
+  param: "other" as BudgetParam,
+  /** 枠内に表示する発信者（アイコンのみ） */
+  featuredCreatorIds: ["namaragurume", "kenji-gourmet", "kitagohan", "rui", "mokkun", "rikomogu"],
+};
+
+/** 一番のおすすめ（マイクロ＋インフルエンサーの組み合わせ） */
+export const comboPlan = {
+  label: "BEST",
+  title: "一番のおすすめ",
+  items: [
+    { name: "マイクロインフルエンサー10名", price: "8万円" },
+    { name: "おすすめインフルエンサー数名", price: "別途お見積もり" },
+  ],
+  note: "幅広いフォロワー層への拡散と、影響力のある発信者による話題づくりを組み合わせたプランです。",
   param: "other" as BudgetParam,
 };
