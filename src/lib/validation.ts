@@ -106,6 +106,19 @@ export const partnerSchema = z.object({
   ...antiSpam,
 });
 
+export const corpCategoryOptions = ["SNS・PRのご相談", "EC・商品について", "店舗について", "取材・その他"] as const;
+
+/** 株式会社North Pleasure（/corp）のお問い合わせ */
+export const corpContactSchema = z.object({
+  name: required("お名前", 50),
+  company: optional(100),
+  email,
+  category: optionalEnum(corpCategoryOptions),
+  message: required("お問い合わせ内容", 3000),
+  privacy: z.literal(true, { error: "個人情報の取扱いへの同意が必要です" }),
+  ...antiSpam,
+});
+
 export type PartnerInput = z.input<typeof partnerSchema>;
 export type PartnerData = z.output<typeof partnerSchema>;
 

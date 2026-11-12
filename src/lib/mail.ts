@@ -12,7 +12,7 @@ import { escapeHtml } from "./utils";
  * 未設定・設定不備の場合は送信しません（成功を装わない）。
  */
 
-export type FormKind = "contact" | "partner";
+export type FormKind = "contact" | "partner" | "corp";
 
 export type MailMessage = {
   kind: FormKind;
