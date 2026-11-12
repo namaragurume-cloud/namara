@@ -7,7 +7,7 @@ import { site } from "@/data/site";
 import { isAdmin } from "@/lib/ops/auth";
 import { fmtDateLong } from "@/lib/ops/dates";
 import { db } from "@/lib/ops/db";
-import { buildPlan, yen } from "@/lib/ops/proposal";
+import { buildPlan, microReachPerPerson, yen } from "@/lib/ops/proposal";
 import { fmtReach, fmtReachRange } from "@/lib/ops/reach";
 import { reachEstimates } from "@/lib/ops/reach-store";
 import { proposalTitle, proposalValidUntil } from "@/lib/ops/proposal-msg";
@@ -32,9 +32,10 @@ export default async function ProposalDoc({ params }: { params: Promise<{ token:
   const cMap = new Map(all.map((c) => [c.id, c]));
   const creators = p.creatorIds.map((id) => cMap.get(id)).filter((c): c is Creator => Boolean(c));
   const reach = settings.showReach !== false ? await reachEstimates() : undefined;
-  const plan = buildPlan(creators, settings, reach);
+  const micro = { people: p.microPeople, perPerson: microReachPerPerson(all, reach) };
+  const plan = buildPlan(creators, settings, reach, micro);
   const lightCreators = creators.filter((c) => p.text?.lightPlan?.creatorIds.includes(c.id));
-  const light = lightCreators.length > 0 && lightCreators.length < creators.length ? buildPlan(lightCreators, settings, reach) : null;
+  const light = lightCreators.length > 0 && lightCreators.length < creators.length ? buildPlan(lightCreators, settings, reach, micro) : null;
   const plans = [{ name: light ? "プランA" : "", plan }, ...(light ? [{ name: "プランB", plan: light }] : [])].filter((x) => x.plan.reach);
 
   return (
@@ -80,6 +81,7 @@ export default async function ProposalDoc({ params }: { params: Promise<{ token:
                     {x.name && <b>{x.name}：</b>}
                     ご予算 <b className="num">{yen(x.plan.total)}</b>（税込）で、約<b className="num text-emerald-800">{fmtReach(x.plan.reach!.value)}人</b>
                     （{fmtReachRange(x.plan.reach!)}）へのリーチが見込まれます。
+                    {x.plan.reach!.partial && <span className="text-xs text-muted">（実績のある発信者の分だけの合計で、実績のない発信者の分は含んでいません）</span>}
                   </li>
                 ))}
               </ul>

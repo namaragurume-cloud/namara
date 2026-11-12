@@ -5,17 +5,19 @@ import { fmtReach } from "@/lib/ops/reach";
 
 /** フォーム内でチェックした発信者の人数と料金の合計（税別）を表示 */
 export function SelectedTotal({ formId }: { formId: string }) {
-  const [state, setState] = useState({ n: 0, sum: 0, missing: 0, reach: 0, noReach: 0 });
+  const [state, setState] = useState({ n: 0, micro: 0, sum: 0, missing: 0, reach: 0, noReach: 0 });
   useEffect(() => {
     const form = document.getElementById(formId);
     if (!form) return;
     const update = () => {
       const checked = [...form.querySelectorAll<HTMLInputElement>('input[name="creatorId"]:checked')];
+      const micro = form.querySelector<HTMLInputElement>('input[name="microPeople"]:checked');
       setState({
         n: checked.length,
-        sum: checked.reduce((n, el) => n + Number(el.dataset.price || 0), 0),
+        micro: Number(micro?.dataset.people || 0),
+        sum: checked.reduce((n, el) => n + Number(el.dataset.price || 0), 0) + Number(micro?.dataset.price || 0),
         missing: checked.filter((el) => !Number(el.dataset.price)).length,
-        reach: checked.reduce((n, el) => n + Number(el.dataset.reach || 0), 0),
+        reach: checked.reduce((n, el) => n + Number(el.dataset.reach || 0), 0) + Number(micro?.dataset.reach || 0),
         noReach: checked.filter((el) => !Number(el.dataset.reach)).length,
       });
     };
@@ -25,7 +27,8 @@ export function SelectedTotal({ formId }: { formId: string }) {
   }, [formId]);
   return (
     <p className="text-sm">
-      選択中 <b className="num">{state.n}</b>名・料金の合計 <b className="num">{state.sum.toLocaleString("ja-JP")}円</b>（税別）
+      選択中 {state.micro > 0 && <>マイクロ<b className="num">{state.micro}</b>名＋</>}
+      <b className="num">{state.n}</b>名・料金の合計 <b className="num">{state.sum.toLocaleString("ja-JP")}円</b>（税別）
       {state.reach > 0 && (
         <>
           ・予想リーチ <b className="num text-emerald-700">約{fmtReach(state.reach)}人</b>

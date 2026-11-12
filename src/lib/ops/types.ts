@@ -301,6 +301,8 @@ export type Proposal = {
   id: string;
   restaurantId: string;
   creatorIds: string[];
+  /** マイクロインフルエンサー（フォロワー1万人未満）の調整人数（5・10・15。発信者は指定しない） */
+  microPeople?: number;
   /** あなたのメモ（提案の狙い・お店の要望など。お店には見えません） */
   request?: string;
   text?: ProposalText;

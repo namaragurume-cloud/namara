@@ -10,7 +10,8 @@ export function PlanTable({ plan, title, taxRate, compact }: { plan: Plan; title
       <div className="flex items-baseline justify-between gap-3 bg-[#f1f5fb] px-4 py-2.5">
         <b className="shrink-0 text-sm">{title}</b>
         <span className="text-xs text-muted">
-          発信者{plan.creators.length}名{plan.followers ? `・フォロワー合計 ${plan.followers.toLocaleString("ja-JP")}人` : ""}
+          発信者{plan.creators.length + plan.microPeople}名
+          {plan.followers ? `・${plan.microPeople ? "指定アカウントの" : ""}フォロワー合計 ${plan.followers.toLocaleString("ja-JP")}人` : ""}
         </span>
       </div>
       <table className="w-full text-sm">
@@ -20,6 +21,14 @@ export function PlanTable({ plan, title, taxRate, compact }: { plan: Plan; title
               <td className={`px-4 ${compact ? "py-1.5" : "py-2"} font-sans [overflow-wrap:anywhere]`}>
                 <span className="flex items-center gap-3">
                   {l.creator && <CreatorAvatar name={l.creator.name} src={l.creator.icon} size={compact ? 28 : 36} />}
+                  {l.micro && (
+                    <span
+                      style={{ width: compact ? 28 : 36, height: compact ? 28 : 36 }}
+                      className="flex shrink-0 items-center justify-center rounded-full bg-brand/10 text-[11px] font-extrabold text-brand"
+                    >
+                      {l.micro.people}名
+                    </span>
+                  )}
                   <span className="min-w-0">
                     {l.label}
                     {l.sub && !compact && <span className="block text-xs text-muted">{l.sub}</span>}
@@ -29,6 +38,12 @@ export function PlanTable({ plan, title, taxRate, compact }: { plan: Plan; title
                         <span className="font-normal text-muted">
                           （{fmtReachRange(l.reach)}・{l.reach.basis === "history" ? `実績${l.reach.posts}投稿から` : "フォロワー数からの参考値"}）
                         </span>
+                      </span>
+                    )}
+                    {l.micro?.reach && (
+                      <span className="block text-xs font-bold text-emerald-700">
+                        予想リーチ 約{fmtReach(l.micro.reach.value)}人
+                        <span className="font-normal text-muted">（{fmtReachRange(l.micro.reach)}・マイクロ発信者の実績から）</span>
                       </span>
                     )}
                     {l.creator?.url && (
@@ -61,7 +76,8 @@ export function PlanTable({ plan, title, taxRate, compact }: { plan: Plan; title
                   予想リーチ合計
                   <span className="block text-xs font-normal text-muted">
                     {fmtReachRange(plan.reach)}
-                    {plan.reach.missing.length > 0 && `・${plan.reach.missing.length}名は実績がないため含みません`}
+                    {plan.reach.partial &&
+                      `・${[plan.reach.missingMicro ? `マイクロ${plan.microPeople}名` : "", plan.reach.missing.length ? `${plan.reach.missing.length}名` : ""].filter(Boolean).join("と")}は実績がないため含みません`}
                   </span>
                 </td>
                 <td className="whitespace-nowrap px-4 py-2.5 text-right text-lg font-extrabold text-emerald-800">約{fmtReach(plan.reach.value)}人</td>
