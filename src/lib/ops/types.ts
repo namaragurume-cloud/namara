@@ -233,6 +233,8 @@ export type Assignment = {
   insight?: Insight;
   insightRequestedAt?: string;
   insightRemindedAt?: string;
+  /** インサイトのリマインドを送らない（あなたが外した人。自動・今すぐのどちらも） */
+  noInsightRemind?: boolean;
   /** スクショ不足を発信者に連絡した日時と、そのときの不足項目 */
   missingNotifiedAt?: string;
   missingNotifiedFor?: string;

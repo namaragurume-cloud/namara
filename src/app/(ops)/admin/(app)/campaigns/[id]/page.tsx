@@ -36,6 +36,7 @@ import {
   deleteCampaign,
   draftReportAction,
   insightRemindAction,
+  setInsightRemindAction,
   insightRequestAction,
   markConfirmedAction,
   markSentAction,
@@ -663,6 +664,14 @@ export default async function CampaignPage({ params, searchParams }: { params: P
                           <Badge>未依頼</Badge>
                         )}
                         {!isComplete(r.a.insight) && r.a.insightRemindedAt && <span className="mt-0.5 block text-xs text-muted">リマインド済 {fmtDateTime(r.a.insightRemindedAt)}</span>}
+                        {!isComplete(r.a.insight) && !c.reportSentAt && (
+                          <form action={setInsightRemindAction.bind(null, c.id, r.a.id, Boolean(r.a.noInsightRemind))} className="mt-1 flex items-center gap-1.5 text-xs">
+                            {r.a.noInsightRemind ? <Badge>リマインドしない</Badge> : <span className="text-muted">リマインド：する</span>}
+                            <button type="submit" className="text-brand underline">
+                              {r.a.noInsightRemind ? "対象に戻す" : "対象から外す"}
+                            </button>
+                          </form>
+                        )}
                       </td>
                     </tr>
                   ))}
@@ -703,7 +712,9 @@ export default async function CampaignPage({ params, searchParams }: { params: P
                 </form>
               )}
             </div>
-            <p className="mt-1 text-xs text-muted">リマインドは、依頼から3日たつと自動でも1回送ります。今すぐリマインドは何度でも送れます。</p>
+            <p className="mt-1 text-xs text-muted">
+              リマインドは、依頼から3日たつと自動でも1回送ります。今すぐリマインドは何度でも送れます。DMでやり取り中の人などは、表の「対象から外す」で自動・今すぐのどちらのリマインドからも外せます。
+            </p>
           </>
         )}
       </Step>
