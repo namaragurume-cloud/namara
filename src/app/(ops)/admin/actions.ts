@@ -15,6 +15,7 @@ import {
   markConfirmedManually,
   markSentManually,
   runDaily,
+  remindInsightsNow,
   sendInsightRequests,
   sendReportToRestaurant,
   sendRequests,
@@ -487,6 +488,13 @@ export async function insightRequestAction(campaignId: string) {
   await requireAdmin();
   const result = await sendInsightRequests({ campaignId });
   back(`/admin/campaigns/${campaignId}`, summarize("インサイト提出のお願い", result));
+}
+
+export async function insightRemindAction(campaignId: string) {
+  await requireAdmin();
+  const result = await remindInsightsNow(campaignId);
+  if (result.length === 0) back(`/admin/campaigns/${campaignId}`, "!リマインドする人がいません（提出をお願い済みで、未提出・不足の人が対象です）");
+  back(`/admin/campaigns/${campaignId}`, summarize("インサイト提出リマインド", result));
 }
 
 export async function saveReportComment(campaignId: string, fd: FormData) {

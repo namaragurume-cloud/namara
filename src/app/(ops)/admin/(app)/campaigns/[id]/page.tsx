@@ -12,6 +12,7 @@ import { isLineConfigured } from "@/lib/ops/line";
 import { lineShareUrl } from "@/lib/ops/line";
 import {
   confirmOrChangeMsg,
+  insightRemindTargets,
   loadBundle,
   phaseLabel,
   phaseOf,
@@ -34,6 +35,7 @@ import {
   confirmScheduleAction,
   deleteCampaign,
   draftReportAction,
+  insightRemindAction,
   insightRequestAction,
   markConfirmedAction,
   markSentAction,
@@ -92,6 +94,8 @@ export default async function CampaignPage({ params, searchParams }: { params: P
   const phase = phaseOf(b, today);
   const creators = (await db.list("creators")).filter((x) => x.active).sort((x, y) => (y.followers ?? 0) - (x.followers ?? 0));
   const assignedIds = new Set(rows.map((r) => r.creator.id));
+  const remindIds = new Set(insightRemindTargets(rows.map((r) => r.a)).map((a) => a.id));
+  const remindTargets = rows.filter((r) => remindIds.has(r.a.id));
   const shotsBy = new Map<string, Shot[]>();
   for (const s of (await db.list("shots")).filter((s) => rows.some((r) => r.a.id === s.assignmentId)).sort((x, y) => x.createdAt.localeCompare(y.createdAt))) {
     shotsBy.set(s.assignmentId, [...(shotsBy.get(s.assignmentId) ?? []), s]);
@@ -658,6 +662,7 @@ export default async function CampaignPage({ params, searchParams }: { params: P
                         ) : (
                           <Badge>未依頼</Badge>
                         )}
+                        {!isComplete(r.a.insight) && r.a.insightRemindedAt && <span className="mt-0.5 block text-xs text-muted">リマインド済 {fmtDateTime(r.a.insightRemindedAt)}</span>}
                       </td>
                     </tr>
                   ))}
@@ -680,11 +685,25 @@ export default async function CampaignPage({ params, searchParams }: { params: P
                 />
               </div>
             </div>
-            <form action={insightRequestAction.bind(null, c.id)} className="mt-3">
-              <SubmitButton variant="outline" size="sm" confirm="投稿予定日を過ぎていて、まだ依頼していない人に今すぐ送ります。よろしいですか？">
-                月末を待たずに今すぐ提出をお願いする
-              </SubmitButton>
-            </form>
+            <div className="mt-3 flex flex-wrap gap-2">
+              <form action={insightRequestAction.bind(null, c.id)}>
+                <SubmitButton variant="outline" size="sm" confirm="投稿予定日を過ぎていて、まだ依頼していない人に今すぐ送ります。よろしいですか？">
+                  月末を待たずに今すぐ提出をお願いする
+                </SubmitButton>
+              </form>
+              {!c.reportSentAt && remindTargets.length > 0 && (
+                <form action={insightRemindAction.bind(null, c.id)}>
+                  <SubmitButton
+                    variant="outline"
+                    size="sm"
+                    confirm={`提出をお願い済みで、まだ未提出・足りない項目がある${remindTargets.length}名（${remindTargets.map((r) => r.creator.name).join("、")}）に、今すぐリマインドを送ります。よろしいですか？`}
+                  >
+                    未提出・不足の{remindTargets.length}名に今すぐリマインド
+                  </SubmitButton>
+                </form>
+              )}
+            </div>
+            <p className="mt-1 text-xs text-muted">リマインドは、依頼から3日たつと自動でも1回送ります。今すぐリマインドは何度でも送れます。</p>
           </>
         )}
       </Step>
