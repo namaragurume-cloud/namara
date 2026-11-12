@@ -101,7 +101,10 @@ export function SlotEditor({ initial }: { initial: SlotRow[] }) {
 /** 全選択・全解除つきのチェックボックス一覧 */
 export function CheckAll({ formId, name }: { formId: string; name: string }) {
   const toggle = (on: boolean) => {
-    document.querySelectorAll<HTMLInputElement>(`#${formId} input[name="${name}"]:not(:disabled)`).forEach((el) => (el.checked = on));
+    const list = document.querySelectorAll<HTMLInputElement>(`#${formId} input[name="${name}"]:not(:disabled)`);
+    list.forEach((el) => (el.checked = on));
+    // 合計の表示などが追従できるように知らせる
+    list[0]?.dispatchEvent(new Event("change", { bubbles: true }));
   };
   return (
     <span className="flex gap-2">

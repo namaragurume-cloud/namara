@@ -7,7 +7,8 @@ import { fmtDateLong, fmtDateTime, fmtNum } from "@/lib/ops/dates";
 import { db } from "@/lib/ops/db";
 import { isEmailConfigured } from "@/lib/ops/email";
 import { isLineConfigured, lineShareUrl } from "@/lib/ops/line";
-import { buildPlan } from "@/lib/ops/proposal";
+import { MicroPicker } from "@/components/ops/proposal/MicroPicker";
+import { buildPlan, isMicro, microReachPerPerson } from "@/lib/ops/proposal";
 import { proposalShareMsg, proposalTitle, proposalUrl, proposalValidUntil } from "@/lib/ops/proposal-msg";
 import { proposalSettings } from "@/lib/ops/proposal-store";
 import { reachEstimates } from "@/lib/ops/reach-store";
@@ -23,8 +24,9 @@ export default async function ProposalPage({ params, searchParams }: { params: P
   const [r, allCreators, settings, reach] = await Promise.all([db.get("restaurants", p.restaurantId), db.list("creators"), proposalSettings(), reachEstimates()]);
   const cMap = new Map(allCreators.map((c) => [c.id, c]));
   const creators = p.creatorIds.map((cid) => cMap.get(cid)).filter((c): c is Creator => Boolean(c));
-  const plan = buildPlan(creators, settings, reach);
-  const light = p.text?.lightPlan ? buildPlan(creators.filter((c) => p.text!.lightPlan!.creatorIds.includes(c.id)), settings, reach) : null;
+  const micro = { people: p.microPeople, perPerson: microReachPerPerson(allCreators, reach) };
+  const plan = buildPlan(creators, settings, reach, micro);
+  const light = p.text?.lightPlan ? buildPlan(creators.filter((c) => p.text!.lightPlan!.creatorIds.includes(c.id)), settings, reach, micro) : null;
   const t = p.text;
   const shareText = r ? (await proposalShareMsg(p, r)).text : "";
   const shopLine = isLineConfigured() && Boolean(r?.lineGroupId || r?.lineUserId);
@@ -143,22 +145,33 @@ export default async function ProposalPage({ params, searchParams }: { params: P
         </form>
       </Card>
 
-      <Card title="発信者を変える">
-        <form action={saveProposalCreators.bind(null, p.id)} className="space-y-3">
-          <div className="grid max-h-72 gap-1.5 overflow-y-auto sm:grid-cols-2 lg:grid-cols-3">
-            {active.map((c) => (
-              <label key={c.id} className="flex items-center gap-2 rounded-xl border border-line bg-white px-3 py-2 text-sm has-[:checked]:border-brand has-[:checked]:bg-brand/5">
-                <input type="checkbox" name="creatorId" value={c.id} defaultChecked={p.creatorIds.includes(c.id)} className="size-4 accent-[var(--brand)]" />
-                <b className="min-w-0 flex-1 truncate">{c.name}</b>
-                <span className="num text-xs text-muted">{c.price ? `${fmtNum(c.price)}円` : "料金未設定"}</span>
-              </label>
-            ))}
-          </div>
+      <Card title="プラン・発信者を変える">
+        <form action={saveProposalCreators.bind(null, p.id)} className="space-y-4">
+          <MicroPicker value={p.microPeople} perPerson={micro.perPerson} />
+          {[
+            { title: "指定するアカウント（フォロワー1万人以上）", list: active.filter((c) => !isMicro(c)) },
+            { title: "フォロワー1万人未満の発信者を個別に指定する場合", list: active.filter(isMicro) },
+          ].map((g, gi) =>
+            g.list.length === 0 ? null : (
+              <details key={g.title} open={gi === 0 || g.list.some((c) => p.creatorIds.includes(c.id))}>
+                <summary className="cursor-pointer text-sm font-bold">{g.title}</summary>
+                <div className="mt-2 grid max-h-72 gap-1.5 overflow-y-auto sm:grid-cols-2 lg:grid-cols-3">
+                  {g.list.map((c) => (
+                    <label key={c.id} className="flex items-center gap-2 rounded-xl border border-line bg-white px-3 py-2 text-sm has-[:checked]:border-brand has-[:checked]:bg-brand/5">
+                      <input type="checkbox" name="creatorId" value={c.id} defaultChecked={p.creatorIds.includes(c.id)} className="size-4 accent-[var(--brand)]" />
+                      <b className="min-w-0 flex-1 truncate">{c.name}</b>
+                      <span className="num text-xs text-muted">{c.price ? `${fmtNum(c.price)}円` : "料金未設定"}</span>
+                    </label>
+                  ))}
+                </div>
+              </details>
+            ),
+          )}
           <Field label="メモ（お店には見えません）">
             <textarea name="request" rows={2} defaultValue={p.request} className={inputClass} />
           </Field>
           <SubmitButton variant="outline" size="sm">
-            発信者を保存
+            プラン・発信者を保存
           </SubmitButton>
         </form>
       </Card>

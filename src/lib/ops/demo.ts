@@ -305,6 +305,7 @@ export function demoSeed(): Seed {
       creatorIds: ["c3", "c6", "c1", "c2"],
       request: "（デモ）冬の新メニューを若い世代に。予算は抑えめ希望",
       shareToken: "demo-proposal",
+      microPeople: 10,
       createdAt: iso(-1, 11),
       text: { lightPlan: { creatorIds: ["c3", "c6"], reason: "（デモ）フォロワーの多い2名に絞り、予算を抑えたプランです。" } },
     },

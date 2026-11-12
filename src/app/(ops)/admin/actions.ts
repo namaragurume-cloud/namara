@@ -5,6 +5,7 @@ import { z } from "zod";
 import { checkPassword, endSession, requireAdmin, startSession } from "@/lib/ops/auth";
 import { blobs, db, resetDemo } from "@/lib/ops/db";
 import { iconKey } from "@/lib/ops/creator-profile";
+import { microOption } from "@/lib/ops/proposal";
 import { isOnSite, syncFollowersFromSite } from "@/lib/ops/follower-sync";
 import { isDemo } from "@/lib/ops/demo-flag";
 import type { BulkResult } from "@/lib/ops/service";
@@ -737,8 +738,9 @@ export async function createProposal(fd: FormData) {
   }
   if (!restaurantId || !(await db.get("restaurants", restaurantId))) back("/admin/proposals", "!提案する店舗を選ぶか、新しい店舗名を入力してください");
   const creatorIds = fd.getAll("creatorId").map(String).filter(Boolean);
-  if (creatorIds.length === 0) back("/admin/proposals", "!提案する発信者を選んでください");
-  const p = { id: shortId(), restaurantId, creatorIds, request: optStr(fd, "request"), shareToken: newToken(), createdAt: nowIso() };
+  const microPeople = microOption(Number(str(fd, "microPeople")))?.people;
+  if (creatorIds.length === 0 && !microPeople) back("/admin/proposals", "!マイクロインフルエンサーのプランか、提案する発信者を選んでください");
+  const p = { id: shortId(), restaurantId, creatorIds, microPeople, request: optStr(fd, "request"), shareToken: newToken(), createdAt: nowIso() };
   await db.put("proposals", p);
   back(`/admin/proposals/${p.id}`, "料金表を作りました。内容を確認して、飲食店に送ってください");
 }
@@ -746,16 +748,18 @@ export async function createProposal(fd: FormData) {
 export async function saveProposalCreators(id: string, fd: FormData) {
   await requireAdmin();
   const creatorIds = fd.getAll("creatorId").map(String).filter(Boolean);
-  if (creatorIds.length === 0) back(`/admin/proposals/${id}`, "!発信者を1人以上選んでください");
+  const microPeople = microOption(Number(str(fd, "microPeople")))?.people;
+  if (creatorIds.length === 0 && !microPeople) back(`/admin/proposals/${id}`, "!マイクロインフルエンサーのプランか、発信者を1人以上選んでください");
   await db.update("proposals", id, (p) => ({
     ...p,
     creatorIds,
+    microPeople,
     request: optStr(fd, "request"),
     // ライトプランは、今の発信者に含まれる人だけ残す
     text: p.text?.lightPlan ? { ...p.text, lightPlan: lightOf(p.text.lightPlan.creatorIds.filter((x) => creatorIds.includes(x)), creatorIds, p.text.lightPlan.reason) } : p.text,
     updatedAt: nowIso(),
   }));
-  back(`/admin/proposals/${id}`, "発信者を変えました（料金表も更新されています）");
+  back(`/admin/proposals/${id}`, "プラン・発信者を保存しました（料金表も更新されています）");
 }
 
 /** ライトプランは「全員より少ない1人以上」のときだけ有効 */

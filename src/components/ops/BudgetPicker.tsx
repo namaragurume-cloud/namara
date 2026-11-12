@@ -18,12 +18,15 @@ export function BudgetPicker({ formId, taxRate, fixedFee }: { formId: string; ta
     if (!form) return;
     const yen = Number(budget.replace(/[^\d]/g, ""));
     if (!yen) return setResult("予算を入力してください");
-    const cap = Math.floor((yen / (1 + taxRate / 100) - fixedFee) / UNIT);
+    // マイクロインフルエンサーの定額プランを選んでいれば、その分を先に引く
+    const microPrice = Number(form.querySelector<HTMLInputElement>('input[name="microPeople"]:checked')?.dataset.price || 0);
+    const cap = Math.floor((yen / (1 + taxRate / 100) - fixedFee - microPrice) / UNIT);
     const boxes = [...form.querySelectorAll<HTMLInputElement>('input[name="creatorId"]')];
     const items = boxes
       .map((el) => ({ el, price: Number(el.dataset.price || 0), reach: Number(el.dataset.reach || 0) }))
-      .filter((x) => x.price > 0 && x.reach > 0);
-    if (cap <= 0 || items.length === 0) return setResult(items.length === 0 ? "料金と予想リーチの両方がある発信者がいません" : "予算が固定費・消費税を下回っています");
+      // 隠れている（フォロワー1万人未満の個別指定）発信者は自動では選ばない
+      .filter((x) => x.price > 0 && x.reach > 0 && x.el.closest("details")?.open !== false);
+    if (cap <= 0 || items.length === 0) return setResult(items.length === 0 ? "料金と予想リーチの両方がある発信者がいません" : "予算が固定費・消費税（・マイクロのプラン）を下回っています");
     // 0/1ナップサック（重さ＝料金、価値＝予想リーチ）
     const best = new Array<number>(cap + 1).fill(0);
     const keep = items.map(() => new Uint8Array(cap + 1));
@@ -52,7 +55,7 @@ export function BudgetPicker({ formId, taxRate, fixedFee }: { formId: string; ta
   return (
     <div className="rounded-xl border border-emerald-200 bg-emerald-50/60 p-3">
       <p className="text-sm font-bold">予算から選ぶ</p>
-      <p className="text-xs text-muted">予算（税込）を入れると、その中で予想リーチが一番大きくなる組み合わせにチェックを入れます。あとから手で変えられます。</p>
+      <p className="text-xs text-muted">予算（税込）を入れると、その中で予想リーチが一番大きくなる組み合わせにチェックを入れます（マイクロインフルエンサーのプランを選んでいれば、その料金を引いた残りで選びます）。あとから手で変えられます。</p>
       <div className="mt-2 flex flex-wrap gap-2">
         <input
           value={budget}
