@@ -631,7 +631,7 @@ export async function runReminders(today = jstDate()): Promise<BulkResult> {
 
   // インサイト未提出・不足（依頼から3日後に1回）
   const late = ctx.assignments.filter(
-    (a) => a.insightRequestedAt && needsInsight(a) && !a.insightRemindedAt && daysSince(a.insightRequestedAt, today) >= 3 && !ctx.campaigns.get(a.campaignId)?.reportSentAt,
+    (a) => a.insightRequestedAt && needsInsight(a) && !a.noInsightRemind && !a.insightRemindedAt && daysSince(a.insightRequestedAt, today) >= 3 && !ctx.campaigns.get(a.campaignId)?.reportSentAt,
   );
   out.push(...(await sendInsightReminders(ctx, late)));
   return out;
@@ -659,7 +659,7 @@ async function sendInsightReminders(ctx: Ctx, targets: Assignment[]): Promise<Bu
 
 /** 案件の中で、提出をお願い済みなのに未提出・不足の人（今すぐリマインドの対象） */
 export function insightRemindTargets(assignments: Assignment[]): Assignment[] {
-  return assignments.filter((a) => a.insightRequestedAt && needsInsight(a));
+  return assignments.filter((a) => a.insightRequestedAt && needsInsight(a) && !a.noInsightRemind);
 }
 
 /** 今すぐリマインド（3日待たずに、何度でも送れる） */

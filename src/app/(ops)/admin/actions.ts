@@ -490,6 +490,13 @@ export async function insightRequestAction(campaignId: string) {
   back(`/admin/campaigns/${campaignId}`, summarize("インサイト提出のお願い", result));
 }
 
+export async function setInsightRemindAction(campaignId: string, assignmentId: string, on: boolean) {
+  await requireAdmin();
+  const a = await db.update("assignments", assignmentId, (x) => ({ ...x, noInsightRemind: on ? undefined : true }));
+  const name = a ? (await db.get("creators", a.creatorId))?.name : undefined;
+  back(`/admin/campaigns/${campaignId}`, on ? `${name ?? ""}さんをリマインドの対象に戻しました` : `${name ?? ""}さんをリマインドの対象から外しました（自動・今すぐのどちらも送りません）`);
+}
+
 export async function insightRemindAction(campaignId: string) {
   await requireAdmin();
   const result = await remindInsightsNow(campaignId);
