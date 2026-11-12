@@ -633,20 +633,40 @@ export async function runReminders(today = jstDate()): Promise<BulkResult> {
   const late = ctx.assignments.filter(
     (a) => a.insightRequestedAt && needsInsight(a) && !a.insightRemindedAt && daysSince(a.insightRequestedAt, today) >= 3 && !ctx.campaigns.get(a.campaignId)?.reportSentAt,
   );
-  for (const [creatorId, list] of groupByCreator(late)) {
+  out.push(...(await sendInsightReminders(ctx, late)));
+  return out;
+}
+
+/** インサイト未提出・不足の人へのリマインド（同じ人の複数の投稿は1通にまとめる） */
+async function sendInsightReminders(ctx: Ctx, targets: Assignment[]): Promise<BulkResult> {
+  const out: BulkResult = [];
+  for (const [creatorId, list] of groupByCreator(targets)) {
     const creator = ctx.creators.get(creatorId);
     if (!creator) continue;
     const lines = list.map((a) => {
       const c = ctx.campaigns.get(a.campaignId)!;
       const name = ctx.restaurants.get(c.restaurantId)?.name ?? c.title;
       const state = a.insight ? `${a.insight.missing.map((k) => fieldLabel(a.insight!.platform, k)).join("、")}が足りません` : "未提出";
-      return `・${name}：${state}\n${assignmentUrl(creator, a)}`;
+      const askDate = a.postDateByCreator && !a.plannedPostDate ? "（投稿した日の入力もお願いします）" : "";
+      return `・${name}：${state}${askDate}\n${assignmentUrl(creator, a)}`;
     });
     const result = await sendToCreator(creator, await msg("insightReminder", { 発信者名: creator.name, 投稿一覧: lines.join("\n\n"), URL: creatorPortalUrl(creator) }), "インサイト提出リマインド");
     if (result.ok) for (const a of list) await db.update("assignments", a.id, (x) => ({ ...x, insightRemindedAt: nowIso() }));
     out.push({ name: creator.name, result });
   }
   return out;
+}
+
+/** 案件の中で、提出をお願い済みなのに未提出・不足の人（今すぐリマインドの対象） */
+export function insightRemindTargets(assignments: Assignment[]): Assignment[] {
+  return assignments.filter((a) => a.insightRequestedAt && needsInsight(a));
+}
+
+/** 今すぐリマインド（3日待たずに、何度でも送れる） */
+export async function remindInsightsNow(campaignId: string): Promise<BulkResult> {
+  const ctx = await loadAll();
+  if (ctx.campaigns.get(campaignId)?.reportSentAt) return [];
+  return sendInsightReminders(ctx, insightRemindTargets(ctx.assignments.filter((a) => a.campaignId === campaignId)));
 }
 
 /**
