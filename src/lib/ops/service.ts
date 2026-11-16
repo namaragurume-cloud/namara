@@ -643,11 +643,13 @@ export async function runReminders(today = jstDate()): Promise<BulkResult> {
  *  - 発信者：その日の投稿予定と、前日のリマインドが届いていない人の撮影（同じ人の複数の案件は1通にまとめる）
  * 同じ日に二度送らないよう、送った日を記録します（送れなかった場合も記録し、管理画面の送信履歴に残ります）。
  */
-export async function runTodayNotices(today = jstDate()): Promise<BulkResult> {
+export async function runTodayNotices(today = jstDate(), opts: { campaignId?: string; preview?: TodayPreview } = {}): Promise<BulkResult> {
   const ctx = await loadAll();
   const out: BulkResult = [];
+  const { campaignId, preview } = opts;
   const live = ctx.assignments.filter((a) => {
     const c = ctx.campaigns.get(a.campaignId);
+    if (campaignId && a.campaignId !== campaignId) return false;
     return c && !c.reportSentAt && a.status === "accepted" && a.confirmedNotifiedAt && slotById(c, a.confirmedSlotId);
   });
   const isShoot = (a: Assignment) => slotById(ctx.campaigns.get(a.campaignId)!, a.confirmedSlotId)!.date === today;
@@ -656,7 +658,7 @@ export async function runTodayNotices(today = jstDate()): Promise<BulkResult> {
 
   // お店
   for (const c of ctx.campaigns.values()) {
-    if (c.reportSentAt || c.todayNotifiedOn === today) continue;
+    if ((campaignId && c.id !== campaignId) || c.reportSentAt || c.todayNotifiedOn === today) continue;
     const r = ctx.restaurants.get(c.restaurantId);
     if (!r) continue;
     const mine = live.filter((a) => a.campaignId === c.id);
@@ -678,6 +680,10 @@ export async function runTodayNotices(today = jstDate()): Promise<BulkResult> {
         ].join("\n")
       : undefined;
     const postText = posts.length ? `■ 本日の投稿予定\n${posts.map((a) => `${creatorName(a)}さん`).join("、")}` : undefined;
+    if (preview) {
+      preview.restaurants.push(r.name);
+      continue;
+    }
     const result = await sendToRestaurant(
       r,
       await msg("restaurantToday", {
@@ -703,6 +709,10 @@ export async function runTodayNotices(today = jstDate()): Promise<BulkResult> {
   for (const [creatorId, list] of groupByCreator(targets)) {
     const creator = ctx.creators.get(creatorId);
     if (!creator) continue;
+    if (preview) {
+      preview.creators.push(creator.name);
+      continue;
+    }
     const kinds: string[] = [];
     const lines = list.flatMap((a) => {
       const c = ctx.campaigns.get(a.campaignId)!;
@@ -737,6 +747,14 @@ export async function runTodayNotices(today = jstDate()): Promise<BulkResult> {
     const c = ctx.campaigns.get(a.campaignId)!;
     return !videoEnabled(c) || videoStage(a, c) === "approved";
   }
+}
+
+/** まだ送っていない今日のお知らせの送り先（送らずに名前だけ集める） */
+export type TodayPreview = { restaurants: string[]; creators: string[] };
+export async function todayNoticePreview(campaignId?: string, today = jstDate()): Promise<TodayPreview> {
+  const preview: TodayPreview = { restaurants: [], creators: [] };
+  await runTodayNotices(today, { campaignId, preview });
+  return preview;
 }
 
 /** インサイト未提出・不足の人へのリマインド（同じ人の複数の投稿は1通にまとめる） */

@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { CheckAll, CopyButton, SubmitButton } from "@/components/ops/client";
 import { AdminShotDrop } from "@/components/ops/AdminShotDrop";
+import { TodayNotice } from "../../TodayNotice";
 import { channelLabel, phaseTone } from "@/components/ops/phase";
 import { ShopLinks } from "@/components/ops/ShopLinks";
 import { Badge, ButtonLink, Card, Empty, Field, Flash, Stat, buttonClass, inputClass } from "@/components/ops/ui";
@@ -154,6 +155,8 @@ export default async function CampaignPage({ params, searchParams }: { params: P
           </ButtonLink>
         </div>
       </div>
+
+      <TodayNotice campaignId={c.id} />
 
       {/* ---------------- STEP 1 ---------------- */}
       <Step n={1} title="発信者へPR依頼を一括送信" done={rows.length > 0 && unsent.length === 0}>
