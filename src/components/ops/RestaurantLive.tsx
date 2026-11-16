@@ -106,11 +106,13 @@ export function RestaurantLive({ campaign: c, rows: all, today, updatedAt }: { c
               <li key={e.key} className={cn("flex flex-wrap items-center gap-x-3 gap-y-1 rounded-xl px-3 py-2.5 text-sm", e.day === today ? "bg-brand/5 ring-1 ring-brand/30" : "bg-amber-50")}>
                 <span className={cn("rounded-full px-2.5 py-0.5 text-xs font-bold", e.day === today ? chip.today : chip.soon)}>{e.day === today ? "今日" : "明日"}</span>
                 {e.kind === "shoot" ? (
-                  <span className="flex items-center gap-1.5">
+                  <span className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5">
                     <Camera className="size-4 text-muted" />
                     <b className="num">{fmtSlot(e.r.slot).replace(/^\S+\s/, "")}</b>
                     <Who c={e.r.creator} />
-                    {(e.r.a.partySize ?? 1) > 1 ? `ほか計${e.r.a.partySize}名` : ""}が撮影に伺います
+                    <span>
+                      計<b className="num">{Math.max(1, e.r.a.partySize ?? 1)}</b>名で撮影に伺います
+                    </span>
                   </span>
                 ) : (
                   <span className="flex items-center gap-1.5">
