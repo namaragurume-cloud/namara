@@ -238,7 +238,7 @@ export const templateDefs: Record<TemplateKey, TemplateDef> = {
   },
   creatorToday: {
     title: "発信者へ当日のお知らせ",
-    when: "撮影日・投稿予定日の当日の朝9時（自動）",
+    when: "投稿予定日の当日の朝9時（撮影日は、前日のリマインドが届かなかった人だけ）（自動）",
     to: "発信者",
     subject: "【本日の予定】{予定}",
     body: `{発信者名}さん

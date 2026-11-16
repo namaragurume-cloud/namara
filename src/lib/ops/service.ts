@@ -640,7 +640,7 @@ export async function runReminders(today = jstDate()): Promise<BulkResult> {
 /**
  * 撮影日・投稿予定日の当日の朝（毎日の自動処理＝朝9時）
  *  - お店：その日の撮影（時間帯ごとに誰が何名で来るか）と投稿予定（案件ごとに1通）
- *  - 発信者：その日の撮影・投稿予定（同じ人の複数の案件は1通にまとめる）
+ *  - 発信者：その日の投稿予定と、前日のリマインドが届いていない人の撮影（同じ人の複数の案件は1通にまとめる）
  * 同じ日に二度送らないよう、送った日を記録します（送れなかった場合も記録し、管理画面の送信履歴に残ります）。
  */
 export async function runTodayNotices(today = jstDate()): Promise<BulkResult> {
@@ -696,7 +696,10 @@ export async function runTodayNotices(today = jstDate()): Promise<BulkResult> {
   }
 
   // 発信者
-  const targets = live.filter((a) => (isShoot(a) && a.shootDayNotifiedOn !== today) || (isPost(a) && a.postDayNotifiedOn !== today && postReady(a)));
+  // 撮影日：前日のリマインドが届いている人には送らない（届いていない人だけ当日の朝に送る）
+  const shootDue = (a: Assignment) => isShoot(a) && a.shootDayNotifiedOn !== today && !a.shootRemindedAt;
+  const postDue = (a: Assignment) => isPost(a) && a.postDayNotifiedOn !== today && postReady(a);
+  const targets = live.filter((a) => shootDue(a) || postDue(a));
   for (const [creatorId, list] of groupByCreator(targets)) {
     const creator = ctx.creators.get(creatorId);
     if (!creator) continue;
@@ -706,12 +709,12 @@ export async function runTodayNotices(today = jstDate()): Promise<BulkResult> {
       const r = ctx.restaurants.get(c.restaurantId);
       const shop = `${r?.name ?? c.title}さん`;
       const items: string[] = [];
-      if (isShoot(a) && a.shootDayNotifiedOn !== today) {
+      if (shootDue(a)) {
         const s = slotById(c, a.confirmedSlotId)!;
         kinds.push(`${shop}の撮影日`);
         items.push(`・${shop}の撮影：${s.start}〜${s.end}（${fmtParty(a.partySize)}）${r?.address ? `\n　住所：${r.address}` : ""}\n　${assignmentUrl(creator, a)}`);
       }
-      if (isPost(a) && a.postDayNotifiedOn !== today && postReady(a)) {
+      if (postDue(a)) {
         kinds.push(`${shop}の投稿予定日`);
         items.push(`・${shop}の投稿予定日です。投稿したら、ページから投稿URLを送っていただけると助かります\n　${assignmentUrl(creator, a)}`);
       }
@@ -721,8 +724,8 @@ export async function runTodayNotices(today = jstDate()): Promise<BulkResult> {
     for (const a of list) {
       await db.update("assignments", a.id, (x) => ({
         ...x,
-        shootDayNotifiedOn: isShoot(a) ? today : x.shootDayNotifiedOn,
-        postDayNotifiedOn: isPost(a) ? today : x.postDayNotifiedOn,
+        shootDayNotifiedOn: shootDue(a) ? today : x.shootDayNotifiedOn,
+        postDayNotifiedOn: postDue(a) ? today : x.postDayNotifiedOn,
       }));
     }
     out.push({ name: creator.name, result });
