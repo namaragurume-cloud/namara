@@ -499,13 +499,13 @@ export async function setInsightRemindAction(campaignId: string, assignmentId: s
   back(`/admin/campaigns/${campaignId}`, on ? `${name ?? ""}さんをリマインドの対象に戻しました` : `${name ?? ""}さんをリマインドの対象から外しました（自動・今すぐのどちらも送りません）`);
 }
 
-/** 今日のお知らせ（撮影日・投稿予定日の当日分）を今すぐ送る。送っていない分だけ */
+/** 朝のお知らせ（お店へ明日の予定・発信者へ今日の予定）を今すぐ送る。送っていない分だけ */
 export async function todayNoticeAction(campaignId?: string) {
   await requireAdmin();
   const result = await runTodayNotices(jstDate(), { campaignId });
   const to = campaignId ? `/admin/campaigns/${campaignId}` : "/admin";
-  if (result.length === 0) back(to, "!今日のお知らせで、まだ送っていないものはありません");
-  back(to, summarize("今日のお知らせ", result));
+  if (result.length === 0) back(to, "!まだ送っていない朝のお知らせはありません");
+  back(to, summarize("朝のお知らせ", result));
 }
 
 export async function insightRemindAction(campaignId: string) {

@@ -109,8 +109,8 @@ export type Campaign = {
   /** 投稿前の動画チェック：なし／飲食店が直接確認／あなたが先に確認してから飲食店へ */
   videoCheck?: "none" | "direct" | "owner_first";
   reportSentAt?: string;
-  /** お店に当日の朝のお知らせを送った日（YYYY-MM-DD） */
-  todayNotifiedOn?: string;
+  /** お店に前日のお知らせを送った、撮影・投稿の日（YYYY-MM-DD） */
+  shopNoticeFor?: string;
   /** レポート：サマリー（表紙） */
   reportComment?: string;
   /** レポート：対象期間（空なら投稿日から自動） */
