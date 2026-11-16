@@ -16,6 +16,7 @@ import {
   markConfirmedManually,
   markSentManually,
   runDaily,
+  runTodayNotices,
   remindInsightsNow,
   sendInsightRequests,
   sendReportToRestaurant,
@@ -37,7 +38,7 @@ import { findSlot, flexDates, flexSlotId, flexTimes, isFlex } from "@/lib/ops/sl
 import type { Assignment, Campaign, Creator, FlexSchedule, Insight, Platform, Restaurant, Slot } from "@/lib/ops/types";
 import { newLinkCode, newToken, nowIso, shortId } from "@/lib/ops/util";
 import { isRateLimited } from "@/lib/spam";
-import { toInstagramUrl } from "@/lib/ops/dates";
+import { jstDate, toInstagramUrl } from "@/lib/ops/dates";
 import { headers } from "next/headers";
 
 /* ---------- 共通 ---------- */
@@ -496,6 +497,15 @@ export async function setInsightRemindAction(campaignId: string, assignmentId: s
   const a = await db.update("assignments", assignmentId, (x) => ({ ...x, noInsightRemind: on ? undefined : true }));
   const name = a ? (await db.get("creators", a.creatorId))?.name : undefined;
   back(`/admin/campaigns/${campaignId}`, on ? `${name ?? ""}さんをリマインドの対象に戻しました` : `${name ?? ""}さんをリマインドの対象から外しました（自動・今すぐのどちらも送りません）`);
+}
+
+/** 今日のお知らせ（撮影日・投稿予定日の当日分）を今すぐ送る。送っていない分だけ */
+export async function todayNoticeAction(campaignId?: string) {
+  await requireAdmin();
+  const result = await runTodayNotices(jstDate(), { campaignId });
+  const to = campaignId ? `/admin/campaigns/${campaignId}` : "/admin";
+  if (result.length === 0) back(to, "!今日のお知らせで、まだ送っていないものはありません");
+  back(to, summarize("今日のお知らせ", result));
 }
 
 export async function insightRemindAction(campaignId: string) {

@@ -7,6 +7,7 @@ import { isDemo } from "@/lib/ops/demo-flag";
 import { isComplete } from "@/lib/ops/insight-fields";
 import { latestVideo, videoStage } from "@/lib/ops/video-state";
 import { phaseLabel, phaseOf, type Row } from "@/lib/ops/service";
+import { TodayNotice } from "./TodayNotice";
 
 export const metadata = { title: "ホーム" };
 
@@ -94,6 +95,8 @@ export default async function AdminHome({ searchParams }: { searchParams: Promis
           </ol>
         </Card>
       )}
+
+      <TodayNotice />
 
       <Card title="あなたがやること">
         {todos.length === 0 ? (
