@@ -637,6 +637,108 @@ export async function runReminders(today = jstDate()): Promise<BulkResult> {
   return out;
 }
 
+/**
+ * 撮影日・投稿予定日の当日の朝（毎日の自動処理＝朝9時）
+ *  - お店：その日の撮影（時間帯ごとに誰が何名で来るか）と投稿予定（案件ごとに1通）
+ *  - 発信者：その日の投稿予定と、前日のリマインドが届いていない人の撮影（同じ人の複数の案件は1通にまとめる）
+ * 同じ日に二度送らないよう、送った日を記録します（送れなかった場合も記録し、管理画面の送信履歴に残ります）。
+ */
+export async function runTodayNotices(today = jstDate()): Promise<BulkResult> {
+  const ctx = await loadAll();
+  const out: BulkResult = [];
+  const live = ctx.assignments.filter((a) => {
+    const c = ctx.campaigns.get(a.campaignId);
+    return c && !c.reportSentAt && a.status === "accepted" && a.confirmedNotifiedAt && slotById(c, a.confirmedSlotId);
+  });
+  const isShoot = (a: Assignment) => slotById(ctx.campaigns.get(a.campaignId)!, a.confirmedSlotId)!.date === today;
+  const isPost = (a: Assignment) => a.plannedPostDate === today && !a.postUrl && !a.insight;
+  const creatorName = (a: Assignment) => ctx.creators.get(a.creatorId)?.name ?? "";
+
+  // お店
+  for (const c of ctx.campaigns.values()) {
+    if (c.reportSentAt || c.todayNotifiedOn === today) continue;
+    const r = ctx.restaurants.get(c.restaurantId);
+    if (!r) continue;
+    const mine = live.filter((a) => a.campaignId === c.id);
+    const shoots = mine.filter(isShoot);
+    const posts = mine.filter(isPost);
+    if (shoots.length === 0 && posts.length === 0) continue;
+    const byTime = new Map<string, Assignment[]>();
+    for (const a of shoots) {
+      const s = slotById(c, a.confirmedSlotId)!;
+      const k = `${s.start}〜${s.end}`;
+      byTime.set(k, [...(byTime.get(k) ?? []), a]);
+    }
+    const shootText = shoots.length
+      ? [
+          "■ 本日の撮影",
+          ...[...byTime]
+            .sort(([x], [y]) => x.localeCompare(y))
+            .map(([t, list]) => `${t}　${list.map((a) => `${creatorName(a)}さん（${partyOf(a)}名）`).join("、")}　計${list.reduce((n, a) => n + partyOf(a), 0)}名`),
+        ].join("\n")
+      : undefined;
+    const postText = posts.length ? `■ 本日の投稿予定\n${posts.map((a) => `${creatorName(a)}さん`).join("、")}` : undefined;
+    const result = await sendToRestaurant(
+      r,
+      await msg("restaurantToday", {
+        店舗名: r.name,
+        宛名: r.contactName ? `${r.contactName}様` : "ご担当者様",
+        案件名: c.title,
+        日付: fmtDate(today),
+        撮影: shootText,
+        投稿: postText,
+        URL: restaurantPortalUrl(c),
+      }),
+      `当日のお知らせ：${c.title}`,
+    );
+    await db.update("campaigns", c.id, (x) => ({ ...x, todayNotifiedOn: today }));
+    out.push({ name: r.name, result });
+  }
+
+  // 発信者
+  // 撮影日：前日のリマインドが届いている人には送らない（届いていない人だけ当日の朝に送る）
+  const shootDue = (a: Assignment) => isShoot(a) && a.shootDayNotifiedOn !== today && !a.shootRemindedAt;
+  const postDue = (a: Assignment) => isPost(a) && a.postDayNotifiedOn !== today && postReady(a);
+  const targets = live.filter((a) => shootDue(a) || postDue(a));
+  for (const [creatorId, list] of groupByCreator(targets)) {
+    const creator = ctx.creators.get(creatorId);
+    if (!creator) continue;
+    const kinds: string[] = [];
+    const lines = list.flatMap((a) => {
+      const c = ctx.campaigns.get(a.campaignId)!;
+      const r = ctx.restaurants.get(c.restaurantId);
+      const shop = `${r?.name ?? c.title}さん`;
+      const items: string[] = [];
+      if (shootDue(a)) {
+        const s = slotById(c, a.confirmedSlotId)!;
+        kinds.push(`${shop}の撮影日`);
+        items.push(`・${shop}の撮影：${s.start}〜${s.end}（${fmtParty(a.partySize)}）${r?.address ? `\n　住所：${r.address}` : ""}\n　${assignmentUrl(creator, a)}`);
+      }
+      if (postDue(a)) {
+        kinds.push(`${shop}の投稿予定日`);
+        items.push(`・${shop}の投稿予定日です。投稿したら、ページから投稿URLを送っていただけると助かります\n　${assignmentUrl(creator, a)}`);
+      }
+      return items;
+    });
+    const result = await sendToCreator(creator, await msg("creatorToday", { 発信者名: creator.name, 予定: kinds.join("・"), 一覧: lines.join("\n\n") }), "当日のお知らせ");
+    for (const a of list) {
+      await db.update("assignments", a.id, (x) => ({
+        ...x,
+        shootDayNotifiedOn: shootDue(a) ? today : x.shootDayNotifiedOn,
+        postDayNotifiedOn: postDue(a) ? today : x.postDayNotifiedOn,
+      }));
+    }
+    out.push({ name: creator.name, result });
+  }
+  return out;
+
+  /** 動画チェックありの案件は、動画がOKになってから「投稿予定日です」と送る */
+  function postReady(a: Assignment) {
+    const c = ctx.campaigns.get(a.campaignId)!;
+    return !videoEnabled(c) || videoStage(a, c) === "approved";
+  }
+}
+
 /** インサイト未提出・不足の人へのリマインド（同じ人の複数の投稿は1通にまとめる） */
 async function sendInsightReminders(ctx: Ctx, targets: Assignment[]): Promise<BulkResult> {
   const out: BulkResult = [];
@@ -684,9 +786,13 @@ export async function runDaily(today = jstDate()) {
   const reminders = await runReminders(today);
   await cleanupVideos(today).catch((e) => console.error("[video] cleanup", e));
   const insights = isInsightDay(today) ? await sendInsightRequests({ today }) : [];
+  const todayNotices = await runTodayNotices(today).catch((e) => {
+    console.error("[today] notices", e);
+    return [] as BulkResult;
+  });
   const followers = await syncFollowersFromSite().catch((e) => {
     console.error("[followers] sync", e);
     return null;
   });
-  return { today, reminders, insights, followers };
+  return { today, reminders: [...reminders, ...todayNotices], insights, followers };
 }
