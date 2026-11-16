@@ -639,7 +639,7 @@ export async function runReminders(today = jstDate()): Promise<BulkResult> {
 
 /**
  * 撮影日・投稿予定日の当日の朝（毎日の自動処理＝朝9時）
- *  - お店：その日の撮影（時間帯ごとに誰が何名で来るか）と投稿予定（案件ごとに1通）
+ *  - お店：前日に、明日の撮影（時間帯ごとに誰が何名で来るか）と投稿予定（案件ごとに1通）
  *  - 発信者：その日の投稿予定と、前日のリマインドが届いていない人の撮影（同じ人の複数の案件は1通にまとめる）
  * 同じ日に二度送らないよう、送った日を記録します（送れなかった場合も記録し、管理画面の送信履歴に残ります）。
  */
@@ -652,18 +652,21 @@ export async function runTodayNotices(today = jstDate(), opts: { campaignId?: st
     if (campaignId && a.campaignId !== campaignId) return false;
     return c && !c.reportSentAt && a.status === "accepted" && a.confirmedNotifiedAt && slotById(c, a.confirmedSlotId);
   });
-  const isShoot = (a: Assignment) => slotById(ctx.campaigns.get(a.campaignId)!, a.confirmedSlotId)!.date === today;
-  const isPost = (a: Assignment) => a.plannedPostDate === today && !a.postUrl && !a.insight;
+  const tomorrow = addDays(today, 1);
+  const shootOn = (a: Assignment, day: string) => slotById(ctx.campaigns.get(a.campaignId)!, a.confirmedSlotId)!.date === day;
+  const postOn = (a: Assignment, day: string) => a.plannedPostDate === day && !a.postUrl && !a.insight;
+  const isShoot = (a: Assignment) => shootOn(a, today);
+  const isPost = (a: Assignment) => postOn(a, today);
   const creatorName = (a: Assignment) => ctx.creators.get(a.creatorId)?.name ?? "";
 
-  // お店
+  // お店：前日の朝に、明日の撮影・投稿予定をお知らせ
   for (const c of ctx.campaigns.values()) {
-    if ((campaignId && c.id !== campaignId) || c.reportSentAt || c.todayNotifiedOn === today) continue;
+    if ((campaignId && c.id !== campaignId) || c.reportSentAt || c.shopNoticeFor === tomorrow) continue;
     const r = ctx.restaurants.get(c.restaurantId);
     if (!r) continue;
     const mine = live.filter((a) => a.campaignId === c.id);
-    const shoots = mine.filter(isShoot);
-    const posts = mine.filter(isPost);
+    const shoots = mine.filter((a) => shootOn(a, tomorrow));
+    const posts = mine.filter((a) => postOn(a, tomorrow));
     if (shoots.length === 0 && posts.length === 0) continue;
     const byTime = new Map<string, Assignment[]>();
     for (const a of shoots) {
@@ -673,13 +676,13 @@ export async function runTodayNotices(today = jstDate(), opts: { campaignId?: st
     }
     const shootText = shoots.length
       ? [
-          "■ 本日の撮影",
+          "■ 明日の撮影",
           ...[...byTime]
             .sort(([x], [y]) => x.localeCompare(y))
             .map(([t, list]) => `${t}　${list.map((a) => `${creatorName(a)}さん（${partyOf(a)}名）`).join("、")}　計${list.reduce((n, a) => n + partyOf(a), 0)}名`),
         ].join("\n")
       : undefined;
-    const postText = posts.length ? `■ 本日の投稿予定\n${posts.map((a) => `${creatorName(a)}さん`).join("、")}` : undefined;
+    const postText = posts.length ? `■ 明日の投稿予定\n${posts.map((a) => `${creatorName(a)}さん`).join("、")}` : undefined;
     if (preview) {
       preview.restaurants.push(r.name);
       continue;
@@ -690,14 +693,14 @@ export async function runTodayNotices(today = jstDate(), opts: { campaignId?: st
         店舗名: r.name,
         宛名: r.contactName ? `${r.contactName}様` : "ご担当者様",
         案件名: c.title,
-        日付: fmtDate(today),
+        日付: fmtDate(tomorrow),
         撮影: shootText,
         投稿: postText,
         URL: restaurantPortalUrl(c),
       }),
-      `当日のお知らせ：${c.title}`,
+      `前日のお知らせ：${c.title}`,
     );
-    await db.update("campaigns", c.id, (x) => ({ ...x, todayNotifiedOn: today }));
+    await db.update("campaigns", c.id, (x) => ({ ...x, shopNoticeFor: tomorrow }));
     out.push({ name: r.name, result });
   }
 
