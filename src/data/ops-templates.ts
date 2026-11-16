@@ -30,6 +30,7 @@ export const TEMPLATE_KEYS = [
   "scheduleChanged",
   "rescheduleRequest",
   "shootReminder",
+  "creatorToday",
   "insightRequest",
   "insightMissing",
   "insightComplete",
@@ -44,6 +45,7 @@ export const TEMPLATE_KEYS = [
   "videoRevision",
   "proposalShare",
   "restaurantSchedule",
+  "restaurantToday",
   "restaurantVideoCheck",
   "restaurantVideoReminder",
   "restaurantReport",
@@ -231,6 +233,26 @@ export const templateDefs: Record<TemplateKey, TemplateDef> = {
       回答期限: "2026年11月20日(金)",
       URL: "https://…/m/…",
       撮影候補日: "・12/6(土) 18:00〜20:00\n・12/7(日) 18:00〜20:00",
+      ...SIGN_VAR,
+    },
+  },
+  creatorToday: {
+    title: "発信者へ当日のお知らせ",
+    when: "撮影日・投稿予定日の当日の朝9時（自動）",
+    to: "発信者",
+    subject: "【本日の予定】{予定}",
+    body: `{発信者名}さん
+
+おはようございます！今日は{予定}です。
+
+{一覧}
+
+どうぞよろしくお願いします🙏
+{署名}`,
+    vars: {
+      発信者名: "はなこ",
+      予定: "焼肉 たいようさんの撮影日",
+      一覧: "・焼肉 たいようさんの撮影：18:00〜19:00（2名）\n　住所：札幌市中央区南5条西3丁目\n　https://…/m/…",
       ...SIGN_VAR,
     },
   },
@@ -447,6 +469,37 @@ SNSプロモーションの料金表をお送りいたします。
 ご不明点やご要望があれば、お気軽にご連絡ください。
 {署名}`,
     vars: { 店舗名: "焼肉 たいよう", 宛名: "山田様", タイトル: "SNSプロモーション 料金のご案内", URL: "https://…/proposal/…", 有効期限: "2026年11月30日(月)", ...SIGN_VAR },
+  },
+  restaurantToday: {
+    title: "飲食店へ当日の予定のお知らせ",
+    when: "撮影日・投稿予定日の当日の朝9時（自動）",
+    to: "飲食店",
+    subject: "【本日の予定】{案件名}",
+    body: `{店舗名}
+{宛名}
+
+おはようございます。MIRATSUMUです。
+本日{日付}の予定をお知らせいたします。
+
+{撮影}
+
+{投稿}
+
+撮影・投稿の状況は下記ページでいつでもご確認いただけます。
+{URL}
+
+本日もどうぞよろしくお願いいたします。
+{署名}`,
+    vars: {
+      店舗名: "焼肉 たいよう",
+      宛名: "山田様",
+      案件名: "12月 新メニューPR",
+      日付: "12/5(金)",
+      撮影: "■ 本日の撮影\n18:00〜19:00　はなこさん（2名）、たろうさん（1名）　計3名",
+      投稿: "■ 本日の投稿予定\nけんたさん",
+      URL: "https://…/p/…",
+      ...SIGN_VAR,
+    },
   },
   restaurantSchedule: {
     title: "飲食店への日程共有",

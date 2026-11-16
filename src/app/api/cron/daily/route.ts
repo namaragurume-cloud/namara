@@ -5,6 +5,7 @@ import { runDaily } from "@/lib/ops/service";
 /**
  * 毎日1回の自動処理（vercel.json の crons から呼ばれます）。
  *  - 回答期限前日・撮影前日・インサイト未提出のリマインド
+ *  - 撮影日・投稿予定日の当日のお知らせ（お店・発信者）。毎朝9時（日本時間）に動くので、その時刻に届きます
  *  - 月末（OPS_INSIGHT_DAY）にインサイト提出のお願い
  * Vercel は CRON_SECRET を設定すると Authorization: Bearer <CRON_SECRET> を付けて呼び出します。
  */
