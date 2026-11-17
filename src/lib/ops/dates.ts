@@ -61,6 +61,11 @@ export function fmtParty(n?: number): string {
   return `${n}名（同伴${n - 1}名）`;
 }
 
+/** 来店人数＋来店メモ（例：2名（同伴1名）・お子様連れ） */
+export function fmtPartyNote(a: { partySize?: number; partyNote?: string }): string {
+  return a.partyNote ? `${fmtParty(a.partySize)}・${a.partyNote}` : fmtParty(a.partySize);
+}
+
 /** Instagram の入力（URL か @アカウント）をURLにそろえる */
 export function toInstagramUrl(v?: string): string | undefined {
   const s = v?.trim();

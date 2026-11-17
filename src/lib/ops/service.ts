@@ -1,6 +1,6 @@
 import "server-only";
 import { syncFollowersFromSite } from "./follower-sync";
-import { addDays, fmtDate, fmtDateLong, fmtNum, fmtParty, fmtPostDates, fmtSlot, isLastDayOfMonth, jstDate } from "./dates";
+import { addDays, fmtDate, fmtDateLong, fmtNum, fmtParty, fmtPartyNote, fmtPostDates, fmtSlot, isLastDayOfMonth, jstDate } from "./dates";
 import { db } from "./db";
 import { sendToCreator, sendToRestaurant, type SendResult } from "./notify";
 import { needsInsight } from "./insights";
@@ -234,7 +234,7 @@ export async function markSentManually(assignmentId: string): Promise<void> {
 export async function recordResponse(
   a: Assignment,
   campaign: Campaign,
-  input: { accept: boolean; slotIds: string[]; plannedPostDate?: string; partySize?: number; note?: string },
+  input: { accept: boolean; slotIds: string[]; plannedPostDate?: string; partySize?: number; partyNote?: string; note?: string },
 ): Promise<void> {
   const valid = { has: (id: string) => Boolean(findSlot(campaign, id)) };
   await db.update("assignments", a.id, (x) => {
@@ -246,6 +246,7 @@ export async function recordResponse(
       availableSlotIds: locked ? x.availableSlotIds : input.accept ? input.slotIds.filter((id) => valid.has(id)) : [],
       plannedPostDate: input.accept ? input.plannedPostDate || x.plannedPostDate : undefined,
       partySize: input.accept ? (input.partySize ?? x.partySize) : undefined,
+      partyNote: input.accept ? input.partyNote : undefined,
       rescheduleRequestedAt: undefined,
       note: input.note,
       respondedAt: nowIso(),
@@ -407,7 +408,7 @@ export function scheduleLines(b: Bundle): string[] {
     })
     .map(
       (r) =>
-        `■ ${slotLabel(b.campaign, r.a.confirmedSlotId)}　${r.creator.name}（@${r.creator.account}）　来店：${fmtParty(r.a.partySize)}　投稿日：${r.a.plannedPostDate ? fmtDate(r.a.plannedPostDate) : "調整中"}`,
+        `■ ${slotLabel(b.campaign, r.a.confirmedSlotId)}　${r.creator.name}（@${r.creator.account}）　来店：${fmtPartyNote(r.a)}　投稿日：${r.a.plannedPostDate ? fmtDate(r.a.plannedPostDate) : "調整中"}`,
     );
 }
 
@@ -679,7 +680,7 @@ export async function runTodayNotices(today = jstDate(), opts: { campaignId?: st
           "■ 明日の撮影",
           ...[...byTime]
             .sort(([x], [y]) => x.localeCompare(y))
-            .map(([t, list]) => `${t}　${list.map((a) => `${creatorName(a)}さん（${partyOf(a)}名）`).join("、")}　計${list.reduce((n, a) => n + partyOf(a), 0)}名`),
+            .map(([t, list]) => `${t}　${list.map((a) => `${creatorName(a)}さん（${partyOf(a)}名${a.partyNote ? `・${a.partyNote}` : ""}）`).join("、")}　計${list.reduce((n, a) => n + partyOf(a), 0)}名`),
         ].join("\n")
       : undefined;
     const postText = posts.length ? `■ 明日の投稿予定\n${posts.map((a) => `${creatorName(a)}さん`).join("、")}` : undefined;

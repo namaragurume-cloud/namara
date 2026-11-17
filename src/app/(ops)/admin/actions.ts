@@ -592,6 +592,7 @@ export async function saveAssignment(fd: FormData) {
     note: optStr(fd, "note"),
     offer: optStr(fd, "offer"),
     partySize: [1, 2, 3].includes(Number(str(fd, "partySize"))) ? Number(str(fd, "partySize")) : a.partySize,
+    partyNote: optStr(fd, "partyNote")?.slice(0, 100),
     respondedAt: a.respondedAt ?? (status === "accepted" || status === "declined" ? nowIso() : undefined),
   });
   back(`/admin/campaigns/${a.campaignId}`, "依頼の内容を保存しました");

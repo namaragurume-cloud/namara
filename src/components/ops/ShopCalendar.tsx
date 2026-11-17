@@ -149,6 +149,7 @@ export function ShopCalendar({ rows, today }: { rows: Row[]; today: string }) {
                       <li key={r.a.id}>
                         <b>{r.creator.name}</b>さん
                         <span className="ml-1 text-xs text-muted">{fmtParty(r.a.partySize)}</span>
+                        {r.a.partyNote && <span className="ml-1.5 inline-block max-w-full rounded bg-amber-100 px-1.5 py-0.5 text-xs font-bold text-amber-900">{r.a.partyNote}</span>}
                       </li>
                     ))}
                   </ul>

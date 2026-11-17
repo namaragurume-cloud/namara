@@ -113,6 +113,7 @@ export function RestaurantLive({ campaign: c, rows: all, today, updatedAt }: { c
                     <span>
                       計<b className="num">{Math.max(1, e.r.a.partySize ?? 1)}</b>名で撮影に伺います
                     </span>
+                    {e.r.a.partyNote && <span className="rounded bg-amber-100 px-1.5 py-0.5 text-xs font-bold text-amber-900">{e.r.a.partyNote}</span>}
                   </span>
                 ) : (
                   <span className="flex items-center gap-1.5">
@@ -143,6 +144,7 @@ export function RestaurantLive({ campaign: c, rows: all, today, updatedAt }: { c
                   <span>
                     <Who c={r.creator} />
                     <span className="ml-1 text-xs text-muted">来店 {fmtParty(r.a.partySize)}</span>
+                    {r.a.partyNote && <span className="ml-1.5 inline-block max-w-full rounded bg-amber-100 px-1.5 py-0.5 text-xs font-bold text-amber-900">{r.a.partyNote}</span>}
                   </span>
                   <span className="flex flex-wrap items-center gap-2">
                     <span className={cn("rounded-full px-2.5 py-0.5 text-xs font-bold", chip[s.tone])}>{s.label}</span>

@@ -353,6 +353,7 @@ export default async function CampaignPage({ params, searchParams }: { params: P
                         <td className="px-4 py-2 md:px-2">
                           <b>{r.creator.name}</b>
                           <span className="ml-1 text-xs text-muted">来店 {fmtParty(r.a.partySize)}</span>
+                          {r.a.partyNote && <span className="ml-1 rounded bg-amber-100 px-1 text-xs font-bold text-amber-900">{r.a.partyNote}</span>}
                           {r.a.offer && <p className="mt-0.5 max-w-56 text-xs text-sky-800">個別の報酬：{r.a.offer}</p>}
                           {r.a.note && <p className="mt-0.5 max-w-56 text-xs text-muted">💬 {r.a.note}</p>}
                           <input

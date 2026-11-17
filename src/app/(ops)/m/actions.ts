@@ -44,6 +44,7 @@ export async function respond(token: string, id: string, fd: FormData) {
   }
   const plannedPostDate = String(fd.get("plannedPostDate") ?? "");
   const note = String(fd.get("note") ?? "").trim().slice(0, 500) || undefined;
+  const partyNote = String(fd.get("partyNote") ?? "").trim().slice(0, 100) || undefined;
   const party = Number(fd.get("partySize"));
   const partySize = party === 1 || party === 2 ? party : undefined;
   if (fd.get("answer") !== "yes" && fd.get("answer") !== "no") back(token, id, "!参加するかどうかを選んでください");
@@ -54,7 +55,7 @@ export async function respond(token: string, id: string, fd: FormData) {
     if (!plannedPostDate && !a.confirmedNotifiedAt) back(token, id, "!投稿日をカレンダーから選んでください");
     if (plannedPostDate && !postDates.includes(plannedPostDate) && plannedPostDate !== a.plannedPostDate) back(token, id, "!投稿日は色のついた日から選んでください");
   }
-  await recordResponse(a, campaign, { accept, slotIds, plannedPostDate: plannedPostDate || undefined, partySize, note });
+  await recordResponse(a, campaign, { accept, slotIds, plannedPostDate: plannedPostDate || undefined, partySize, partyNote, note });
   back(token, id, accept ? "回答ありがとうございます！撮影日が決まったらお知らせします。" : "ご回答ありがとうございました。またよろしくお願いします！");
 }
 

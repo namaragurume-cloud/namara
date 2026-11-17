@@ -86,6 +86,9 @@ export default async function AssignmentPage({ params, searchParams }: { params:
                 <option value="3">3名（同伴2名）</option>
               </select>
             </Field>
+            <Field label="来店メモ（お店に表示）" hint="例：お子様連れ・ベビーカーあり・車で来店">
+              <input name="partyNote" defaultValue={a.partyNote} maxLength={100} className={inputClass} />
+            </Field>
             <Field label="投稿予定日">
               <input type="date" name="plannedPostDate" defaultValue={a.plannedPostDate} className={inputClass} />
             </Field>

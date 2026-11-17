@@ -218,6 +218,9 @@ export default async function AssignmentPage({ params, searchParams }: { params:
               </div>
               <p className="mt-1 text-xs text-muted">同伴の飲食代の扱いは「報酬・特典」をご確認ください。3人以上の場合はメモに書いてください。</p>
             </fieldset>
+            <Field label="お店に伝えておきたいこと（任意）" hint="例：お子様連れ・ベビーカーあり。お店の予定表に表示されます">
+              <input name="partyNote" defaultValue={a.partyNote} maxLength={100} className={inputClass} />
+            </Field>
             <Field label="メモ（任意）" hint="苦手な食材、時間の希望など">
               <textarea name="note" rows={2} defaultValue={a.note} className={inputClass} />
             </Field>
