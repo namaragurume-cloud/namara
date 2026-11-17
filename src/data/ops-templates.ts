@@ -27,6 +27,7 @@ export const TEMPLATE_KEYS = [
   "prRequestAgain",
   "replyReminder",
   "confirmed",
+  "shootBrief",
   "scheduleChanged",
   "rescheduleRequest",
   "shootReminder",
@@ -173,6 +174,34 @@ export const templateDefs: Record<TemplateKey, TemplateDef> = {
       撮影日時: "12/5(金) 18:00〜20:00",
       投稿日: "2026年12月10日(水)",
       投稿条件: "リール1本／店舗アカウントをタグ付け／#PR 表記",
+      URL: "https://…/m/…",
+      ...SIGN_VAR,
+    },
+  },
+  shootBrief: {
+    title: "撮影の詳細の連絡",
+    when: "案件ページの「撮影の詳細を連絡」から送ったとき",
+    to: "発信者",
+    subject: "【撮影の詳細】{店舗名}｜{撮影日時}",
+    body: `{発信者名}さん
+
+{店舗名}さんの撮影について、詳細をお送りします。
+■ 撮影日時：{撮影日時}
+■ 住所：{住所}
+
+{詳細}
+
+この内容は下のページでもいつでも確認できます。
+{URL}
+
+ご不明な点があれば、このトークでご連絡ください。
+{署名}`,
+    vars: {
+      発信者名: "はなこ",
+      店舗名: "焼肉 たいよう",
+      撮影日時: "12/5(金) 18:00〜20:00",
+      住所: "札幌市中央区南5条西3丁目",
+      詳細: "・撮影していただきたいメニュー：特選盛り合わせ、冷麺\n・入口で「MIRATSUMUの撮影です」とお伝えください\n・お店の外観も1枚撮っていただけると助かります",
       URL: "https://…/m/…",
       ...SIGN_VAR,
     },

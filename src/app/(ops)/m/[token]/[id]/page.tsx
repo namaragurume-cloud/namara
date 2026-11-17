@@ -85,6 +85,12 @@ export default async function AssignmentPage({ params, searchParams }: { params:
         </div>
       )}
 
+      {confirmed && c.shootBrief && (a.briefSentAt || a.briefFailedAt) && (
+        <Card title="撮影の詳細">
+          <p className="whitespace-pre-wrap text-sm leading-relaxed">{c.shootBrief}</p>
+        </Card>
+      )}
+
       <Card title="依頼内容">
         <dl className="space-y-3 text-sm">
           {c.description && (

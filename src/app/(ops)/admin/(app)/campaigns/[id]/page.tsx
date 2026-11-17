@@ -13,6 +13,8 @@ import { isLineConfigured } from "@/lib/ops/line";
 import { lineShareUrl } from "@/lib/ops/line";
 import {
   confirmOrChangeMsg,
+  shootBriefMsg,
+  slotById,
   insightRemindTargets,
   loadBundle,
   phaseLabel,
@@ -39,7 +41,9 @@ import {
   insightRemindAction,
   setInsightRemindAction,
   insightRequestAction,
+  markBriefSentAction,
   markConfirmedAction,
+  shootBriefAction,
   markSentAction,
   removeAssignment,
   reRequestAction,
@@ -126,6 +130,13 @@ export default async function CampaignPage({ params, searchParams }: { params: P
   );
   const reportText = (await restaurantReportMsg(b)).text;
   const requestTexts = new Map(await Promise.all(unsent.map(async (r) => [r.a.id, (await prRequestMsg(b, r.creator, r.a)).text] as const)));
+  // 撮影の詳細：撮影日時が決まって連絡済みの人
+  const briefRows = accepted.filter((r) => r.a.confirmedNotifiedAt && r.a.confirmedSlotId);
+  const briefFailedTexts = new Map(
+    c.shootBrief
+      ? await Promise.all(briefRows.filter((r) => r.a.briefFailedAt && !r.a.briefSentAt).map(async (r) => [r.a.id, (await shootBriefMsg(b, r.creator, r.a, c.shootBrief!)).text] as const))
+      : [],
+  );
   const confirmTexts = new Map(
     await Promise.all(accepted.filter((r) => r.a.confirmedSlotId && !r.a.confirmedNotifiedAt).map(async (r) => [r.a.id, (await confirmOrChangeMsg(b, r.creator, r.a)).text] as const)),
   );
@@ -502,6 +513,60 @@ export default async function CampaignPage({ params, searchParams }: { params: P
           </div>
         )}
       </Step>
+
+      {briefRows.length > 0 && !c.reportSentAt && (
+        <section id="brief" className="scroll-mt-20">
+          <Card title="撮影日時が決まった人へ、撮影の詳細を連絡">
+            <form action={shootBriefAction.bind(null, c.id)} className="space-y-3">
+              <Field label="撮影の詳細" hint="撮影してほしいメニュー・内容、来店時の伝え方、注意事項など。各自の撮影日時と住所は自動で入ります">
+                <textarea
+                  name="brief"
+                  rows={6}
+                  defaultValue={c.shootBrief}
+                  placeholder={"例）\n・撮影していただきたいメニュー：特選盛り合わせ、冷麺\n・入口で「MIRATSUMUの撮影です」とお伝えください\n・お店の外観も1枚撮っていただけると助かります"}
+                  className={inputClass}
+                />
+              </Field>
+              <div>
+                <div className="mb-1.5 flex flex-wrap items-center justify-between gap-2">
+                  <p className="text-sm font-bold">送る人</p>
+                  <CheckAll formId="brief-to" name="briefTo" />
+                </div>
+                <ul id="brief-to" className="grid gap-1.5 sm:grid-cols-2">
+                  {briefRows
+                    .slice()
+                    .sort((x, y) => (slotById(c, x.a.confirmedSlotId)?.date ?? "").localeCompare(slotById(c, y.a.confirmedSlotId)?.date ?? ""))
+                    .map((r) => (
+                      <li key={r.a.id} className="rounded-xl border border-line bg-white px-3 py-2 text-sm">
+                        <label className="flex items-center gap-2">
+                          <input type="checkbox" name="briefTo" value={r.a.id} defaultChecked={!r.a.briefSentAt} className="size-4 accent-[var(--brand)]" />
+                          <b className="min-w-0 truncate">{r.creator.name}</b>
+                          <span className="num text-xs text-muted">{slotLabel(c, r.a.confirmedSlotId)}</span>
+                          <span className="ml-auto shrink-0">
+                            {r.a.briefSentAt ? (
+                              <Badge tone="green">送信済 {fmtDateTime(r.a.briefSentAt)}</Badge>
+                            ) : r.a.briefFailedAt ? (
+                              <Badge tone="red">送れず</Badge>
+                            ) : (
+                              <Badge>未送信</Badge>
+                            )}
+                          </span>
+                        </label>
+                        {briefFailedTexts.has(r.a.id) && (
+                          <div className="mt-1.5">
+                            <ManualSend text={briefFailedTexts.get(r.a.id)!} onDone={markBriefSentAction.bind(null, c.id, r.a.id)} doneLabel="送信済みにする" />
+                          </div>
+                        )}
+                      </li>
+                    ))}
+                </ul>
+                <p className="mt-1 text-xs text-muted">まだ送っていない人にチェックが入っています。内容を直して送り直すときは、送り直す人にチェックを入れてください。</p>
+              </div>
+              <SubmitButton confirm="チェックした人に、撮影の詳細を送ります。よろしいですか？">チェックした人に送る</SubmitButton>
+            </form>
+          </Card>
+        </section>
+      )}
 
       {/* ---------------- STEP 3 ---------------- */}
       <Step
