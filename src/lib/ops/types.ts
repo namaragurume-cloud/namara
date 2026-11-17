@@ -215,6 +215,8 @@ export type Assignment = {
   offer?: string;
   /** 来店人数（本人を含む。1＝本人のみ、2＝同伴1名） */
   partySize?: number;
+  /** 来店メモ（お店に表示。例：お子様連れ・ベビーカーあり） */
+  partyNote?: string;
   note?: string;
   respondedAt?: string;
   confirmedNotifiedAt?: string;
