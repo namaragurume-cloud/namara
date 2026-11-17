@@ -288,6 +288,33 @@ export function confirmedMsg(b: Bundle, creator: Creator, a: Assignment) {
   return withNote(m, a);
 }
 
+/** 撮影の詳細（撮影日時が決まった人へ） */
+export function shootBriefMsg(b: Bundle, creator: Creator, a: Assignment, brief: string) {
+  return msg("shootBrief", {
+    発信者名: creator.name,
+    店舗名: b.restaurant?.name ?? "",
+    撮影日時: slotLabel(b.campaign, a.confirmedSlotId),
+    住所: b.restaurant?.address,
+    詳細: brief,
+    URL: assignmentUrl(creator, a),
+  });
+}
+
+/** 撮影日時が決まった人（確定の連絡済み）に、撮影の詳細を送る */
+export async function sendShootBrief(campaignId: string, assignmentIds: string[], brief: string): Promise<BulkResult> {
+  const b = await loadBundle(campaignId);
+  if (!b) throw new Error("案件が見つかりません");
+  await db.update("campaigns", campaignId, (c) => ({ ...c, shootBrief: brief }));
+  const out: BulkResult = [];
+  for (const { a, creator } of b.rows) {
+    if (!assignmentIds.includes(a.id) || a.status !== "accepted" || !a.confirmedNotifiedAt || !a.confirmedSlotId) continue;
+    const result = await sendToCreator(creator, await shootBriefMsg(b, creator, a, brief), `撮影の詳細：${b.campaign.title}`);
+    await db.update("assignments", a.id, (x) => (result.ok ? { ...x, briefSentAt: nowIso(), briefFailedAt: undefined } : { ...x, briefFailedAt: nowIso() }));
+    out.push({ name: creator.name, result });
+  }
+  return out;
+}
+
 export async function confirmSchedule(
   campaignId: string,
   picks: Record<string, { slotId?: string; postDate?: string; note?: string }>,

@@ -16,6 +16,7 @@ import {
   markConfirmedManually,
   markSentManually,
   runDaily,
+  sendShootBrief,
   runTodayNotices,
   remindInsightsNow,
   sendInsightRequests,
@@ -54,8 +55,10 @@ const optNum = (fd: FormData, k: string) => {
 const ymd = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
 
 function back(path: string, flash: string): never {
-  const sep = path.includes("?") ? "&" : "?";
-  redirect(`${path}${sep}flash=${encodeURIComponent(flash)}`);
+  // 「#見出し」付きのときは、flash をその前に入れる（戻ったときにその場所を表示）
+  const [base, hash] = path.split("#");
+  const sep = base.includes("?") ? "&" : "?";
+  redirect(`${base}${sep}flash=${encodeURIComponent(flash)}${hash ? `#${hash}` : ""}`);
 }
 
 function summarize(label: string, list: BulkResult): string {
@@ -460,6 +463,23 @@ export async function rescheduleAction(campaignId: string, assignmentId: string,
     if (e instanceof Error && !("digest" in e)) back(`/admin/campaigns/${campaignId}`, `!${e.message}`);
     throw e;
   }
+}
+
+export async function shootBriefAction(campaignId: string, fd: FormData) {
+  await requireAdmin();
+  const brief = str(fd, "brief").slice(0, 3000);
+  const ids = fd.getAll("briefTo").map(String).filter(Boolean);
+  if (!brief) back(`/admin/campaigns/${campaignId}#brief`, "!撮影の詳細を入力してください");
+  if (ids.length === 0) back(`/admin/campaigns/${campaignId}#brief`, "!送る発信者を選んでください");
+  const result = await sendShootBrief(campaignId, ids, brief);
+  back(`/admin/campaigns/${campaignId}#brief`, summarize("撮影の詳細", result));
+}
+
+/** 撮影の詳細を自分で送った（コピーして送った）ときに、送信済みにする */
+export async function markBriefSentAction(campaignId: string, assignmentId: string) {
+  await requireAdmin();
+  await db.update("assignments", assignmentId, (x) => ({ ...x, briefSentAt: nowIso(), briefFailedAt: undefined }));
+  back(`/admin/campaigns/${campaignId}#brief`, "撮影の詳細を送信済みにしました");
 }
 
 export async function markConfirmedAction(campaignId: string, assignmentId: string) {
