@@ -4,7 +4,7 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 import { db } from "@/lib/ops/db";
 import { jstDate } from "@/lib/ops/dates";
-import { findCreatorByToken, recordResponse } from "@/lib/ops/service";
+import { findCreatorByToken, rechoosePostDate, recordResponse } from "@/lib/ops/service";
 import { flexSlotId, isFlex, isValidFlexPick } from "@/lib/ops/slots";
 
 const ymd = /^\d{4}-\d{2}-\d{2}$/;
@@ -73,4 +73,18 @@ export async function savePostUrl(token: string, id: string, fd: FormData) {
   }
   await db.update("assignments", a.id, (x) => ({ ...x, postUrl: url || undefined, plannedPostDate: postDate }));
   back(token, id, a.postDateByCreator ? "投稿日を保存しました" : "投稿URLを保存しました");
+}
+
+/** 投稿日の選び直し（担当者からお願いがあったとき） */
+export async function rechoosePostDateAction(token: string, id: string, fd: FormData) {
+  const { a, campaign } = await load(token, id);
+  if (campaign.reportSentAt) back(token, id, "!この案件は終了しています");
+  if (!a.postDateRequestedAt) back(token, id, "!投稿日の選び直しのお願いはありません");
+  const d = String(fd.get("plannedPostDate") ?? "");
+  if (!ymd.test(d)) back(token, id, "!投稿日をカレンダーから選んでください");
+  if (d < jstDate()) back(token, id, "!今日以降の日付を選んでください");
+  const postDates = campaign.postDates ?? [];
+  if (postDates.length && !postDates.includes(d)) back(token, id, "!投稿日は色のついた日から選んでください");
+  await rechoosePostDate(a, d);
+  back(token, id, "投稿日を変更しました。ありがとうございます！");
 }

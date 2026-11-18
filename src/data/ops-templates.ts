@@ -30,6 +30,7 @@ export const TEMPLATE_KEYS = [
   "shootBrief",
   "scheduleChanged",
   "rescheduleRequest",
+  "postDateRequest",
   "shootReminder",
   "creatorToday",
   "insightRequest",
@@ -233,6 +234,34 @@ export const templateDefs: Record<TemplateKey, TemplateDef> = {
       投稿日の変更: "",
       住所: "札幌市中央区南5条西3丁目",
       URL: "https://…/m/…",
+      ...SIGN_VAR,
+    },
+  },
+  postDateRequest: {
+    title: "投稿日の再調整のお願い",
+    when: "案件ページで「投稿日の選び直しをお願いする」を押したとき",
+    to: "発信者",
+    subject: "【投稿日の再調整のお願い】{店舗名}",
+    body: `{発信者名}さん
+
+{店舗名}さんの投稿日について、再調整をお願いしたく連絡しました。
+■ 理由：{理由}
+■ 現在の投稿日：{現在の投稿日}
+
+お手数ですが、下のページから投稿日を選び直してください。
+{URL}
+
+■ 選べる投稿日
+{投稿日}
+
+{署名}`,
+    vars: {
+      発信者名: "はなこ",
+      店舗名: "焼肉 たいよう",
+      理由: "お店の都合により",
+      現在の投稿日: "2026年12月10日(木)",
+      URL: "https://…/m/…",
+      投稿日: "12/12(土)・12/13(日)・12/14(月)",
       ...SIGN_VAR,
     },
   },

@@ -414,6 +414,48 @@ export async function requestReschedule(assignmentId: string, reason?: string): 
   );
 }
 
+/**
+ * 投稿日の再調整：発信者に投稿日だけを選び直してもらう（撮影日時はそのまま）。
+ * 発信者が選び直すとすぐ反映し、お店に共有済みなら「お店に再共有」と表示する。
+ */
+export async function requestPostDateChange(assignmentId: string, reason?: string): Promise<SendResult> {
+  const a = await db.get("assignments", assignmentId);
+  if (!a || a.status !== "accepted" || !a.confirmedNotifiedAt) throw new Error("撮影日時を確定・連絡済みの人だけ、投稿日の選び直しをお願いできます");
+  const b = (await loadBundle(a.campaignId))!;
+  const creator = b.rows.find((r) => r.a.id === a.id)!.creator;
+  const updated = (await db.update("assignments", a.id, (x) => ({ ...x, postDateRequestedAt: nowIso(), postDateRequestReason: reason })))!;
+  const today = jstDate();
+  const choices = (b.campaign.postDates ?? []).filter((d) => d >= today);
+  return sendToCreator(
+    creator,
+    await msg("postDateRequest", {
+      発信者名: creator.name,
+      店舗名: b.restaurant?.name ?? "",
+      理由: reason,
+      現在の投稿日: a.plannedPostDate ? fmtDateLong(a.plannedPostDate) : "未定",
+      URL: assignmentUrl(creator, updated),
+      投稿日: choices.length ? choices.map((d) => fmtDate(d)).join("・") : undefined,
+    }),
+    `投稿日の再調整のお願い：${b.campaign.title}`,
+  );
+}
+
+/** 発信者が投稿日を選び直した */
+export async function rechoosePostDate(a: Assignment, date: string): Promise<void> {
+  await db.update("assignments", a.id, (x) => ({
+    ...x,
+    postDateBefore: x.plannedPostDate,
+    plannedPostDate: date,
+    postDateRequestedAt: undefined,
+    postDateRequestReason: undefined,
+    postDateRechosenAt: nowIso(),
+    // お店に共有済みなら「お店に再共有」の対象にする
+    scheduleChangedAt: x.plannedPostDate !== date ? nowIso() : x.scheduleChangedAt,
+    // 当日のお知らせは新しい投稿日で送り直せるように
+    postDayNotifiedOn: undefined,
+  }));
+}
+
 /** 手動で確定連絡をしたことにする */
 export async function markConfirmedManually(assignmentId: string): Promise<void> {
   await db.update("assignments", assignmentId, (x) => ({

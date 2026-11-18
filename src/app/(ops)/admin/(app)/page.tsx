@@ -40,6 +40,8 @@ export default async function AdminHome({ searchParams }: { searchParams: Promis
         rows.some((r) => (r.a.scheduleChangedAt ?? "") > campaign.scheduleSharedAt! || (r.a.rescheduleRequestedAt ?? "") > campaign.scheduleSharedAt!)
       )
         todo.push("日程の変更をお店に再共有");
+      const postWaiting = accepted.filter((r) => r.a.postDateRequestedAt).length;
+      if (postWaiting) todo.push(`投稿日の選び直し待ち ${postWaiting}名`);
       const ownerVideo = accepted.filter((r) => videoStage(r.a, campaign) === "owner_review").length;
       if (ownerVideo) todo.push(`動画の確認 ${ownerVideo}件`);
       const shopUnsent = accepted.filter((r) => videoStage(r.a, campaign) === "shop_review" && !latestVideo(r.a)?.sentToShopAt).length;

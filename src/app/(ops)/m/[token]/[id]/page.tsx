@@ -19,7 +19,7 @@ import { isComplete, platformLabel, screenshotGuide } from "@/lib/ops/insight-fi
 import { listShots } from "@/lib/ops/insights";
 import type { Platform } from "@/lib/ops/types";
 import { isAiConfigured } from "@/lib/ops/vision";
-import { respond, savePostUrl } from "../../actions";
+import { rechoosePostDateAction, respond, savePostUrl } from "../../actions";
 
 export const metadata = { title: "PRのご依頼" };
 
@@ -82,6 +82,19 @@ export default async function AssignmentPage({ params, searchParams }: { params:
           </p>
           {r?.address && <p className="mt-1 text-sm">住所：{r.address}</p>}
           <p className="mt-2 text-xs text-muted">日程の変更が必要な場合は、担当者に直接ご連絡ください。</p>
+        </div>
+      )}
+
+      {confirmed && a.postDateRequestedAt && !closed && (
+        <div className="rounded-2xl border border-sky-300 bg-sky-50 p-4 text-sm">
+          <p className="font-bold text-sky-900">投稿日の再調整のお願い</p>
+          {a.postDateRequestReason && <p className="mt-1">理由：{a.postDateRequestReason}</p>}
+          <p className="mt-1">現在の投稿日：{a.plannedPostDate ? fmtDateLong(a.plannedPostDate) : "未定"}</p>
+          <p className="mt-1">お手数ですが、下のカレンダーから投稿日を選び直してください。撮影日時は変わりません。</p>
+          <form action={rechoosePostDateAction.bind(null, token, a.id)} className="mt-3 space-y-3">
+            <DateCalendar name="plannedPostDate" mode="single" initial={[]} allowed={c.postDates?.length ? c.postDates : undefined} today={today} />
+            <SubmitButton className="w-full">この日に投稿日を変更する</SubmitButton>
+          </form>
         </div>
       )}
 
