@@ -233,6 +233,8 @@ export type Assignment = {
   /** 投稿日の選び直しをお願いした日時と理由（選び直すと消える） */
   postDateRequestedAt?: string;
   postDateRequestReason?: string;
+  /** 投稿日の再調整のお願いを自動で送れなかった日時（手動で送ったら消す） */
+  postDateRequestFailedAt?: string;
   /** 発信者が投稿日を選び直した日時と、選び直す前の投稿日 */
   postDateRechosenAt?: string;
   postDateBefore?: string;

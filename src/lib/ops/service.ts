@@ -424,20 +424,24 @@ export async function requestPostDateChange(assignmentId: string, reason?: strin
   const b = (await loadBundle(a.campaignId))!;
   const creator = b.rows.find((r) => r.a.id === a.id)!.creator;
   const updated = (await db.update("assignments", a.id, (x) => ({ ...x, postDateRequestedAt: nowIso(), postDateRequestReason: reason })))!;
+  const result = await sendToCreator(creator, await postDateRequestMsg(b, creator, updated), `投稿日の再調整のお願い：${b.campaign.title}`);
+  // 送れなかったら、管理画面で文面をコピーして送れるようにする（本人のページにはお願いが表示されている）
+  await db.update("assignments", a.id, (x) => ({ ...x, postDateRequestFailedAt: result.ok ? undefined : nowIso() }));
+  return result;
+}
+
+/** 投稿日の再調整のお願いの文面（手動で送るときにも使う） */
+export function postDateRequestMsg(b: Bundle, creator: Creator, a: Assignment) {
   const today = jstDate();
   const choices = (b.campaign.postDates ?? []).filter((d) => d >= today);
-  return sendToCreator(
-    creator,
-    await msg("postDateRequest", {
-      発信者名: creator.name,
-      店舗名: b.restaurant?.name ?? "",
-      理由: reason,
-      現在の投稿日: a.plannedPostDate ? fmtDateLong(a.plannedPostDate) : "未定",
-      URL: assignmentUrl(creator, updated),
-      投稿日: choices.length ? choices.map((d) => fmtDate(d)).join("・") : undefined,
-    }),
-    `投稿日の再調整のお願い：${b.campaign.title}`,
-  );
+  return msg("postDateRequest", {
+    発信者名: creator.name,
+    店舗名: b.restaurant?.name ?? "",
+    理由: a.postDateRequestReason,
+    現在の投稿日: a.plannedPostDate ? fmtDateLong(a.plannedPostDate) : "未定",
+    URL: assignmentUrl(creator, a),
+    投稿日: choices.length ? choices.map((d) => fmtDate(d)).join("・") : undefined,
+  });
 }
 
 /** 発信者が投稿日を選び直した */
@@ -448,6 +452,7 @@ export async function rechoosePostDate(a: Assignment, date: string): Promise<voi
     plannedPostDate: date,
     postDateRequestedAt: undefined,
     postDateRequestReason: undefined,
+    postDateRequestFailedAt: undefined,
     postDateRechosenAt: nowIso(),
     // お店に共有済みなら「お店に再共有」の対象にする
     scheduleChangedAt: x.plannedPostDate !== date ? nowIso() : x.scheduleChangedAt,
