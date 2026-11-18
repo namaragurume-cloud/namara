@@ -42,7 +42,9 @@ import {
   setInsightRemindAction,
   insightRequestAction,
   markBriefSentAction,
+  cancelPostDateRequestAction,
   markConfirmedAction,
+  postDateRequestAction,
   shootBriefAction,
   markSentAction,
   removeAssignment,
@@ -457,6 +459,53 @@ export default async function CampaignPage({ params, searchParams }: { params: P
                 </li>
               ))}
             </ul>
+          </div>
+        )}
+
+        {notified.length > 0 && !c.reportSentAt && (
+          <div id="repost" className="mt-5 scroll-mt-20 rounded-xl border border-sky-200 bg-sky-50/60 p-3">
+            <h3 className="text-sm font-bold">投稿日の再調整（発信者に投稿日を選び直してもらう）</h3>
+            <p className="mt-2 text-xs leading-relaxed text-muted">
+              撮影日時はそのままで、投稿日だけを選び直してもらいます。押すと「投稿日の再調整のお願い」がLINEで届き、本人が専用ページで案件の投稿日（カレンダー）から選び直します。選び直すとすぐ反映され、お店に共有済みなら「お店に再共有」と表示します。
+              （選べる投稿日を増やすときは、先に「内容・候補日を編集」で投稿日を追加してください。こちらで決めた日に変えるだけなら、上の表で投稿予定日を変えて「確定して発信者に連絡」を押せば「日程変更」の連絡が届きます）
+            </p>
+            <form action={postDateRequestAction.bind(null, c.id)} className="mt-3 space-y-2">
+              <div className="flex justify-end">
+                <CheckAll formId="repost-to" name="postTo" />
+              </div>
+              <ul id="repost-to" className="grid gap-1.5 sm:grid-cols-2">
+                {notified.map((r) => (
+                  <li key={r.a.id} className="rounded-xl border border-line bg-white px-3 py-2 text-sm">
+                    <label className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                      <input type="checkbox" name="postTo" value={r.a.id} className="size-4 accent-[var(--brand)]" />
+                      <b className="min-w-0 truncate">{r.creator.name}</b>
+                      <span className="num text-xs text-muted">投稿日 {r.a.plannedPostDate ? fmtDate(r.a.plannedPostDate) : "未定"}</span>
+                      <span className="ml-auto">
+                        {r.a.postDateRequestedAt ? (
+                          <Badge tone="amber">選び直し待ち {fmtDateTime(r.a.postDateRequestedAt)}</Badge>
+                        ) : r.a.postDateRechosenAt ? (
+                          <Badge tone="green">
+                            選び直し済み {r.a.postDateBefore ? `${fmtDate(r.a.postDateBefore)} → ` : ""}
+                            {fmtDate(r.a.plannedPostDate)}
+                          </Badge>
+                        ) : null}
+                      </span>
+                    </label>
+                    {r.a.postDateRequestedAt && (
+                      <button formAction={cancelPostDateRequestAction.bind(null, c.id, r.a.id)} className="mt-1 text-xs text-muted underline">
+                        お願いを取り消す
+                      </button>
+                    )}
+                  </li>
+                ))}
+              </ul>
+              <div className="flex flex-wrap items-center gap-2">
+                <input name="reason" placeholder="理由（例：お店の都合により）" className={`${inputClass} min-w-48 flex-1`} />
+                <SubmitButton variant="outline" size="sm" confirm="チェックした人に、投稿日の選び直しをお願いします。よろしいですか？">
+                  チェックした人に投稿日の選び直しをお願いする
+                </SubmitButton>
+              </div>
+            </form>
           </div>
         )}
 

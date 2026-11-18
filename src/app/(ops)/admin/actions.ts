@@ -16,6 +16,7 @@ import {
   markConfirmedManually,
   markSentManually,
   runDaily,
+  requestPostDateChange,
   sendShootBrief,
   runTodayNotices,
   remindInsightsNow,
@@ -480,6 +481,32 @@ export async function markBriefSentAction(campaignId: string, assignmentId: stri
   await requireAdmin();
   await db.update("assignments", assignmentId, (x) => ({ ...x, briefSentAt: nowIso(), briefFailedAt: undefined }));
   back(`/admin/campaigns/${campaignId}#brief`, "撮影の詳細を送信済みにしました");
+}
+
+/** 選んだ発信者に、投稿日の選び直しをお願いする */
+export async function postDateRequestAction(campaignId: string, fd: FormData) {
+  await requireAdmin();
+  const ids = fd.getAll("postTo").map(String).filter(Boolean);
+  if (ids.length === 0) back(`/admin/campaigns/${campaignId}#repost`, "!投稿日を選び直してもらう人を選んでください");
+  const reason = str(fd, "reason") || undefined;
+  const result: BulkResult = [];
+  for (const id of ids) {
+    const a = await db.get("assignments", id);
+    const name = a ? ((await db.get("creators", a.creatorId))?.name ?? "") : "";
+    try {
+      result.push({ name, result: await requestPostDateChange(id, reason) });
+    } catch (e) {
+      result.push({ name, result: { ok: false, channel: "manual", error: e instanceof Error ? e.message : String(e) } });
+    }
+  }
+  back(`/admin/campaigns/${campaignId}#repost`, summarize("投稿日の再調整のお願い", result));
+}
+
+/** 投稿日の選び直しのお願いを取り消す */
+export async function cancelPostDateRequestAction(campaignId: string, assignmentId: string) {
+  await requireAdmin();
+  await db.update("assignments", assignmentId, (x) => ({ ...x, postDateRequestedAt: undefined, postDateRequestReason: undefined }));
+  back(`/admin/campaigns/${campaignId}#repost`, "投稿日の選び直しのお願いを取り消しました（本人への連絡はしていません）");
 }
 
 export async function markConfirmedAction(campaignId: string, assignmentId: string) {

@@ -230,6 +230,12 @@ export type Assignment = {
   previousPostDate?: string;
   /** 確定後に日程を変更して連絡した日時（お店への再共有の目安） */
   scheduleChangedAt?: string;
+  /** 投稿日の選び直しをお願いした日時と理由（選び直すと消える） */
+  postDateRequestedAt?: string;
+  postDateRequestReason?: string;
+  /** 発信者が投稿日を選び直した日時と、選び直す前の投稿日 */
+  postDateRechosenAt?: string;
+  postDateBefore?: string;
   /** 見送りの人にもう一度依頼した日時とひとこと */
   reRequestedAt?: string;
   reRequestNote?: string;
