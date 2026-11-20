@@ -311,7 +311,7 @@ export function demoSeed(): Seed {
     },
   ];
 
-  return { restaurants, creators, campaigns, assignments, messages, shots: [], templates: [], settings: [], proposals };
+  return { restaurants, creators, campaigns, assignments, messages, shots: [], templates: [], settings: [], proposals, broadcasts: [] };
 }
 
 /** デモ：スクショを読み取ったことにするサンプルの数値（実際の画像は読んでいない） */

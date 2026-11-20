@@ -16,6 +16,7 @@ import {
   markConfirmedManually,
   markSentManually,
   runDaily,
+  sendBroadcast,
   requestPostDateChange,
   sendShootBrief,
   runTodayNotices,
@@ -928,4 +929,26 @@ export async function runDailyNow() {
   await requireAdmin();
   const r = await runDaily();
   back("/admin/settings", [summarize("リマインド", r.reminders), summarize("インサイト依頼（月末のみ）", r.insights)].join("\n"));
+}
+
+/* ---------- 全体連絡 ---------- */
+
+export async function broadcastAction(fd: FormData) {
+  await requireAdmin();
+  const audience = str(fd, "audience") === "restaurants" ? "restaurants" : "creators";
+  const to = `/admin/broadcast${audience === "restaurants" ? "?to=restaurants" : ""}`;
+  const title = str(fd, "title").slice(0, 60);
+  const body = str(fd, "body").slice(0, 4000);
+  const ids = fd.getAll("to").map(String).filter(Boolean);
+  if (!title) back(to, "!件名を入力してください");
+  if (!body) back(to, "!本文を入力してください");
+  if (ids.length === 0) back(to, "!送る相手を選んでください");
+  const b = await sendBroadcast(audience, ids, title, body);
+  back(`${to}${to.includes("?") ? "&" : "?"}sent=${b.id}`, summarize("全体連絡", b.results.map((r) => ({ name: r.name, result: { ok: r.ok, channel: r.channel, error: r.error } }))));
+}
+
+export async function deleteBroadcastAction(id: string) {
+  await requireAdmin();
+  await db.remove("broadcasts", id);
+  back("/admin/broadcast", "全体連絡の記録を削除しました（送ったメッセージは取り消せません）");
 }

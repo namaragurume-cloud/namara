@@ -39,6 +39,7 @@ export const TEMPLATE_KEYS = [
   "insightReminder",
   "insightWhichPost",
   "creatorOnboarding",
+  "broadcast",
   "lineWelcome",
   "lineLinked",
   "lineUnknown",
@@ -437,6 +438,24 @@ export const templateDefs: Record<TemplateKey, TemplateDef> = {
       連携コード: "ABC123",
       連携リンク: "（こちらを押すとコードが入力された状態でトークが開きます）\nhttps://line.me/R/oaMessage/…",
       専用ページURL: "https://…/m/…",
+      ...SIGN_VAR,
+    },
+  },
+  broadcast: {
+    title: "全体連絡",
+    when: "「全体連絡」から発信者・飲食店にまとめて送ったとき（飲食店にも同じ文面を使います）",
+    to: "発信者",
+    subject: "【お知らせ】{件名}",
+    body: `{宛名}
+
+【{件名}】
+{本文}
+
+{署名}`,
+    vars: {
+      宛名: "はなこさん",
+      件名: "年末年始のお休みについて",
+      本文: "いつもありがとうございます！\n12/29〜1/3はお休みをいただきます。期間中のご連絡は1/4以降に順次お返事します。",
       ...SIGN_VAR,
     },
   },

@@ -11,7 +11,7 @@ import { cleanupVideos } from "./video";
 import { latestVideo, videoEnabled, videoStage } from "./video-state";
 import { fieldLabel, isComplete, platformLabel, screenshotGuide } from "./insight-fields";
 import { buildReport, pct, pct1 } from "./report";
-import type { Assignment, Campaign, Creator, Platform, Restaurant, Slot } from "./types";
+import type { Assignment, Broadcast, Campaign, Creator, Platform, Restaurant, Slot } from "./types";
 import { assignmentUrl, creatorPortalUrl, restaurantPortalUrl } from "./urls";
 import { newToken, nowIso } from "./util";
 
@@ -891,4 +891,26 @@ export async function runDaily(today = jstDate()) {
     return null;
   });
   return { today, reminders: [...reminders, ...todayNotices], insights, followers };
+}
+
+/** 全体連絡の宛名（発信者は「〇〇さん」、飲食店は「店舗名＋ご担当者様」） */
+export function broadcastTo(kind: "creators" | "restaurants", x: Creator | Restaurant): string {
+  if (kind === "creators") return `${x.name}さん`;
+  const r = x as Restaurant;
+  return `${r.name}\n${r.contactName ? `${r.contactName}様` : "ご担当者様"}`;
+}
+
+/** 全体連絡を送る（1人ずつ送り、結果を記録） */
+export async function sendBroadcast(audience: "creators" | "restaurants", ids: string[], title: string, body: string): Promise<Broadcast> {
+  const list = audience === "creators" ? await db.list("creators") : await db.list("restaurants");
+  const targets = list.filter((x) => ids.includes(x.id));
+  const results: Broadcast["results"] = [];
+  for (const x of targets) {
+    const m = await msg("broadcast", { 宛名: broadcastTo(audience, x), 件名: title, 本文: body });
+    const r = audience === "creators" ? await sendToCreator(x as Creator, m, `全体連絡：${title}`) : await sendToRestaurant(x as Restaurant, m, `全体連絡：${title}`);
+    results.push({ id: x.id, name: x.name, ok: r.ok, channel: r.channel, error: r.error, text: m.text });
+  }
+  const b: Broadcast = { id: newToken(), audience, title, body, results, createdAt: nowIso() };
+  await db.put("broadcasts", b);
+  return b;
 }
