@@ -1,6 +1,6 @@
 import "server-only";
 import { syncFollowersFromSite } from "./follower-sync";
-import { addDays, fmtDate, fmtDateLong, fmtNum, fmtParty, fmtPartyNote, fmtPostDates, fmtSlot, isLastDayOfMonth, jstDate } from "./dates";
+import { addDays, fmtDate, fmtDateLong, fmtNum, fmtParty, fmtPostDates, fmtSlot, isLastDayOfMonth, jstDate } from "./dates";
 import { db } from "./db";
 import { sendToCreator, sendToRestaurant, type SendResult } from "./notify";
 import { needsInsight } from "./insights";
@@ -472,18 +472,25 @@ export async function markConfirmedManually(assignmentId: string): Promise<void>
   }));
 }
 
+/**
+ * お店への日程共有：同じ日時の人をまとめて、名前だけ並べる（ID・投稿日・メモは載せない）
+ *   〇11/23(月) 18:30〜20:00（来店 計11名）
+ *   ・karina
+ *   ・あきら
+ */
 export function scheduleLines(b: Bundle): string[] {
-  return b.rows
-    .filter((r) => r.a.status === "accepted" && r.a.confirmedSlotId)
-    .sort((x, y) => {
-      const sx = slotById(b.campaign, x.a.confirmedSlotId);
-      const sy = slotById(b.campaign, y.a.confirmedSlotId);
-      return `${sx?.date}${sx?.start}`.localeCompare(`${sy?.date}${sy?.start}`);
+  const groups = new Map<string, Row[]>();
+  for (const r of b.rows.filter((r) => r.a.status === "accepted" && slotById(b.campaign, r.a.confirmedSlotId))) {
+    const id = r.a.confirmedSlotId!;
+    groups.set(id, [...(groups.get(id) ?? []), r]);
+  }
+  return [...groups]
+    .sort(([x], [y]) => {
+      const sx = slotById(b.campaign, x)!;
+      const sy = slotById(b.campaign, y)!;
+      return `${sx.date}${sx.start}`.localeCompare(`${sy.date}${sy.start}`);
     })
-    .map(
-      (r) =>
-        `■ ${slotLabel(b.campaign, r.a.confirmedSlotId)}　${r.creator.name}（@${r.creator.account}）　来店：${fmtPartyNote(r.a)}　投稿日：${r.a.plannedPostDate ? fmtDate(r.a.plannedPostDate) : "調整中"}`,
-    );
+    .map(([id, list]) => [`〇${slotLabel(b.campaign, id)}（来店 計${list.reduce((n, r) => n + partyOf(r.a), 0)}名）`, ...list.map((r) => `・${r.creator.name}`)].join("\n"));
 }
 
 const atena = (r: Restaurant | null) => (r?.contactName ? `${r.contactName}様` : "ご担当者様");
@@ -493,7 +500,7 @@ export function restaurantScheduleMsg(b: Bundle) {
     店舗名: b.restaurant?.name ?? "",
     宛名: atena(b.restaurant),
     案件名: b.campaign.title,
-    日程一覧: scheduleLines(b).join("\n"),
+    日程一覧: scheduleLines(b).join("\n\n"),
     URL: restaurantPortalUrl(b.campaign),
   });
 }
