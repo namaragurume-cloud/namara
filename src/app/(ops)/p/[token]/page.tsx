@@ -11,7 +11,8 @@ import { videoEnabled } from "@/lib/ops/video-state";
 import { isAdmin } from "@/lib/ops/auth";
 import { fmtDate, fmtSlot, jstDate } from "@/lib/ops/dates";
 import { buildReport } from "@/lib/ops/report";
-import { findCampaignByShareToken, loadBundle, slotById } from "@/lib/ops/service";
+import { findCampaignByShareToken, loadBundle, shopCheckRows, slotById } from "@/lib/ops/service";
+import { ShopScheduleCheck } from "@/components/ops/ShopScheduleCheck";
 
 export const metadata = { title: "PRのご報告" };
 
@@ -41,6 +42,21 @@ export default async function RestaurantPortal({ params, searchParams }: { param
     .filter((r) => r.slot)
     .sort((x, y) => `${x.slot.date}${x.slot.start}`.localeCompare(`${y.slot.date}${y.slot.start}`));
   const report = buildReport(b);
+  // 確定前の日程の確認（同じ日時ごとにまとめる）
+  const checkMap = new Map<string, typeof b.rows>();
+  for (const r of shopCheckRows(b)) checkMap.set(r.a.tentativeSlotId!, [...(checkMap.get(r.a.tentativeSlotId!) ?? []), r]);
+  const checkGroups = [...checkMap]
+    .map(([id]) => ({ id, slot: slotById(c, id) }))
+    .filter((g) => g.slot)
+    .sort((x, y) => `${x.slot!.date}${x.slot!.start}`.localeCompare(`${y.slot!.date}${y.slot!.start}`))
+    .map(({ id, slot }) => {
+      const list = checkMap.get(id)!;
+      return {
+        label: fmtSlot(slot!),
+        total: list.reduce((n, r) => n + Math.max(1, r.a.partySize ?? 1), 0),
+        people: list.map((r) => ({ id: r.a.id, name: r.creator.name, party: r.a.partySize, note: r.a.partyNote })),
+      };
+    });
 
   return (
     <>
@@ -64,6 +80,7 @@ export default async function RestaurantPortal({ params, searchParams }: { param
       </header>
 
       <Flash text={flash} />
+      <ShopScheduleCheck token={token} campaign={c} groups={checkGroups} />
       {videoEnabled(c) && <ShopVideos token={token} campaign={c} rows={b.rows} />}
 
       {!live && !showSchedule && !showReport && <Card>撮影日が決まりましたら、こちらでご案内いたします。</Card>}

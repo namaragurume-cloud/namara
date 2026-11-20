@@ -479,9 +479,17 @@ export async function markConfirmedManually(assignmentId: string): Promise<void>
  *   ・あきら
  */
 export function scheduleLines(b: Bundle): string[] {
+  return groupedLines(b, b.rows.filter((r) => r.a.status === "accepted"), (a) => a.confirmedSlotId);
+}
+
+const atena = (r: Restaurant | null) => (r?.contactName ? `${r.contactName}様` : "ご担当者様");
+
+/** 日程の行（同じ日時ごとに名前をまとめる）。slotOf で、確定済み・確認中のどちらの日時を使うか選ぶ */
+function groupedLines(b: Bundle, rows: Row[], slotOf: (a: Assignment) => string | undefined): string[] {
   const groups = new Map<string, Row[]>();
-  for (const r of b.rows.filter((r) => r.a.status === "accepted" && slotById(b.campaign, r.a.confirmedSlotId))) {
-    const id = r.a.confirmedSlotId!;
+  for (const r of rows) {
+    const id = slotOf(r.a);
+    if (!id || !slotById(b.campaign, id)) continue;
     groups.set(id, [...(groups.get(id) ?? []), r]);
   }
   return [...groups]
@@ -493,7 +501,47 @@ export function scheduleLines(b: Bundle): string[] {
     .map(([id, list]) => [`〇${slotLabel(b.campaign, id)}（来店 計${list.reduce((n, r) => n + partyOf(r.a), 0)}名）`, ...list.map((r) => `・${r.creator.name}`)].join("\n"));
 }
 
-const atena = (r: Restaurant | null) => (r?.contactName ? `${r.contactName}様` : "ご担当者様");
+/** お店に確認する日程（まだ発信者に連絡していない人の、確認中の日時） */
+export function shopCheckRows(b: Bundle): Row[] {
+  return b.rows.filter((r) => r.a.status === "accepted" && !r.a.confirmedNotifiedAt && r.a.tentativeSlotId);
+}
+
+export function restaurantScheduleCheckMsg(b: Bundle) {
+  return msg("restaurantScheduleCheck", {
+    店舗名: b.restaurant?.name ?? "",
+    宛名: atena(b.restaurant),
+    案件名: b.campaign.title,
+    日程一覧: groupedLines(b, shopCheckRows(b), (a) => a.tentativeSlotId).join("\n\n"),
+    URL: `${restaurantPortalUrl(b.campaign)}#check`,
+  });
+}
+
+/**
+ * 撮影日時を確定する前に、表で選んだ日程をお店に確認してもらう。
+ * 選んだ日時は「確認中」として保存するだけで、発信者には連絡しない。
+ */
+export async function sendShopCheck(campaignId: string, picks: Record<string, { slotId?: string; postDate?: string }>): Promise<SendResult> {
+  const b0 = await loadBundle(campaignId);
+  if (!b0 || !b0.restaurant) throw new Error("案件または店舗が見つかりません");
+  for (const { a } of b0.rows) {
+    if (a.status !== "accepted" || a.confirmedNotifiedAt) continue;
+    const pick = picks[a.id];
+    const slotId = pick?.slotId && slotById(b0.campaign, pick.slotId) ? pick.slotId : undefined;
+    await db.update("assignments", a.id, (x) => ({ ...x, tentativeSlotId: slotId, tentativePostDate: pick?.postDate || x.tentativePostDate }));
+  }
+  const b = (await loadBundle(campaignId))!;
+  if (shopCheckRows(b).length === 0) throw new Error("撮影日時を選んだ人がいません");
+  const result = await sendToRestaurant(b.restaurant!, await restaurantScheduleCheckMsg(b), `日程の確認：${b.campaign.title}`);
+  await db.update("campaigns", campaignId, (c) => ({ ...c, shopCheck: { sentAt: nowIso(), delivered: result.ok, status: "pending" } }));
+  return result;
+}
+
+/** お店が日程の確認に回答した */
+export async function answerShopCheck(campaignId: string, ok: boolean, comment?: string, name?: string): Promise<void> {
+  await db.update("campaigns", campaignId, (c) =>
+    c.shopCheck ? { ...c, shopCheck: { ...c.shopCheck, status: ok ? "ok" : "change", comment, name, answeredAt: nowIso() } } : c,
+  );
+}
 
 export function restaurantScheduleMsg(b: Bundle) {
   return msg("restaurantSchedule", {

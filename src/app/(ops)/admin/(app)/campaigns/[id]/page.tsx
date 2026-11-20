@@ -24,6 +24,7 @@ import {
   partyOf,
   proposeSlots,
   restaurantReportMsg,
+  restaurantScheduleCheckMsg,
   restaurantScheduleMsg,
   slotLabel,
 } from "@/lib/ops/service";
@@ -46,6 +47,9 @@ import {
   cancelPostDateRequestAction,
   markPostDateRequestSentAction,
   markConfirmedAction,
+  markShopCheckSentAction,
+  recordShopCheckAction,
+  shopCheckAction,
   postDateRequestAction,
   shootBriefAction,
   markSentAction,
@@ -154,6 +158,7 @@ export default async function CampaignPage({ params, searchParams }: { params: P
       ? await Promise.all(briefRows.filter((r) => r.a.briefFailedAt && !r.a.briefSentAt).map(async (r) => [r.a.id, (await shootBriefMsg(b, r.creator, r.a, c.shootBrief!)).text] as const))
       : [],
   );
+  const shopCheckText = c.shopCheck && !c.shopCheck.delivered ? (await restaurantScheduleCheckMsg(b)).text : "";
   const confirmTexts = new Map(
     await Promise.all(accepted.filter((r) => r.a.confirmedSlotId && !r.a.confirmedNotifiedAt).map(async (r) => [r.a.id, (await confirmOrChangeMsg(b, r.creator, r.a)).text] as const)),
   );
@@ -360,6 +365,58 @@ export default async function CampaignPage({ params, searchParams }: { params: P
           })}
         </div>
 
+        {accepted.length > 0 && restaurant && (
+          <div id="shopcheck" className="mt-5 scroll-mt-20 rounded-xl border border-violet-200 bg-violet-50/60 p-3 text-sm">
+            <h3 className="flex flex-wrap items-center gap-2 font-bold">
+              お店への日程の確認（確定する前に）
+              {c.shopCheck &&
+                (c.shopCheck.status === "ok" ? (
+                  <Badge tone="green">OK</Badge>
+                ) : c.shopCheck.status === "change" ? (
+                  <Badge tone="red">変更の希望あり</Badge>
+                ) : (
+                  <Badge tone="amber">確認待ち</Badge>
+                ))}
+            </h3>
+            {!c.shopCheck ? (
+              <p className="mt-1 text-xs text-muted">下の表で撮影日時を選んで「この日程でお店に確認する」を押すと、発信者に連絡する前にお店に日程を確認してもらえます。</p>
+            ) : (
+              <div className="mt-1 space-y-2">
+                <p className="text-xs text-muted">
+                  {fmtDateTime(c.shopCheck.sentAt)}に確認をお願いしました
+                  {c.shopCheck.answeredAt && `／${fmtDateTime(c.shopCheck.answeredAt)}に回答${c.shopCheck.name ? `（${c.shopCheck.name}）` : ""}`}
+                </p>
+                {c.shopCheck.status === "change" && c.shopCheck.comment && (
+                  <p className="whitespace-pre-wrap rounded-lg bg-white px-3 py-2 text-rose-800">💬 {c.shopCheck.comment}</p>
+                )}
+                {c.shopCheck.status === "ok" && <p className="text-emerald-800">お店のOKが出ました。下の「この内容で確定して発信者に連絡」で発信者に連絡してください。</p>}
+                {!c.shopCheck.delivered && (
+                  <div>
+                    <p className="mb-1 text-xs font-bold text-rose-700">お店に自動で送れませんでした。文面をコピーして送ってください。</p>
+                    <ManualSend text={shopCheckText} onDone={markShopCheckSentAction.bind(null, c.id)} doneLabel="送信済みにする" />
+                  </div>
+                )}
+                {c.shopCheck.status === "pending" && (
+                  <details className="text-xs">
+                    <summary className="cursor-pointer text-muted">お店からLINEなどで返事が来たときは、ここで記録</summary>
+                    <form action={recordShopCheckAction.bind(null, c.id, true)} className="mt-2">
+                      <SubmitButton variant="outline" size="sm">
+                        お店のOKを記録
+                      </SubmitButton>
+                    </form>
+                    <form action={recordShopCheckAction.bind(null, c.id, false)} className="mt-2 flex flex-wrap gap-2">
+                      <input name="comment" placeholder="お店の希望（例：11/25は14時以降にしてほしい）" className={`${inputClass} min-w-48 flex-1`} />
+                      <SubmitButton variant="outline" size="sm">
+                        変更の希望を記録
+                      </SubmitButton>
+                    </form>
+                  </details>
+                )}
+              </div>
+            )}
+          </div>
+        )}
+
         {accepted.length > 0 && (
           <form action={confirmScheduleAction.bind(null, c.id)} className="mt-5 space-y-3">
             <h3 className="text-sm font-bold">撮影日の割り当て（自動で提案しています。変更もできます）</h3>
@@ -375,7 +432,8 @@ export default async function CampaignPage({ params, searchParams }: { params: P
                 </thead>
                 <tbody>
                   {accepted.map((r) => {
-                    const pick = proposal.get(r.a.id);
+                    // お店に確認中の日時があればそれを、なければ自動の提案を選んでおく
+                    const pick = !r.a.confirmedNotifiedAt && r.a.tentativeSlotId ? r.a.tentativeSlotId : proposal.get(r.a.id);
                     return (
                       <tr key={r.a.id} className="border-b border-line last:border-0 align-top">
                         <td className="px-4 py-2 md:px-2">
@@ -407,7 +465,7 @@ export default async function CampaignPage({ params, searchParams }: { params: P
                         </td>
                         <td className="px-2 py-2">
                           {c.postDates?.length ? (
-                            <select name={`post_${r.a.id}`} defaultValue={r.a.plannedPostDate ?? ""} className={inputClass}>
+                            <select name={`post_${r.a.id}`} defaultValue={(!r.a.confirmedNotifiedAt && r.a.tentativePostDate) || r.a.plannedPostDate || ""} className={inputClass}>
                               <option value="">未定</option>
                               {[...new Set([...c.postDates, ...(r.a.plannedPostDate ? [r.a.plannedPostDate] : [])])].sort().map((d) => (
                                 <option key={d} value={d}>
@@ -416,7 +474,7 @@ export default async function CampaignPage({ params, searchParams }: { params: P
                               ))}
                             </select>
                           ) : (
-                            <input type="date" name={`post_${r.a.id}`} defaultValue={r.a.plannedPostDate} className={inputClass} />
+                            <input type="date" name={`post_${r.a.id}`} defaultValue={(!r.a.confirmedNotifiedAt && r.a.tentativePostDate) || r.a.plannedPostDate} className={inputClass} />
                           )}
                         </td>
                         <td className="px-2 py-2">
@@ -447,7 +505,18 @@ export default async function CampaignPage({ params, searchParams }: { params: P
             <Field label="発信者へのひとこと（任意）" hint="今回連絡する全員の連絡文に入ります（例：当日は裏口からお入りください）。表の「この人だけへのひとこと」は、その人にだけ追加されます">
               <textarea name="note" rows={3} className={inputClass} />
             </Field>
-            <SubmitButton confirm="この内容で確定し、発信者に連絡します。よろしいですか？">この内容で確定して発信者に連絡</SubmitButton>
+            <div className="flex flex-wrap gap-2">
+              {restaurant && (
+                <SubmitButton
+                  variant="outline"
+                  formAction={shopCheckAction.bind(null, c.id)}
+                  confirm="表で選んでいる日程を、お店に確認してもらいます（発信者にはまだ連絡しません）。よろしいですか？"
+                >
+                  この日程でお店に確認する
+                </SubmitButton>
+              )}
+              <SubmitButton confirm="この内容で確定し、発信者に連絡します。よろしいですか？">この内容で確定して発信者に連絡</SubmitButton>
+            </div>
           </form>
         )}
 

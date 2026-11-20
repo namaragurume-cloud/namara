@@ -109,6 +109,16 @@ export type Campaign = {
   /** 投稿前の動画チェック：なし／飲食店が直接確認／あなたが先に確認してから飲食店へ */
   videoCheck?: "none" | "direct" | "owner_first";
   reportSentAt?: string;
+  /** 撮影日時を確定する前に、お店に日程を確認してもらう（最後に送った確認とお店の回答） */
+  shopCheck?: {
+    sentAt: string;
+    /** 自動で送れたか（送れなかったら管理画面から手動で送る） */
+    delivered: boolean;
+    status: "pending" | "ok" | "change";
+    comment?: string;
+    name?: string;
+    answeredAt?: string;
+  };
   /** 撮影日時が決まった人へ送る「撮影の詳細」（撮影内容・メニュー・注意事項など。最後に送った内容） */
   shootBrief?: string;
   /** お店に前日のお知らせを送った、撮影・投稿の日（YYYY-MM-DD） */
@@ -219,6 +229,9 @@ export type Assignment = {
   partySize?: number;
   /** 来店メモ（お店に表示。例：お子様連れ・ベビーカーあり） */
   partyNote?: string;
+  /** お店に確認中の撮影日時・投稿日（まだ発信者には連絡していない） */
+  tentativeSlotId?: string;
+  tentativePostDate?: string;
   /** 撮影の詳細を送った日時（送れなかったときは briefFailedAt） */
   briefSentAt?: string;
   briefFailedAt?: string;

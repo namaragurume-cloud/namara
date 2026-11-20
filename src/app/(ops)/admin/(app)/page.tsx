@@ -46,6 +46,11 @@ export default async function AdminHome({ searchParams }: { searchParams: Promis
         rows.some((r) => (r.a.scheduleChangedAt ?? "") > campaign.scheduleSharedAt! || (r.a.rescheduleRequestedAt ?? "") > campaign.scheduleSharedAt!)
       )
         todo.push("日程の変更をお店に再共有");
+      if (campaign.shopCheck && accepted.some((r) => !r.a.confirmedNotifiedAt && r.a.tentativeSlotId)) {
+        if (campaign.shopCheck.status === "ok") todo.push("お店の日程OK → 確定して発信者に連絡");
+        else if (campaign.shopCheck.status === "change") todo.push("お店から日程の変更希望");
+        else if (!campaign.shopCheck.delivered) todo.push("お店に日程の確認を送れていません");
+      }
       const postWaiting = accepted.filter((r) => r.a.postDateRequestedAt).length;
       if (postWaiting) todo.push(`投稿日の選び直し待ち ${postWaiting}名`);
       const ownerVideo = accepted.filter((r) => videoStage(r.a, campaign) === "owner_review").length;
