@@ -16,6 +16,8 @@ import {
   markConfirmedManually,
   markSentManually,
   runDaily,
+  answerShopCheck,
+  sendShopCheck,
   sendBroadcast,
   requestPostDateChange,
   sendShootBrief,
@@ -457,8 +459,8 @@ export async function removeAssignment(campaignId: string, assignmentId: string)
   back(`/admin/campaigns/${campaignId}`, "依頼を取り消しました（発信者への連絡は必要に応じて行ってください）");
 }
 
-export async function confirmScheduleAction(campaignId: string, fd: FormData) {
-  await requireAdmin();
+/** 撮影日の割り当て表の入力（撮影日時・投稿日・ひとこと） */
+function readPicks(fd: FormData) {
   const picks: Record<string, { slotId?: string; postDate?: string; note?: string }> = {};
   for (const [k, v] of fd.entries()) {
     const m = k.match(/^(slot|post|note)_(.+)$/);
@@ -468,6 +470,44 @@ export async function confirmScheduleAction(campaignId: string, fd: FormData) {
     else if (m[1] === "note") entry.note = String(v).trim().slice(0, 1000) || undefined;
     else entry.postDate = ymd.safeParse(String(v)).success ? String(v) : undefined;
   }
+  return picks;
+}
+
+/** 確定する前に、表で選んだ日程をお店に確認してもらう（発信者には連絡しない） */
+export async function shopCheckAction(campaignId: string, fd: FormData) {
+  await requireAdmin();
+  let r: Awaited<ReturnType<typeof sendShopCheck>>;
+  try {
+    r = await sendShopCheck(campaignId, readPicks(fd));
+  } catch (e) {
+    if (e instanceof Error && !("digest" in e)) back(`/admin/campaigns/${campaignId}#shopcheck`, `!${e.message}`);
+    throw e;
+  }
+  back(
+    `/admin/campaigns/${campaignId}#shopcheck`,
+    r.ok
+      ? `お店に${r.channel === "line" ? "公式LINE" : "メール"}で日程の確認をお願いしました。お店の回答はここに表示されます（発信者にはまだ連絡していません）`
+      : `!お店に自動で送れませんでした（${r.error}）。下の「文面をコピー」から送ってください`,
+  );
+}
+
+/** 日程の確認を自分で送った（コピーして送った） */
+export async function markShopCheckSentAction(campaignId: string) {
+  await requireAdmin();
+  await db.update("campaigns", campaignId, (c) => (c.shopCheck ? { ...c, shopCheck: { ...c.shopCheck, delivered: true } } : c));
+  back(`/admin/campaigns/${campaignId}#shopcheck`, "送信済みにしました");
+}
+
+/** お店からLINEなどで返事が来たときに、代わりに記録する */
+export async function recordShopCheckAction(campaignId: string, ok: boolean, fd: FormData) {
+  await requireAdmin();
+  await answerShopCheck(campaignId, ok, str(fd, "comment") || undefined, "（代理で記録）");
+  back(`/admin/campaigns/${campaignId}#shopcheck`, ok ? "お店のOKを記録しました" : "お店の変更希望を記録しました");
+}
+
+export async function confirmScheduleAction(campaignId: string, fd: FormData) {
+  await requireAdmin();
+  const picks = readPicks(fd);
   const result = await confirmSchedule(campaignId, picks, str(fd, "note").slice(0, 2000) || undefined);
   back(`/admin/campaigns/${campaignId}`, summarize("撮影日の確定連絡", result));
 }

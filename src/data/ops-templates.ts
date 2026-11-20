@@ -47,6 +47,7 @@ export const TEMPLATE_KEYS = [
   "videoApproved",
   "videoRevision",
   "proposalShare",
+  "restaurantScheduleCheck",
   "restaurantSchedule",
   "restaurantToday",
   "restaurantVideoCheck",
@@ -575,6 +576,32 @@ SNSプロモーションの料金表をお送りいたします。
       撮影: "■ 明日の撮影\n18:00〜19:00　はなこさん（2名）、たろうさん（1名）　計3名",
       投稿: "■ 明日の投稿予定\nけんたさん",
       URL: "https://…/p/…",
+      ...SIGN_VAR,
+    },
+  },
+  restaurantScheduleCheck: {
+    title: "飲食店へ日程の確認のお願い",
+    when: "案件ページで「この日程でお店に確認する」を押したとき（撮影日時を確定する前）",
+    to: "飲食店",
+    subject: "【撮影日程のご確認】{案件名}",
+    body: `{店舗名}
+{宛名}
+
+いつもお世話になっております。MIRATSUMUです。
+PRの撮影日程を下記で調整しております。この日程で問題ないか、ご確認をお願いいたします。
+
+{日程一覧}
+
+下記ページの「この日程でOK」または「変更をお願いしたい」を押してお知らせください（このメッセージへの返信でも大丈夫です）。
+{URL}
+
+{署名}`,
+    vars: {
+      店舗名: "焼肉 たいよう",
+      宛名: "山田様",
+      案件名: "12月 新メニューPR",
+      日程一覧: "〇12/5(金) 18:00〜20:00（来店 計3名）\n・はなこ\n・たろう",
+      URL: "https://…/p/…#check",
       ...SIGN_VAR,
     },
   },

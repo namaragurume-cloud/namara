@@ -14,6 +14,7 @@ export function SubmitButton({
   confirm,
   name,
   value,
+  formAction,
 }: {
   children: React.ReactNode;
   variant?: BtnVariant;
@@ -22,6 +23,8 @@ export function SubmitButton({
   confirm?: string;
   name?: string;
   value?: string;
+  /** フォームの action の代わりに送る先（同じフォームで別の操作をするとき） */
+  formAction?: (fd: FormData) => void | Promise<void>;
 }) {
   const { pending } = useFormStatus();
   return (
@@ -29,6 +32,7 @@ export function SubmitButton({
       type="submit"
       name={name}
       value={value}
+      formAction={formAction}
       disabled={pending}
       className={cn(buttonClass(variant, size), className)}
       onClick={(e) => {
