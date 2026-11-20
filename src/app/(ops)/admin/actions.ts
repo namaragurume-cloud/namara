@@ -16,6 +16,7 @@ import {
   markConfirmedManually,
   markSentManually,
   runDaily,
+  sendBroadcast,
   requestPostDateChange,
   sendShootBrief,
   runTodayNotices,
@@ -62,6 +63,18 @@ function back(path: string, flash: string): never {
   redirect(`${base}${sep}flash=${encodeURIComponent(flash)}${hash ? `#${hash}` : ""}`);
 }
 
+/** 送れなかった理由を、わかる言葉にする（元のエラーは送信履歴に残っています） */
+function reasonOf(error?: string): string {
+  const e = error ?? "";
+  if (/LINE push 429/.test(e) && /monthly limit/i.test(e)) return "公式LINEの今月のメッセージ数の上限に達しています（LINE公式アカウントの料金プランで上限を確認・変更してください）";
+  if (/LINE push 429/.test(e)) return "公式LINEへの送信が多すぎるため、一時的に送れませんでした（少し待ってからもう一度お試しください）";
+  if (/LINE push 401/.test(e)) return "公式LINEの設定（アクセストークン）が正しくありません";
+  if (/LINE push 400/.test(e) && /to/i.test(e)) return "LINEの送り先が見つかりません（ブロックされているか、連携が外れている可能性があります）";
+  if (/LINE push 403/.test(e)) return "公式LINEから送れませんでした（ブロックされている可能性があります）";
+  if (/LINE未連携・メール未登録/.test(e)) return "LINE未連携・メール未登録";
+  return e.split(" / ")[0].slice(0, 120) || "不明なエラー";
+}
+
 function summarize(label: string, list: BulkResult): string {
   if (list.length === 0) return `${label}：対象者はいませんでした`;
   const ok = list.filter((x) => x.result.ok);
@@ -70,7 +83,16 @@ function summarize(label: string, list: BulkResult): string {
   const ng = list.filter((x) => !x.result.ok);
   const lines = [`${label}：${ok.length}件 送信しました（LINE ${line}・メール ${mail}）`];
   if (isDemo() && ok.length) lines.push("※デモのため実際には送信していません（送信履歴に記録のみ）");
-  if (ng.length) lines.push(`自動送信できなかった人：${ng.map((x) => x.name).join("、")}\n→ 表の「文面をコピー」から手動で送ってください`);
+  if (ng.length) {
+    const reasons = new Map<string, string[]>();
+    for (const x of ng) {
+      const r = reasonOf(x.result.error);
+      reasons.set(r, [...(reasons.get(r) ?? []), x.name]);
+    }
+    lines.push(`自動送信できなかった人：${ng.map((x) => x.name).join("、")}`);
+    for (const [r, names] of reasons) lines.push(`理由：${r}${reasons.size > 1 ? `（${names.join("、")}）` : ""}`);
+    lines.push("→ 「文面をコピー」から手動で送ってください（詳しい理由は「送信履歴」に残っています）");
+  }
   return (ng.length && !ok.length ? "!" : "") + lines.join("\n");
 }
 
@@ -502,10 +524,17 @@ export async function postDateRequestAction(campaignId: string, fd: FormData) {
   back(`/admin/campaigns/${campaignId}#repost`, summarize("投稿日の再調整のお願い", result));
 }
 
+/** 投稿日の再調整のお願いを自分で送った（コピーして送った） */
+export async function markPostDateRequestSentAction(campaignId: string, assignmentId: string) {
+  await requireAdmin();
+  await db.update("assignments", assignmentId, (x) => ({ ...x, postDateRequestFailedAt: undefined }));
+  back(`/admin/campaigns/${campaignId}#repost`, "送信済みにしました");
+}
+
 /** 投稿日の選び直しのお願いを取り消す */
 export async function cancelPostDateRequestAction(campaignId: string, assignmentId: string) {
   await requireAdmin();
-  await db.update("assignments", assignmentId, (x) => ({ ...x, postDateRequestedAt: undefined, postDateRequestReason: undefined }));
+  await db.update("assignments", assignmentId, (x) => ({ ...x, postDateRequestedAt: undefined, postDateRequestReason: undefined, postDateRequestFailedAt: undefined }));
   back(`/admin/campaigns/${campaignId}#repost`, "投稿日の選び直しのお願いを取り消しました（本人への連絡はしていません）");
 }
 
@@ -900,4 +929,26 @@ export async function runDailyNow() {
   await requireAdmin();
   const r = await runDaily();
   back("/admin/settings", [summarize("リマインド", r.reminders), summarize("インサイト依頼（月末のみ）", r.insights)].join("\n"));
+}
+
+/* ---------- 全体連絡 ---------- */
+
+export async function broadcastAction(fd: FormData) {
+  await requireAdmin();
+  const audience = str(fd, "audience") === "restaurants" ? "restaurants" : "creators";
+  const to = `/admin/broadcast${audience === "restaurants" ? "?to=restaurants" : ""}`;
+  const title = str(fd, "title").slice(0, 60);
+  const body = str(fd, "body").slice(0, 4000);
+  const ids = fd.getAll("to").map(String).filter(Boolean);
+  if (!title) back(to, "!件名を入力してください");
+  if (!body) back(to, "!本文を入力してください");
+  if (ids.length === 0) back(to, "!送る相手を選んでください");
+  const b = await sendBroadcast(audience, ids, title, body);
+  back(`${to}${to.includes("?") ? "&" : "?"}sent=${b.id}`, summarize("全体連絡", b.results.map((r) => ({ name: r.name, result: { ok: r.ok, channel: r.channel, error: r.error } }))));
+}
+
+export async function deleteBroadcastAction(id: string) {
+  await requireAdmin();
+  await db.remove("broadcasts", id);
+  back("/admin/broadcast", "全体連絡の記録を削除しました（送ったメッセージは取り消せません）");
 }

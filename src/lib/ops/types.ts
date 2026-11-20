@@ -233,6 +233,8 @@ export type Assignment = {
   /** 投稿日の選び直しをお願いした日時と理由（選び直すと消える） */
   postDateRequestedAt?: string;
   postDateRequestReason?: string;
+  /** 投稿日の再調整のお願いを自動で送れなかった日時（手動で送ったら消す） */
+  postDateRequestFailedAt?: string;
   /** 発信者が投稿日を選び直した日時と、選び直す前の投稿日 */
   postDateRechosenAt?: string;
   postDateBefore?: string;
@@ -331,6 +333,18 @@ export type Proposal = {
   updatedAt?: string;
 };
 
+/** 全体連絡（案件に関係なく、発信者・飲食店にまとめて送るお知らせ） */
+export type Broadcast = {
+  id: string;
+  audience: "creators" | "restaurants";
+  /** 件名（本文の最初の【】とメールの件名に入る） */
+  title: string;
+  /** 本文（宛名と署名は自動で付く） */
+  body: string;
+  results: { id: string; name: string; ok: boolean; channel: Channel; error?: string; text: string }[];
+  createdAt: string;
+};
+
 export type Collections = {
   creators: Creator;
   restaurants: Restaurant;
@@ -341,5 +355,6 @@ export type Collections = {
   templates: TemplateOverride;
   settings: ProposalSettings;
   proposals: Proposal;
+  broadcasts: Broadcast;
 };
 export type CollectionName = keyof Collections;

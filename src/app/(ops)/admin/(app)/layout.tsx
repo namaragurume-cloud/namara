@@ -11,6 +11,7 @@ const nav = [
   { href: "/admin/proposals", label: "提案" },
   { href: "/admin/creators", label: "発信者" },
   { href: "/admin/restaurants", label: "飲食店" },
+  { href: "/admin/broadcast", label: "全体連絡" },
   { href: "/admin/messages", label: "送信履歴" },
   { href: "/admin/settings", label: "設定" },
 ];

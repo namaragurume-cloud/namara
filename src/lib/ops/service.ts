@@ -1,6 +1,6 @@
 import "server-only";
 import { syncFollowersFromSite } from "./follower-sync";
-import { addDays, fmtDate, fmtDateLong, fmtNum, fmtParty, fmtPartyNote, fmtPostDates, fmtSlot, isLastDayOfMonth, jstDate } from "./dates";
+import { addDays, fmtDate, fmtDateLong, fmtNum, fmtParty, fmtPostDates, fmtSlot, isLastDayOfMonth, jstDate } from "./dates";
 import { db } from "./db";
 import { sendToCreator, sendToRestaurant, type SendResult } from "./notify";
 import { needsInsight } from "./insights";
@@ -11,7 +11,7 @@ import { cleanupVideos } from "./video";
 import { latestVideo, videoEnabled, videoStage } from "./video-state";
 import { fieldLabel, isComplete, platformLabel, screenshotGuide } from "./insight-fields";
 import { buildReport, pct, pct1 } from "./report";
-import type { Assignment, Campaign, Creator, Platform, Restaurant, Slot } from "./types";
+import type { Assignment, Broadcast, Campaign, Creator, Platform, Restaurant, Slot } from "./types";
 import { assignmentUrl, creatorPortalUrl, restaurantPortalUrl } from "./urls";
 import { newToken, nowIso } from "./util";
 
@@ -424,20 +424,24 @@ export async function requestPostDateChange(assignmentId: string, reason?: strin
   const b = (await loadBundle(a.campaignId))!;
   const creator = b.rows.find((r) => r.a.id === a.id)!.creator;
   const updated = (await db.update("assignments", a.id, (x) => ({ ...x, postDateRequestedAt: nowIso(), postDateRequestReason: reason })))!;
+  const result = await sendToCreator(creator, await postDateRequestMsg(b, creator, updated), `投稿日の再調整のお願い：${b.campaign.title}`);
+  // 送れなかったら、管理画面で文面をコピーして送れるようにする（本人のページにはお願いが表示されている）
+  await db.update("assignments", a.id, (x) => ({ ...x, postDateRequestFailedAt: result.ok ? undefined : nowIso() }));
+  return result;
+}
+
+/** 投稿日の再調整のお願いの文面（手動で送るときにも使う） */
+export function postDateRequestMsg(b: Bundle, creator: Creator, a: Assignment) {
   const today = jstDate();
   const choices = (b.campaign.postDates ?? []).filter((d) => d >= today);
-  return sendToCreator(
-    creator,
-    await msg("postDateRequest", {
-      発信者名: creator.name,
-      店舗名: b.restaurant?.name ?? "",
-      理由: reason,
-      現在の投稿日: a.plannedPostDate ? fmtDateLong(a.plannedPostDate) : "未定",
-      URL: assignmentUrl(creator, updated),
-      投稿日: choices.length ? choices.map((d) => fmtDate(d)).join("・") : undefined,
-    }),
-    `投稿日の再調整のお願い：${b.campaign.title}`,
-  );
+  return msg("postDateRequest", {
+    発信者名: creator.name,
+    店舗名: b.restaurant?.name ?? "",
+    理由: a.postDateRequestReason,
+    現在の投稿日: a.plannedPostDate ? fmtDateLong(a.plannedPostDate) : "未定",
+    URL: assignmentUrl(creator, a),
+    投稿日: choices.length ? choices.map((d) => fmtDate(d)).join("・") : undefined,
+  });
 }
 
 /** 発信者が投稿日を選び直した */
@@ -448,6 +452,7 @@ export async function rechoosePostDate(a: Assignment, date: string): Promise<voi
     plannedPostDate: date,
     postDateRequestedAt: undefined,
     postDateRequestReason: undefined,
+    postDateRequestFailedAt: undefined,
     postDateRechosenAt: nowIso(),
     // お店に共有済みなら「お店に再共有」の対象にする
     scheduleChangedAt: x.plannedPostDate !== date ? nowIso() : x.scheduleChangedAt,
@@ -467,18 +472,25 @@ export async function markConfirmedManually(assignmentId: string): Promise<void>
   }));
 }
 
+/**
+ * お店への日程共有：同じ日時の人をまとめて、名前だけ並べる（ID・投稿日・メモは載せない）
+ *   〇11/23(月) 18:30〜20:00（来店 計11名）
+ *   ・karina
+ *   ・あきら
+ */
 export function scheduleLines(b: Bundle): string[] {
-  return b.rows
-    .filter((r) => r.a.status === "accepted" && r.a.confirmedSlotId)
-    .sort((x, y) => {
-      const sx = slotById(b.campaign, x.a.confirmedSlotId);
-      const sy = slotById(b.campaign, y.a.confirmedSlotId);
-      return `${sx?.date}${sx?.start}`.localeCompare(`${sy?.date}${sy?.start}`);
+  const groups = new Map<string, Row[]>();
+  for (const r of b.rows.filter((r) => r.a.status === "accepted" && slotById(b.campaign, r.a.confirmedSlotId))) {
+    const id = r.a.confirmedSlotId!;
+    groups.set(id, [...(groups.get(id) ?? []), r]);
+  }
+  return [...groups]
+    .sort(([x], [y]) => {
+      const sx = slotById(b.campaign, x)!;
+      const sy = slotById(b.campaign, y)!;
+      return `${sx.date}${sx.start}`.localeCompare(`${sy.date}${sy.start}`);
     })
-    .map(
-      (r) =>
-        `■ ${slotLabel(b.campaign, r.a.confirmedSlotId)}　${r.creator.name}（@${r.creator.account}）　来店：${fmtPartyNote(r.a)}　投稿日：${r.a.plannedPostDate ? fmtDate(r.a.plannedPostDate) : "調整中"}`,
-    );
+    .map(([id, list]) => [`〇${slotLabel(b.campaign, id)}（来店 計${list.reduce((n, r) => n + partyOf(r.a), 0)}名）`, ...list.map((r) => `・${r.creator.name}`)].join("\n"));
 }
 
 const atena = (r: Restaurant | null) => (r?.contactName ? `${r.contactName}様` : "ご担当者様");
@@ -488,7 +500,7 @@ export function restaurantScheduleMsg(b: Bundle) {
     店舗名: b.restaurant?.name ?? "",
     宛名: atena(b.restaurant),
     案件名: b.campaign.title,
-    日程一覧: scheduleLines(b).join("\n"),
+    日程一覧: scheduleLines(b).join("\n\n"),
     URL: restaurantPortalUrl(b.campaign),
   });
 }
@@ -886,4 +898,26 @@ export async function runDaily(today = jstDate()) {
     return null;
   });
   return { today, reminders: [...reminders, ...todayNotices], insights, followers };
+}
+
+/** 全体連絡の宛名（発信者は「〇〇さん」、飲食店は「店舗名＋ご担当者様」） */
+export function broadcastTo(kind: "creators" | "restaurants", x: Creator | Restaurant): string {
+  if (kind === "creators") return `${x.name}さん`;
+  const r = x as Restaurant;
+  return `${r.name}\n${r.contactName ? `${r.contactName}様` : "ご担当者様"}`;
+}
+
+/** 全体連絡を送る（1人ずつ送り、結果を記録） */
+export async function sendBroadcast(audience: "creators" | "restaurants", ids: string[], title: string, body: string): Promise<Broadcast> {
+  const list = audience === "creators" ? await db.list("creators") : await db.list("restaurants");
+  const targets = list.filter((x) => ids.includes(x.id));
+  const results: Broadcast["results"] = [];
+  for (const x of targets) {
+    const m = await msg("broadcast", { 宛名: broadcastTo(audience, x), 件名: title, 本文: body });
+    const r = audience === "creators" ? await sendToCreator(x as Creator, m, `全体連絡：${title}`) : await sendToRestaurant(x as Restaurant, m, `全体連絡：${title}`);
+    results.push({ id: x.id, name: x.name, ok: r.ok, channel: r.channel, error: r.error, text: m.text });
+  }
+  const b: Broadcast = { id: newToken(), audience, title, body, results, createdAt: nowIso() };
+  await db.put("broadcasts", b);
+  return b;
 }

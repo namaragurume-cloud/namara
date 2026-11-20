@@ -13,6 +13,7 @@ import { isLineConfigured } from "@/lib/ops/line";
 import { lineShareUrl } from "@/lib/ops/line";
 import {
   confirmOrChangeMsg,
+  postDateRequestMsg,
   shootBriefMsg,
   slotById,
   insightRemindTargets,
@@ -43,6 +44,7 @@ import {
   insightRequestAction,
   markBriefSentAction,
   cancelPostDateRequestAction,
+  markPostDateRequestSentAction,
   markConfirmedAction,
   postDateRequestAction,
   shootBriefAction,
@@ -77,18 +79,25 @@ function Step({ n, title, done, children, actions }: { n: number; title: string;
   );
 }
 
-function ManualSend({ text, onDone, doneLabel }: { text: string; onDone: () => Promise<void>; doneLabel: string }) {
+/** 手動で送る（文面コピー・自分のLINE・送信済みにする）。inForm：ほかのフォームの中に置くとき（フォームの入れ子を避ける） */
+function ManualSend({ text, onDone, doneLabel, inForm }: { text: string; onDone: () => Promise<void>; doneLabel: string; inForm?: boolean }) {
   return (
     <span className="flex flex-wrap gap-1.5">
       <CopyButton text={text} label="文面をコピー" />
       <a href={lineShareUrl(text)} target="_blank" rel="noopener" className={buttonClass("outline", "sm")}>
         自分のLINEで送る
       </a>
-      <form action={onDone}>
-        <SubmitButton variant="outline" size="sm">
+      {inForm ? (
+        <button formAction={onDone} formNoValidate className={buttonClass("outline", "sm")}>
           {doneLabel}
-        </SubmitButton>
-      </form>
+        </button>
+      ) : (
+        <form action={onDone}>
+          <SubmitButton variant="outline" size="sm">
+            {doneLabel}
+          </SubmitButton>
+        </form>
+      )}
     </span>
   );
 }
@@ -132,6 +141,12 @@ export default async function CampaignPage({ params, searchParams }: { params: P
   );
   const reportText = (await restaurantReportMsg(b)).text;
   const requestTexts = new Map(await Promise.all(unsent.map(async (r) => [r.a.id, (await prRequestMsg(b, r.creator, r.a)).text] as const)));
+  // 投稿日の再調整のお願いを自動で送れなかった人（手動で送るための文面）
+  const postReqTexts = new Map(
+    await Promise.all(
+      accepted.filter((r) => r.a.postDateRequestedAt && r.a.postDateRequestFailedAt).map(async (r) => [r.a.id, (await postDateRequestMsg(b, r.creator, r.a)).text] as const),
+    ),
+  );
   // 撮影の詳細：撮影日時が決まって連絡済みの人
   const briefRows = accepted.filter((r) => r.a.confirmedNotifiedAt && r.a.confirmedSlotId);
   const briefFailedTexts = new Map(
@@ -410,7 +425,7 @@ export default async function CampaignPage({ params, searchParams }: { params: P
                           ) : r.a.confirmedSlotId ? (
                             <span className="flex flex-col gap-1">
                               <Badge tone="red">連絡できず</Badge>
-                              <ManualSend text={confirmTexts.get(r.a.id) ?? ""} onDone={markConfirmedAction.bind(null, c.id, r.a.id)} doneLabel="連絡済みにする" />
+                              <ManualSend inForm text={confirmTexts.get(r.a.id) ?? ""} onDone={markConfirmedAction.bind(null, c.id, r.a.id)} doneLabel="連絡済みにする" />
                             </span>
                           ) : (
                             <Badge tone="amber">未確定</Badge>
@@ -481,7 +496,9 @@ export default async function CampaignPage({ params, searchParams }: { params: P
                       <b className="min-w-0 truncate">{r.creator.name}</b>
                       <span className="num text-xs text-muted">投稿日 {r.a.plannedPostDate ? fmtDate(r.a.plannedPostDate) : "未定"}</span>
                       <span className="ml-auto">
-                        {r.a.postDateRequestedAt ? (
+                        {r.a.postDateRequestedAt && r.a.postDateRequestFailedAt ? (
+                          <Badge tone="red">連絡できず</Badge>
+                        ) : r.a.postDateRequestedAt ? (
                           <Badge tone="amber">選び直し待ち {fmtDateTime(r.a.postDateRequestedAt)}</Badge>
                         ) : r.a.postDateRechosenAt ? (
                           <Badge tone="green">
@@ -495,6 +512,11 @@ export default async function CampaignPage({ params, searchParams }: { params: P
                       <button formAction={cancelPostDateRequestAction.bind(null, c.id, r.a.id)} className="mt-1 text-xs text-muted underline">
                         お願いを取り消す
                       </button>
+                    )}
+                    {postReqTexts.has(r.a.id) && (
+                      <div className="mt-1.5">
+                        <ManualSend inForm text={postReqTexts.get(r.a.id)!} onDone={markPostDateRequestSentAction.bind(null, c.id, r.a.id)} doneLabel="送信済みにする" />
+                      </div>
                     )}
                   </li>
                 ))}
@@ -603,7 +625,7 @@ export default async function CampaignPage({ params, searchParams }: { params: P
                         </label>
                         {briefFailedTexts.has(r.a.id) && (
                           <div className="mt-1.5">
-                            <ManualSend text={briefFailedTexts.get(r.a.id)!} onDone={markBriefSentAction.bind(null, c.id, r.a.id)} doneLabel="送信済みにする" />
+                            <ManualSend inForm text={briefFailedTexts.get(r.a.id)!} onDone={markBriefSentAction.bind(null, c.id, r.a.id)} doneLabel="送信済みにする" />
                           </div>
                         )}
                       </li>

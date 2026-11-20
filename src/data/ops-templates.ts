@@ -39,6 +39,7 @@ export const TEMPLATE_KEYS = [
   "insightReminder",
   "insightWhichPost",
   "creatorOnboarding",
+  "broadcast",
   "lineWelcome",
   "lineLinked",
   "lineUnknown",
@@ -440,6 +441,24 @@ export const templateDefs: Record<TemplateKey, TemplateDef> = {
       ...SIGN_VAR,
     },
   },
+  broadcast: {
+    title: "全体連絡",
+    when: "「全体連絡」から発信者・飲食店にまとめて送ったとき（飲食店にも同じ文面を使います）",
+    to: "発信者",
+    subject: "【お知らせ】{件名}",
+    body: `{宛名}
+
+【{件名}】
+{本文}
+
+{署名}`,
+    vars: {
+      宛名: "はなこさん",
+      件名: "年末年始のお休みについて",
+      本文: "いつもありがとうございます！\n12/29〜1/3はお休みをいただきます。期間中のご連絡は1/4以降に順次お返事します。",
+      ...SIGN_VAR,
+    },
+  },
   lineWelcome: {
     title: "友だち追加のあいさつ",
     when: "公式LINEが友だち追加されたとき（自動）",
@@ -568,7 +587,7 @@ SNSプロモーションの料金表をお送りいたします。
 {宛名}
 
 いつもお世話になっております。MIRATSUMUです。
-PRの撮影日・投稿予定日が決まりましたのでご案内いたします。
+PRの撮影日が決まりましたのでご案内いたします。
 
 {日程一覧}
 
@@ -581,7 +600,7 @@ PRの撮影日・投稿予定日が決まりましたのでご案内いたしま
       店舗名: "焼肉 たいよう",
       宛名: "山田様",
       案件名: "12月 新メニューPR",
-      日程一覧: "■ 12/5(金) 18:00〜20:00　はなこ（@hanako）　投稿日：12/10(水)",
+      日程一覧: "〇12/5(金) 18:00〜20:00（来店 計3名）\n・はなこ\n・たろう",
       URL: "https://…/p/…",
       ...SIGN_VAR,
     },
