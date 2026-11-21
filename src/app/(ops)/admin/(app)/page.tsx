@@ -43,7 +43,8 @@ export default async function AdminHome({ searchParams }: { searchParams: Promis
       if (accepted.some((r) => r.a.confirmedNotifiedAt) && !campaign.scheduleSharedAt) todo.push("飲食店へ撮影日を共有");
       if (
         campaign.scheduleSharedAt &&
-        rows.some((r) => (r.a.scheduleChangedAt ?? "") > campaign.scheduleSharedAt! || (r.a.rescheduleRequestedAt ?? "") > campaign.scheduleSharedAt!)
+        accepted.some((r) => r.a.confirmedNotifiedAt) &&
+        rows.some((r) => (r.a.scheduleChangedAt ?? "") > campaign.scheduleSharedAt!)
       )
         todo.push("日程の変更をお店に再共有");
       if (campaign.shopCheck && accepted.some((r) => !r.a.confirmedNotifiedAt && r.a.tentativeSlotId)) {
