@@ -545,6 +545,39 @@ export async function markBriefSentAction(campaignId: string, assignmentId: stri
   back(`/admin/campaigns/${campaignId}#brief`, "撮影の詳細を送信済みにしました");
 }
 
+/**
+ * 確定した日程の再調整（まとめて）
+ *  - 「撮影日時」にチェック：回答画面をもう一度開き、撮影日時と投稿日を選び直してもらう
+ *  - 「投稿日」だけにチェック：撮影日時はそのままで、投稿日だけ選び直してもらう
+ */
+export async function readjustAction(campaignId: string, fd: FormData) {
+  await requireAdmin();
+  const to = `/admin/campaigns/${campaignId}#readjust`;
+  const what = new Set(fd.getAll("what").map(String));
+  const ids = fd.getAll("readjustTo").map(String).filter(Boolean);
+  if (!what.has("shoot") && !what.has("post")) back(to, "!「撮影日時」か「投稿日」のどちらを調整するか選んでください");
+  if (ids.length === 0) back(to, "!再調整をお願いする人を選んでください");
+  const reason = str(fd, "reason") || undefined;
+  const result: BulkResult = [];
+  for (const id of ids) {
+    const a = await db.get("assignments", id);
+    const name = a ? ((await db.get("creators", a.creatorId))?.name ?? "") : "";
+    try {
+      result.push({ name, result: what.has("shoot") ? await requestReschedule(id, reason) : await requestPostDateChange(id, reason) });
+    } catch (e) {
+      result.push({ name, result: { ok: false, channel: "manual", error: e instanceof Error ? e.message : String(e) } });
+    }
+  }
+  back(to, summarize(what.has("shoot") ? "日程（撮影日時・投稿日）の再調整のお願い" : "投稿日の再調整のお願い", result));
+}
+
+/** 日程の再調整のお願いを自分で送った（コピーして送った） */
+export async function markRescheduleSentAction(campaignId: string, assignmentId: string) {
+  await requireAdmin();
+  await db.update("assignments", assignmentId, (x) => ({ ...x, rescheduleFailedAt: undefined }));
+  back(`/admin/campaigns/${campaignId}#waiting`, "送信済みにしました");
+}
+
 /** 選んだ発信者に、投稿日の選び直しをお願いする */
 export async function postDateRequestAction(campaignId: string, fd: FormData) {
   await requireAdmin();
@@ -568,14 +601,14 @@ export async function postDateRequestAction(campaignId: string, fd: FormData) {
 export async function markPostDateRequestSentAction(campaignId: string, assignmentId: string) {
   await requireAdmin();
   await db.update("assignments", assignmentId, (x) => ({ ...x, postDateRequestFailedAt: undefined }));
-  back(`/admin/campaigns/${campaignId}#repost`, "送信済みにしました");
+  back(`/admin/campaigns/${campaignId}#readjust`, "送信済みにしました");
 }
 
 /** 投稿日の選び直しのお願いを取り消す */
 export async function cancelPostDateRequestAction(campaignId: string, assignmentId: string) {
   await requireAdmin();
   await db.update("assignments", assignmentId, (x) => ({ ...x, postDateRequestedAt: undefined, postDateRequestReason: undefined, postDateRequestFailedAt: undefined }));
-  back(`/admin/campaigns/${campaignId}#repost`, "投稿日の選び直しのお願いを取り消しました（本人への連絡はしていません）");
+  back(`/admin/campaigns/${campaignId}#readjust`, "投稿日の選び直しのお願いを取り消しました（本人への連絡はしていません）");
 }
 
 export async function markConfirmedAction(campaignId: string, assignmentId: string) {
