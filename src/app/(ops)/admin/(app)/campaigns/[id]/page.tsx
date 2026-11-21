@@ -141,9 +141,10 @@ export default async function CampaignPage({ params, searchParams }: { params: P
   const shopVia = shopLine ? (restaurant?.lineGroupId ? "公式LINE（お店のグループ）" : "公式LINE") : shopEmail ? "メール" : null;
   const shopTo = shopLine ? `お店の${shopVia}` : restaurant?.email;
   const scheduleText = (await restaurantScheduleMsg(b)).text;
-  const needsReshare = Boolean(
-    c.scheduleSharedAt && rows.some((r) => (r.a.scheduleChangedAt && r.a.scheduleChangedAt > c.scheduleSharedAt!) || (r.a.rescheduleRequestedAt && r.a.rescheduleRequestedAt > c.scheduleSharedAt!)),
-  );
+  // お店に共有したあとに、変更した日程を確定した（＝送り直す内容がある）
+  const needsReshare = Boolean(c.scheduleSharedAt && confirmed.length > 0 && rows.some((r) => r.a.scheduleChangedAt && r.a.scheduleChangedAt > c.scheduleSharedAt!));
+  // 撮影日時を選び直してもらっている人（確定するまで共有の文面には入らない）
+  const rescheduling = rows.filter((r) => r.a.status === "sent" && r.a.rescheduleRequestedAt);
   const reportText = (await restaurantReportMsg(b)).text;
   const requestTexts = new Map(await Promise.all(unsent.map(async (r) => [r.a.id, (await prRequestMsg(b, r.creator, r.a)).text] as const)));
   // 日程の再調整のお願いを自動で送れなかった人
@@ -719,7 +720,13 @@ export default async function CampaignPage({ params, searchParams }: { params: P
       >
         {needsReshare && (
           <p className="mb-4 rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 text-sm font-bold text-amber-900">
-            お店に共有したあとに、日程の変更・再調整がありました。最新の内容をお店に送ってください（下の「再送」または「自分のLINEで送る」）。
+            お店に共有したあとに、日程が変わりました。最新の内容をお店に送ってください（下の「再送」または「自分のLINEで送る」）。
+          </p>
+        )}
+        {rescheduling.length > 0 && (
+          <p className="mb-4 rounded-xl border border-sky-200 bg-sky-50 px-4 py-3 text-sm text-sky-900">
+            日程の再調整中：{rescheduling.map((r) => `${r.creator.name}さん`).join("、")}。
+            選び直した日程を「② 回答の集計・撮影日の確定」で確定すると、ここの文面に入ります（それまでの文面には入りません）。
           </p>
         )}
         <div className="mb-4 flex flex-wrap items-center gap-3 rounded-xl border border-line bg-mist px-4 py-3 text-sm">
@@ -738,7 +745,7 @@ export default async function CampaignPage({ params, searchParams }: { params: P
           </form>
         </div>
         {confirmed.length === 0 ? (
-          <Empty>撮影日を確定すると、ここに共有用の文面ができます。</Empty>
+          <Empty>{rescheduling.length ? "再調整中の人の日程を確定すると、ここに共有用の文面ができます。" : "撮影日を確定すると、ここに共有用の文面ができます。"}</Empty>
         ) : (
           <>
             <pre className="max-h-72 overflow-auto whitespace-pre-wrap rounded-xl bg-mist p-3 text-xs leading-relaxed">{scheduleText}</pre>
