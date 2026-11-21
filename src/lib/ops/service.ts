@@ -248,6 +248,7 @@ export async function recordResponse(
       partySize: input.accept ? (input.partySize ?? x.partySize) : undefined,
       partyNote: input.accept ? input.partyNote : undefined,
       rescheduleRequestedAt: undefined,
+      rescheduleFailedAt: undefined,
       note: input.note,
       respondedAt: nowIso(),
       sentAt: x.sentAt ?? nowIso(),
@@ -398,20 +399,23 @@ export async function requestReschedule(assignmentId: string, reason?: string): 
     rescheduleRequestedAt: nowIso(),
     rescheduleReason: reason,
   })))!;
+  const result = await sendToCreator(creator, await rescheduleRequestMsg(b, creator, updated), `日程の再調整のお願い：${b.campaign.title}`);
+  await db.update("assignments", a.id, (x) => ({ ...x, rescheduleFailedAt: result.ok ? undefined : nowIso() }));
+  return result;
+}
+
+/** 日程の再調整のお願いの文面（手動で送るときにも使う） */
+export function rescheduleRequestMsg(b: Bundle, creator: Creator, a: Assignment) {
   const today = jstDate();
-  return sendToCreator(
-    creator,
-    await msg("rescheduleRequest", {
-      発信者名: creator.name,
-      店舗名: b.restaurant?.name ?? "",
-      理由: reason,
-      変更前の撮影日時: prevSlot ? slotLabel(b.campaign, prevSlot) : undefined,
-      回答期限: b.campaign.replyDeadline >= today ? fmtDateLong(b.campaign.replyDeadline) : "なるべくお早めに",
-      URL: assignmentUrl(creator, updated),
-      撮影候補日: candidatesText(b.campaign, today),
-    }),
-    `日程の再調整のお願い：${b.campaign.title}`,
-  );
+  return msg("rescheduleRequest", {
+    発信者名: creator.name,
+    店舗名: b.restaurant?.name ?? "",
+    理由: a.rescheduleReason,
+    変更前の撮影日時: a.previousSlotId ? slotLabel(b.campaign, a.previousSlotId) : undefined,
+    回答期限: b.campaign.replyDeadline >= today ? fmtDateLong(b.campaign.replyDeadline) : "なるべくお早めに",
+    URL: assignmentUrl(creator, a),
+    撮影候補日: candidatesText(b.campaign, today),
+  });
 }
 
 /**

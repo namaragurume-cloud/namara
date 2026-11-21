@@ -14,6 +14,7 @@ import { lineShareUrl } from "@/lib/ops/line";
 import {
   confirmOrChangeMsg,
   postDateRequestMsg,
+  rescheduleRequestMsg,
   shootBriefMsg,
   slotById,
   insightRemindTargets,
@@ -50,12 +51,12 @@ import {
   markShopCheckSentAction,
   recordShopCheckAction,
   shopCheckAction,
-  postDateRequestAction,
   shootBriefAction,
   markSentAction,
   removeAssignment,
   reRequestAction,
-  rescheduleAction,
+  readjustAction,
+  markRescheduleSentAction,
   reopenReport,
   saveReportComment,
   sendReportAction,
@@ -145,6 +146,10 @@ export default async function CampaignPage({ params, searchParams }: { params: P
   );
   const reportText = (await restaurantReportMsg(b)).text;
   const requestTexts = new Map(await Promise.all(unsent.map(async (r) => [r.a.id, (await prRequestMsg(b, r.creator, r.a)).text] as const)));
+  // 日程の再調整のお願いを自動で送れなかった人
+  const rescheduleTexts = new Map(
+    await Promise.all(waiting.filter((r) => r.a.rescheduleRequestedAt && r.a.rescheduleFailedAt).map(async (r) => [r.a.id, (await rescheduleRequestMsg(b, r.creator, r.a)).text] as const)),
+  );
   // 投稿日の再調整のお願いを自動で送れなかった人（手動で送るための文面）
   const postReqTexts = new Map(
     await Promise.all(
@@ -491,7 +496,7 @@ export default async function CampaignPage({ params, searchParams }: { params: P
                           <Link href={`/admin/assignments/${r.a.id}`} className="mt-1 block text-xs text-muted underline">
                             詳細・代理入力
                           </Link>
-                          <a href="#reschedule" className="mt-0.5 block text-xs text-amber-800 underline">
+                          <a href="#readjust" className="mt-0.5 block text-xs text-amber-800 underline">
                             日程を選び直してもらう
                           </a>
                         </td>
@@ -520,70 +525,58 @@ export default async function CampaignPage({ params, searchParams }: { params: P
           </form>
         )}
 
-        {accepted.length > 0 && (
-          <div id="reschedule" className="mt-5 scroll-mt-20 rounded-xl border border-amber-200 bg-amber-50/60 p-3">
-            <h3 className="text-sm font-bold">日程の再調整（お店の都合などで、発信者に日時を選び直してもらう）</h3>
-            <p className="mt-2 text-xs leading-relaxed text-muted">
-              お店の希望日時が撮影候補日にない場合は、先に「内容・候補日を編集」で候補日を追加してください。押すと、その人の回答画面がもう一度開き、「日程の再調整のお願い」がLINEで届きます。選び直した結果はいつもどおり上に集まるので、確定すると「日程変更」の連絡が届きます。
-              （候補日の中で日時を変えるだけなら、上の表で日時を変えて「確定して発信者に連絡」を押せば「日程変更」の連絡が届きます）
-            </p>
-            <ul className="mt-3 space-y-2">
-              {accepted.map((r) => (
-                <li key={r.a.id}>
-                  <form action={rescheduleAction.bind(null, c.id, r.a.id)} className="flex flex-wrap items-center gap-2 text-sm">
-                    <span className="w-24 shrink-0 truncate font-bold">{r.creator.name}</span>
-                    <span className="w-44 shrink-0 text-xs text-muted">
-                      {r.a.confirmedNotifiedAt ? `確定：${slotLabel(c, r.a.confirmedSlotId)}` : "まだ確定していません"}
-                    </span>
-                    <input name="reason" placeholder="理由（例：お店の都合により）" className={`${inputClass} min-w-48 flex-1`} />
-                    <SubmitButton variant="outline" size="sm" confirm={`${r.creator.name}さんに日程の選び直しをお願いします。よろしいですか？`}>
-                      日程の再調整をお願いする
-                    </SubmitButton>
-                  </form>
-                </li>
-              ))}
-            </ul>
-          </div>
-        )}
-
         {notified.length > 0 && !c.reportSentAt && (
-          <div id="repost" className="mt-5 scroll-mt-20 rounded-xl border border-sky-200 bg-sky-50/60 p-3">
-            <h3 className="text-sm font-bold">投稿日の再調整（発信者に投稿日を選び直してもらう）</h3>
-            <p className="mt-2 text-xs leading-relaxed text-muted">
-              撮影日時はそのままで、投稿日だけを選び直してもらいます。押すと「投稿日の再調整のお願い」がLINEで届き、本人が専用ページで案件の投稿日（カレンダー）から選び直します。選び直すとすぐ反映され、お店に共有済みなら「お店に再共有」と表示します。
-              （選べる投稿日を増やすときは、先に「内容・候補日を編集」で投稿日を追加してください。こちらで決めた日に変えるだけなら、上の表で投稿予定日を変えて「確定して発信者に連絡」を押せば「日程変更」の連絡が届きます）
-            </p>
-            <form action={postDateRequestAction.bind(null, c.id)} className="mt-3 space-y-2">
-              <div className="flex justify-end">
-                <CheckAll formId="repost-to" name="postTo" />
+          <div id="readjust" className="mt-5 scroll-mt-20 rounded-xl border border-amber-200 bg-amber-50/60 p-3">
+            <h3 className="text-sm font-bold">日程の再調整（確定した撮影日時・投稿日を、発信者に選び直してもらう）</h3>
+            <form action={readjustAction.bind(null, c.id)} className="mt-2 space-y-2.5">
+              <div className="flex flex-wrap items-center gap-2 text-sm">
+                <span className="text-xs font-bold text-muted">調整するもの</span>
+                {[
+                  ["shoot", "撮影日時", true],
+                  ["post", "投稿日", false],
+                ].map(([v, label, on]) => (
+                  <label key={String(v)} className="flex items-center gap-1.5 rounded-full border border-line bg-white px-3 py-1 font-bold has-[:checked]:border-brand has-[:checked]:bg-brand/5 has-[:checked]:text-brand">
+                    <input type="checkbox" name="what" value={String(v)} defaultChecked={Boolean(on)} className="size-4 accent-[var(--brand)]" />
+                    {label}
+                  </label>
+                ))}
+                <span className="text-xs text-muted">撮影日時にチェック：回答画面がもう一度開き、撮影日時と投稿日を選び直してもらいます／投稿日だけ：撮影日時はそのままです</span>
               </div>
-              <ul id="repost-to" className="grid gap-1.5 sm:grid-cols-2">
+              <div className="flex justify-end">
+                <CheckAll formId="readjust-to" name="readjustTo" />
+              </div>
+              <ul id="readjust-to" className="grid gap-1.5 sm:grid-cols-2 lg:grid-cols-3">
                 {notified.map((r) => (
                   <li key={r.a.id} className="rounded-xl border border-line bg-white px-3 py-2 text-sm">
-                    <label className="flex flex-wrap items-center gap-x-2 gap-y-1">
-                      <input type="checkbox" name="postTo" value={r.a.id} className="size-4 accent-[var(--brand)]" />
-                      <b className="min-w-0 truncate">{r.creator.name}</b>
-                      <span className="num text-xs text-muted">投稿日 {r.a.plannedPostDate ? fmtDate(r.a.plannedPostDate) : "未定"}</span>
-                      <span className="ml-auto">
-                        {r.a.postDateRequestedAt && r.a.postDateRequestFailedAt ? (
-                          <Badge tone="red">連絡できず</Badge>
-                        ) : r.a.postDateRequestedAt ? (
-                          <Badge tone="amber">選び直し待ち {fmtDateTime(r.a.postDateRequestedAt)}</Badge>
-                        ) : r.a.postDateRechosenAt ? (
-                          <Badge tone="green">
-                            選び直し済み {r.a.postDateBefore ? `${fmtDate(r.a.postDateBefore)} → ` : ""}
-                            {fmtDate(r.a.plannedPostDate)}
-                          </Badge>
-                        ) : null}
+                    <label className="flex items-start gap-2">
+                      <input type="checkbox" name="readjustTo" value={r.a.id} className="mt-0.5 size-4 shrink-0 accent-[var(--brand)]" />
+                      <span className="min-w-0 flex-1">
+                        <b className="block truncate">{r.creator.name}</b>
+                        <span className="num block text-xs text-muted">撮影 {slotLabel(c, r.a.confirmedSlotId)}</span>
+                        <span className="num block text-xs text-muted">投稿 {r.a.plannedPostDate ? fmtDate(r.a.plannedPostDate) : "未定"}</span>
                       </span>
                     </label>
-                    {r.a.postDateRequestedAt && (
-                      <button formAction={cancelPostDateRequestAction.bind(null, c.id, r.a.id)} className="mt-1 text-xs text-muted underline">
-                        お願いを取り消す
-                      </button>
+                    {(r.a.postDateRequestedAt || r.a.postDateRechosenAt) && (
+                      <div className="mt-1 flex flex-wrap items-center gap-1.5 pl-6">
+                        {r.a.postDateRequestedAt && r.a.postDateRequestFailedAt ? (
+                          <Badge tone="red">投稿日：連絡できず</Badge>
+                        ) : r.a.postDateRequestedAt ? (
+                          <Badge tone="amber">投稿日の選び直し待ち</Badge>
+                        ) : (
+                          <Badge tone="green">
+                            投稿日 選び直し済み {r.a.postDateBefore ? `${fmtDate(r.a.postDateBefore)}→` : ""}
+                            {fmtDate(r.a.plannedPostDate)}
+                          </Badge>
+                        )}
+                        {r.a.postDateRequestedAt && (
+                          <button formAction={cancelPostDateRequestAction.bind(null, c.id, r.a.id)} className="text-xs text-muted underline">
+                            取り消す
+                          </button>
+                        )}
+                      </div>
                     )}
                     {postReqTexts.has(r.a.id) && (
-                      <div className="mt-1.5">
+                      <div className="mt-1.5 pl-6">
                         <ManualSend inForm text={postReqTexts.get(r.a.id)!} onDone={markPostDateRequestSentAction.bind(null, c.id, r.a.id)} doneLabel="送信済みにする" />
                       </div>
                     )}
@@ -592,10 +585,13 @@ export default async function CampaignPage({ params, searchParams }: { params: P
               </ul>
               <div className="flex flex-wrap items-center gap-2">
                 <input name="reason" placeholder="理由（例：お店の都合により）" className={`${inputClass} min-w-48 flex-1`} />
-                <SubmitButton variant="outline" size="sm" confirm="チェックした人に、投稿日の選び直しをお願いします。よろしいですか？">
-                  チェックした人に投稿日の選び直しをお願いする
+                <SubmitButton variant="outline" size="sm" confirm="チェックした人に、日程の再調整をお願いします。よろしいですか？">
+                  チェックした人に再調整をお願いする
                 </SubmitButton>
               </div>
+              <p className="text-xs text-muted">
+                お店の希望日時が候補にない場合は、先に「内容・候補日を編集」で撮影候補日・投稿日を追加してください。候補の中でこちらが日時を決めるだけなら、上の表で変えて「確定して発信者に連絡」を押せば「日程変更」の連絡が届きます。
+              </p>
             </form>
           </div>
         )}
@@ -603,7 +599,7 @@ export default async function CampaignPage({ params, searchParams }: { params: P
         {(waiting.length > 0 || declined.length > 0) && (
           <div className="mt-5 grid gap-3 text-sm md:grid-cols-2">
             {waiting.length > 0 && (
-              <div className="rounded-xl bg-mist p-3">
+              <div id="waiting" className="scroll-mt-20 rounded-xl bg-mist p-3">
                 <p className="text-xs font-bold text-muted">回答待ち（期限前日に自動リマインド）</p>
                 <ul className="mt-1 space-y-1">
                   {waiting.map((r) => (
@@ -619,6 +615,12 @@ export default async function CampaignPage({ params, searchParams }: { params: P
                         <span className="text-xs font-bold text-amber-800">
                           再調整中（前：{slotLabel(c, r.a.previousSlotId)}
                           {r.a.rescheduleReason ? `／${r.a.rescheduleReason}` : ""}）
+                        </span>
+                      )}
+                      {rescheduleTexts.has(r.a.id) && (
+                        <span className="flex w-full flex-wrap items-center gap-1.5">
+                          <Badge tone="red">連絡できず</Badge>
+                          <ManualSend text={rescheduleTexts.get(r.a.id)!} onDone={markRescheduleSentAction.bind(null, c.id, r.a.id)} doneLabel="送信済みにする" />
                         </span>
                       )}
                       <Link href={`/admin/assignments/${r.a.id}`} className="text-xs underline">
