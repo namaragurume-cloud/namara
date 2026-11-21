@@ -27,6 +27,7 @@ export default async function AdminHome({ searchParams }: { searchParams: Promis
     db.list("assignments"),
   ]);
   const today = jstDate();
+  const inboxOpen = (await db.list("inbox")).filter((i) => !i.doneAt).length;
   const rName = new Map(restaurants.map((r) => [r.id, r.name]));
   const cById = new Map(creators.map((c) => [c.id, c]));
   const items = campaigns
@@ -128,6 +129,12 @@ export default async function AdminHome({ searchParams }: { searchParams: Promis
       )}
 
       <TodayNotice />
+
+      {inboxOpen > 0 && (
+        <Link href="/admin/inbox" className="block rounded-2xl border border-sky-200 bg-sky-50 px-4 py-3 text-sm font-bold text-sky-900 hover:border-sky-400">
+          LINEで受け取った画像（インサイト以外など）が {inboxOpen}件 あります → 確認する
+        </Link>
+      )}
 
       <Card title="あなたがやること">
         {todos.length === 0 ? (
