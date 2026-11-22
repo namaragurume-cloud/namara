@@ -5,6 +5,8 @@ import { z } from "zod";
 import { checkPassword, endSession, requireAdmin, startSession } from "@/lib/ops/auth";
 import { blobs, db, resetDemo } from "@/lib/ops/db";
 import { iconKey } from "@/lib/ops/creator-profile";
+import { deleteInbox, inboxData } from "@/lib/ops/inbox";
+
 import { microOption } from "@/lib/ops/proposal";
 import { isOnSite, syncFollowersFromSite } from "@/lib/ops/follower-sync";
 import { isDemo } from "@/lib/ops/demo-flag";
@@ -31,7 +33,7 @@ import {
 import { fieldLabel, insightFields, missingKeys, missingLabels, parseDistText } from "@/lib/ops/insight-fields";
 import { draftReportText } from "@/lib/ops/ai-report";
 import { proposalShareMsg } from "@/lib/ops/proposal-msg";
-import { deleteShot } from "@/lib/ops/insights";
+import { analyzeAssignment, deleteShot, saveShot, ShotError } from "@/lib/ops/insights";
 import { deleteAllVideoFiles, markSentToShop, ownerDecide, shopDecide, VideoError } from "@/lib/ops/video";
 import { buildReport } from "@/lib/ops/report";
 import { isAiConfigured } from "@/lib/ops/vision";
@@ -503,6 +505,16 @@ export async function recordShopCheckAction(campaignId: string, ok: boolean, fd:
   await requireAdmin();
   await answerShopCheck(campaignId, ok, str(fd, "comment") || undefined, "（代理で記録）");
   back(`/admin/campaigns/${campaignId}#shopcheck`, ok ? "お店のOKを記録しました" : "お店の変更希望を記録しました");
+}
+
+/** 電話などで本人と決めたとき：連絡は送らず、表の日時で確定する */
+export async function confirmOfflineAction(campaignId: string, fd: FormData) {
+  await requireAdmin();
+  const result = await confirmSchedule(campaignId, readPicks(fd), undefined, true);
+  back(
+    `/admin/campaigns/${campaignId}`,
+    result.length ? `${result.map((r) => r.name).join("、")}さんの日程を確定しました（連絡は送っていません）` : "!確定する人がいませんでした（日時を選んでいない、または変更がありません）",
+  );
 }
 
 export async function confirmScheduleAction(campaignId: string, fd: FormData) {
@@ -1024,4 +1036,43 @@ export async function deleteBroadcastAction(id: string) {
   await requireAdmin();
   await db.remove("broadcasts", id);
   back("/admin/broadcast", "全体連絡の記録を削除しました（送ったメッセージは取り消せません）");
+}
+
+/* ---------- LINEで受け取った画像 ---------- */
+
+/** 受け取った画像を、選んだ投稿のインサイトとして追加する（AIで読み取り。本人への連絡はしない） */
+export async function inboxToInsightAction(id: string, fd: FormData) {
+  await requireAdmin();
+  const item = await db.get("inbox", id);
+  const a = await db.get("assignments", str(fd, "assignmentId"));
+  if (!item || !a || a.creatorId !== item.creatorId) back("/admin/inbox", "!追加する投稿を選んでください");
+  const data = await inboxData(id);
+  if (!data) back("/admin/inbox", "!画像の保存期間が過ぎています");
+  try {
+    await saveShot(a, { via: "admin", mediaType: item.mediaType, data });
+  } catch (e) {
+    if (e instanceof ShotError) back("/admin/inbox", `!${e.message}`);
+    throw e;
+  }
+  const c = await db.get("campaigns", a.campaignId);
+  await db.update("inbox", id, (x) => ({ ...x, doneAt: nowIso(), doneNote: `インサイトに追加：${c?.title ?? ""}` }));
+  const r = await analyzeAssignment(a.id, { notify: false });
+  back(
+    "/admin/inbox",
+    r.status === "ok"
+      ? `インサイトに追加して読み取りました${r.missing.length ? `（足りない項目 ${r.missing.length}件。本人への連絡は依頼の詳細から）` : "（そろっています）"}`
+      : "インサイトに追加しました",
+  );
+}
+
+export async function inboxDoneAction(id: string) {
+  await requireAdmin();
+  await db.update("inbox", id, (x) => ({ ...x, doneAt: nowIso(), doneNote: "確認済み" }));
+  back("/admin/inbox", "確認済みにしました");
+}
+
+export async function inboxDeleteAction(id: string) {
+  await requireAdmin();
+  await deleteInbox(id);
+  back("/admin/inbox", "画像を削除しました");
 }

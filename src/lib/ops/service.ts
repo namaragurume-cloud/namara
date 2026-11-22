@@ -321,6 +321,8 @@ export async function confirmSchedule(
   picks: Record<string, { slotId?: string; postDate?: string; note?: string }>,
   /** 連絡する全員に添えるひとこと */
   commonNote?: string,
+  /** 電話などで本人と決めた：連絡は送らず、確定・連絡済みとして記録するだけ */
+  silent = false,
 ): Promise<BulkResult> {
   const b = await loadBundle(campaignId);
   if (!b) throw new Error("案件が見つかりません");
@@ -340,13 +342,25 @@ export async function confirmSchedule(
     const confirmNote = [commonNote, pick.note].map((s) => s?.trim()).filter(Boolean).join("\n") || undefined;
     const updated = (await db.update("assignments", a.id, (x) => ({ ...x, confirmedSlotId: pick.slotId, plannedPostDate: newPost, confirmNote })))!;
     const isChange = Boolean(prevSlot);
+    if (silent) {
+      await db.update("assignments", a.id, (x) => ({
+        ...x,
+        confirmedNotifiedAt: nowIso(),
+        confirmedOffline: true,
+        previousSlotId: undefined,
+        previousPostDate: undefined,
+        scheduleChangedAt: isChange ? nowIso() : x.scheduleChangedAt,
+      }));
+      out.push({ name: creator.name, result: { ok: true, channel: "manual" } });
+      continue;
+    }
     const message = isChange
       ? await scheduleChangedMsg(b, creator, updated, prevSlot, prevPost)
       : await confirmedMsg(b, creator, updated);
     const result = await sendToCreator(creator, message, `${isChange ? "日程変更" : "撮影日確定"}：${b.campaign.title}`);
     await db.update("assignments", a.id, (x) =>
       result.ok
-        ? { ...x, confirmedNotifiedAt: nowIso(), previousSlotId: undefined, previousPostDate: undefined, scheduleChangedAt: isChange ? nowIso() : x.scheduleChangedAt }
+        ? { ...x, confirmedNotifiedAt: nowIso(), confirmedOffline: undefined, previousSlotId: undefined, previousPostDate: undefined, scheduleChangedAt: isChange ? nowIso() : x.scheduleChangedAt }
         : // 送れなかったら「連絡できず」にして、管理画面から手動で送れるようにする（変更前の日程は残す）
           { ...x, confirmedNotifiedAt: undefined, previousSlotId: prevSlot, previousPostDate: prevPost },
     );

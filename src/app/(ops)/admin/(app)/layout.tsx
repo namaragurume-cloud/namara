@@ -12,6 +12,7 @@ const nav = [
   { href: "/admin/creators", label: "発信者" },
   { href: "/admin/restaurants", label: "飲食店" },
   { href: "/admin/broadcast", label: "全体連絡" },
+  { href: "/admin/inbox", label: "受け取った画像" },
   { href: "/admin/messages", label: "送信履歴" },
   { href: "/admin/settings", label: "設定" },
 ];

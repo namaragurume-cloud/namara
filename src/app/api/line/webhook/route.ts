@@ -4,7 +4,8 @@ import { analyzeAssignment, listShots, needsInsight, saveShot, ShotError } from 
 import { lineGetContent, lineReply, verifyLineSignature } from "@/lib/ops/line";
 import { text as tmpl } from "@/lib/ops/templates";
 import { creatorPortalUrl } from "@/lib/ops/urls";
-import { isAiConfigured } from "@/lib/ops/vision";
+import { classifyImage, isAiConfigured } from "@/lib/ops/vision";
+import { putInbox } from "@/lib/ops/inbox";
 
 /**
  * 公式LINEの Webhook。
@@ -118,6 +119,30 @@ async function handleImage(ev: LineEvent, userId: string, received: Set<string>)
   const replyToken = ev.replyToken!;
   const creator = (await db.list("creators")).find((c) => c.lineUserId === userId && c.active);
   if (!creator) return; // 未連携の人の画像は担当者がLINEの管理画面で確認
+
+  let content: { mediaType: string; data: Buffer };
+  try {
+    content = await lineGetContent(ev.message!.id);
+  } catch {
+    await lineReply(replyToken, "画像を受け取れませんでした。もう一度送ってください。").catch(() => {});
+    return;
+  }
+
+  // インサイトのスクショかどうかを先に見分ける（料理の写真・動画の下書き・レシートなどはインサイトにしない）
+  if (isAiConfigured()) {
+    let kind: { isInsight: boolean; what: string } | null = null;
+    try {
+      kind = await classifyImage({ mediaType: content.mediaType, base64: content.data.toString("base64") });
+    } catch (e) {
+      console.error("[line webhook] classify failed", e);
+    }
+    if (!kind || !kind.isInsight) {
+      // 自動の返信はしない（公式LINEのチャットで担当者が対応）。管理画面の「LINEで受け取った画像」に置いておく
+      await putInbox({ creatorId: creator.id, mediaType: content.mediaType, data: content.data, what: kind?.what, reason: kind ? "not_insight" : "unclassified" });
+      return;
+    }
+  }
+
   const [assignments, campaigns] = await Promise.all([db.list("assignments"), db.list("campaigns")]);
   const open = new Map(campaigns.filter((c) => !c.reportSentAt).map((c) => [c.id, c]));
   const pending = assignments.filter((a) => a.creatorId === creator.id && open.has(a.campaignId) && needsInsight(a));
@@ -126,22 +151,23 @@ async function handleImage(ev: LineEvent, userId: string, received: Set<string>)
   const target = pending.length === 1 ? pending[0] : requested.length === 1 ? requested[0] : undefined;
 
   if (!target) {
-    if (received.size > 0) return; // 同じ送信で既に返信済み
+    // どの投稿のインサイトか決められない：画像は管理画面に置き、本人には投稿ごとのページから送ってもらう
+    await putInbox({ creatorId: creator.id, mediaType: content.mediaType, data: content.data, what: "インサイトの画面", reason: "no_target" });
+    if (received.has("__replied__")) return; // 同じ送信で既に返信済み
     received.add("__replied__");
     await lineReply(
       replyToken,
       pending.length === 0
         ? `${creator.name}さん、画像ありがとうございます！今インサイトをお願いしている投稿はないため、担当者が確認します。`
         : await tmpl("insightWhichPost", { 発信者名: creator.name, URL: creatorPortalUrl(creator) }),
-    );
+    ).catch(() => {});
     return;
   }
   try {
-    const content = await lineGetContent(ev.message!.id);
     await saveShot(target, { via: "line", mediaType: content.mediaType, data: content.data });
     received.add(target.id);
   } catch (e) {
-    await lineReply(replyToken, e instanceof ShotError ? e.message : "画像を受け取れませんでした。もう一度送ってください。");
+    await lineReply(replyToken, e instanceof ShotError ? e.message : "画像を受け取れませんでした。もう一度送ってください。").catch(() => {});
     return;
   }
   if (!isAiConfigured()) {

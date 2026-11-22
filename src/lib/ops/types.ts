@@ -217,6 +217,8 @@ export type Assignment = {
   availableSlotIds: string[];
   /** 確定した枠 */
   confirmedSlotId?: string;
+  /** 電話などで本人と決めたため、確定の連絡を送らずに確定した */
+  confirmedOffline?: boolean;
   /** 確定・日程変更の連絡に添えた、あなたからのひとこと */
   confirmNote?: string;
   /** 投稿予定日 YYYY-MM-DD */
@@ -360,6 +362,22 @@ export type Broadcast = {
   createdAt: string;
 };
 
+/** 公式LINEで受け取った画像のうち、インサイトとして取り込まなかったもの（管理画面で確認・振り分け） */
+export type InboxImage = {
+  id: string;
+  creatorId: string;
+  mediaType: string;
+  bytes: number;
+  /** AIが見た画像の内容（例：料理の写真） */
+  what?: string;
+  /** not_insight＝インサイト以外の画像 / no_target＝インサイトだがどの投稿か決められない / unclassified＝判定できなかった */
+  reason: "not_insight" | "no_target" | "unclassified";
+  /** 確認済み・インサイトに追加済みの日時 */
+  doneAt?: string;
+  doneNote?: string;
+  createdAt: string;
+};
+
 export type Collections = {
   creators: Creator;
   restaurants: Restaurant;
@@ -371,5 +389,6 @@ export type Collections = {
   settings: ProposalSettings;
   proposals: Proposal;
   broadcasts: Broadcast;
+  inbox: InboxImage;
 };
 export type CollectionName = keyof Collections;

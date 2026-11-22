@@ -132,3 +132,39 @@ export async function extractInsight(images: Img[], hint?: Platform): Promise<Ex
     note: o.note,
   };
 }
+
+const ClassifySchema = z.object({
+  is_insight: z.boolean(),
+  what: z.string(),
+});
+
+/**
+ * 公式LINEに届いた画像が、SNSのインサイト（投稿の分析画面）のスクショかどうかを判定する。
+ * 料理の写真・動画の下書き・レシート・トーク画面などはインサイトとして扱わない。
+ */
+export async function classifyImage(img: Img): Promise<{ isInsight: boolean; what: string }> {
+  if (isDemo() && !process.env.ANTHROPIC_API_KEY) return { isInsight: true, what: "（デモ）インサイトの画面" };
+  const client = new Anthropic();
+  const res = await client.beta.messages.parse({
+    model: MODEL,
+    max_tokens: 2000,
+    betas: ["server-side-fallback-2026-07-01"],
+    fallbacks: "default",
+    system:
+      "発信者から届いた画像を仕分けます。InstagramやTikTokの投稿のインサイト・アナリティクス画面（閲覧数・再生数・リーチ・いいね・保存・年齢や性別の割合などの数値が並ぶ分析画面）のスクリーンショットなら is_insight を true にします。料理やお店の写真、動画のサムネイル、投稿そのものの画面、レシート、トーク画面、プロフィール画面などは false です。what には画像の内容を日本語15文字程度で書きます。",
+    output_config: { effort: "low", format: betaZodOutputFormat(ClassifySchema) },
+    messages: [
+      {
+        role: "user",
+        content: [
+          { type: "image", source: { type: "base64", media_type: img.mediaType as "image/jpeg" | "image/png" | "image/webp" | "image/gif", data: img.base64 } },
+          { type: "text", text: "この画像を仕分けてください。" },
+        ],
+      },
+    ],
+  });
+  if (res.stop_reason === "refusal") throw new Error("画像の判定を断られました");
+  const o = res.parsed_output;
+  if (!o) throw new Error(`画像の判定結果を解析できませんでした（${res.stop_reason}）`);
+  return { isInsight: o.is_insight, what: o.what.slice(0, 60) };
+}
