@@ -47,6 +47,7 @@ import {
   markBriefSentAction,
   cancelPostDateRequestAction,
   markPostDateRequestSentAction,
+  confirmOfflineAction,
   markConfirmedAction,
   markShopCheckSentAction,
   recordShopCheckAction,
@@ -485,7 +486,7 @@ export default async function CampaignPage({ params, searchParams }: { params: P
                         </td>
                         <td className="px-2 py-2">
                           {r.a.confirmedNotifiedAt ? (
-                            <Badge tone="green">確定連絡済</Badge>
+                            <Badge tone="green">{r.a.confirmedOffline ? "確定（連絡なし）" : "確定連絡済"}</Badge>
                           ) : r.a.confirmedSlotId ? (
                             <span className="flex flex-col gap-1">
                               <Badge tone="red">連絡できず</Badge>
@@ -522,7 +523,15 @@ export default async function CampaignPage({ params, searchParams }: { params: P
                 </SubmitButton>
               )}
               <SubmitButton confirm="この内容で確定し、発信者に連絡します。よろしいですか？">この内容で確定して発信者に連絡</SubmitButton>
+              <SubmitButton
+                variant="outline"
+                formAction={confirmOfflineAction.bind(null, c.id)}
+                confirm="表で選んだ日時で確定します。発信者には連絡を送りません（電話などで決めた場合）。よろしいですか？"
+              >
+                連絡せずに確定（電話などで決めた）
+              </SubmitButton>
             </div>
+            <p className="text-xs text-muted">「連絡せずに確定」は、電話やDMで本人と日時を決めたとき用です。確定済みとして記録され、前日のリマインドやお店への共有はいつもどおり動きます。</p>
           </form>
         )}
 

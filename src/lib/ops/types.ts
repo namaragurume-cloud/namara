@@ -217,6 +217,8 @@ export type Assignment = {
   availableSlotIds: string[];
   /** 確定した枠 */
   confirmedSlotId?: string;
+  /** 電話などで本人と決めたため、確定の連絡を送らずに確定した */
+  confirmedOffline?: boolean;
   /** 確定・日程変更の連絡に添えた、あなたからのひとこと */
   confirmNote?: string;
   /** 投稿予定日 YYYY-MM-DD */

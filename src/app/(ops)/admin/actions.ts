@@ -507,6 +507,16 @@ export async function recordShopCheckAction(campaignId: string, ok: boolean, fd:
   back(`/admin/campaigns/${campaignId}#shopcheck`, ok ? "お店のOKを記録しました" : "お店の変更希望を記録しました");
 }
 
+/** 電話などで本人と決めたとき：連絡は送らず、表の日時で確定する */
+export async function confirmOfflineAction(campaignId: string, fd: FormData) {
+  await requireAdmin();
+  const result = await confirmSchedule(campaignId, readPicks(fd), undefined, true);
+  back(
+    `/admin/campaigns/${campaignId}`,
+    result.length ? `${result.map((r) => r.name).join("、")}さんの日程を確定しました（連絡は送っていません）` : "!確定する人がいませんでした（日時を選んでいない、または変更がありません）",
+  );
+}
+
 export async function confirmScheduleAction(campaignId: string, fd: FormData) {
   await requireAdmin();
   const picks = readPicks(fd);
