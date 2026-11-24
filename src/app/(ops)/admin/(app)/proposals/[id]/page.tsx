@@ -8,7 +8,7 @@ import { db } from "@/lib/ops/db";
 import { isEmailConfigured } from "@/lib/ops/email";
 import { isLineConfigured, lineShareUrl } from "@/lib/ops/line";
 import { MicroPicker } from "@/components/ops/proposal/MicroPicker";
-import { buildPlan, isMicro, microReachPerPerson } from "@/lib/ops/proposal";
+import { buildPlan, isMicro, lightMicroOf, microReachPerPerson } from "@/lib/ops/proposal";
 import { proposalShareMsg, proposalTitle, proposalUrl, proposalValidUntil } from "@/lib/ops/proposal-msg";
 import { proposalSettings } from "@/lib/ops/proposal-store";
 import { reachEstimates } from "@/lib/ops/reach-store";
@@ -26,7 +26,9 @@ export default async function ProposalPage({ params, searchParams }: { params: P
   const creators = p.creatorIds.map((cid) => cMap.get(cid)).filter((c): c is Creator => Boolean(c));
   const micro = { people: p.microPeople, perPerson: microReachPerPerson(allCreators, reach) };
   const plan = buildPlan(creators, settings, reach, micro);
-  const light = p.text?.lightPlan ? buildPlan(creators.filter((c) => p.text!.lightPlan!.creatorIds.includes(c.id)), settings, reach, micro) : null;
+  const light = p.text?.lightPlan
+    ? buildPlan(creators.filter((c) => p.text!.lightPlan!.creatorIds.includes(c.id)), settings, reach, { ...micro, people: lightMicroOf(p) })
+    : null;
   const t = p.text;
   const shareText = r ? (await proposalShareMsg(p, r)).text : "";
   const shopLine = isLineConfigured() && Boolean(r?.lineGroupId || r?.lineUserId);
@@ -124,13 +126,21 @@ export default async function ProposalPage({ params, searchParams }: { params: P
           <Field label="タイトル" hint="空欄なら「SNSプロモーション 料金のご案内」">
             <input name="title" defaultValue={t?.title} placeholder={proposalTitle({})} className={inputClass} />
           </Field>
-          {creators.length >= 2 && (
-            <fieldset className="rounded-xl border border-line p-3">
+          {(creators.length > 0 || Boolean(p.microPeople)) && (
+            <fieldset className="space-y-3 rounded-xl border border-line p-3">
               <label className="flex items-center gap-2 text-sm font-bold">
                 <input type="checkbox" name="useLight" defaultChecked={Boolean(t?.lightPlan)} className="accent-[var(--brand)]" />
-                人数を絞ったプランBも載せる
+                プランBも載せる（人数や組み合わせを変えたプラン）
               </label>
-              <div className="mt-2 flex flex-wrap gap-2">
+              <MicroPicker
+                name="lightMicro"
+                value={t?.lightPlan ? lightMicroOf(p) : p.microPeople}
+                perPerson={micro.perPerson}
+                legend="プランBのマイクロインフルエンサー"
+                hint=""
+              />
+              {creators.length > 0 && <p className="text-sm font-bold">プランBに入れる指定アカウント</p>}
+              <div className="flex flex-wrap gap-2">
                 {creators.map((c) => (
                   <label key={c.id} className="flex items-center gap-1 rounded-lg border border-line px-2 py-1 text-sm">
                     <input type="checkbox" name="lightId" value={c.id} defaultChecked={t?.lightPlan?.creatorIds.includes(c.id)} className="accent-[var(--brand)]" />
