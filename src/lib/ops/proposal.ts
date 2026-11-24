@@ -19,6 +19,9 @@ export const DEFAULT_PROPOSAL_SETTINGS: ProposalSettings = {
 export const MICRO_FOLLOWERS = 10000;
 export const microOptions = microPlan.options.map((o) => ({ people: o.people, amount: o.price * 10000, recommended: Boolean("recommended" in o && o.recommended) }));
 export const microOption = (people?: number) => microOptions.find((o) => o.people === people);
+/** プランBのマイクロの人数（未設定の古いデータはプランAと同じ） */
+export const lightMicroOf = (p: { microPeople?: number; text?: { lightPlan?: { microPeople?: number } } }) => p.text?.lightPlan?.microPeople ?? p.microPeople ?? 0;
+
 /** フォロワー1万人未満（フォロワー数が未登録の人は含めない） */
 export const isMicro = (c: Pick<Creator, "followers">) => c.followers !== undefined && c.followers < MICRO_FOLLOWERS;
 

@@ -330,7 +330,8 @@ export type ProposalText = {
   /** 料金表のタイトル（空なら「〇〇様 SNSプロモーション 料金のご案内」） */
   title?: string;
   /** 人数を絞ったプランも載せる場合の発信者と説明 */
-  lightPlan?: { creatorIds: string[]; reason?: string };
+  /** microPeople：プランBのマイクロインフルエンサーの人数（0＝なし。未設定ならプランAと同じ） */
+  lightPlan?: { creatorIds: string[]; reason?: string; microPeople?: number };
 };
 
 /** 飲食店への提案 */

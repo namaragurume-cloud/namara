@@ -7,7 +7,7 @@ import { site } from "@/data/site";
 import { isAdmin } from "@/lib/ops/auth";
 import { fmtDateLong } from "@/lib/ops/dates";
 import { db } from "@/lib/ops/db";
-import { buildPlan, microReachPerPerson, yen } from "@/lib/ops/proposal";
+import { buildPlan, lightMicroOf, microReachPerPerson, yen } from "@/lib/ops/proposal";
 import { fmtReach, fmtReachRange } from "@/lib/ops/reach";
 import { reachEstimates } from "@/lib/ops/reach-store";
 import { proposalTitle, proposalValidUntil } from "@/lib/ops/proposal-msg";
@@ -35,7 +35,7 @@ export default async function ProposalDoc({ params }: { params: Promise<{ token:
   const micro = { people: p.microPeople, perPerson: microReachPerPerson(all, reach) };
   const plan = buildPlan(creators, settings, reach, micro);
   const lightCreators = creators.filter((c) => p.text?.lightPlan?.creatorIds.includes(c.id));
-  const light = lightCreators.length > 0 && lightCreators.length < creators.length ? buildPlan(lightCreators, settings, reach, micro) : null;
+  const light = p.text?.lightPlan ? buildPlan(lightCreators, settings, reach, { ...micro, people: lightMicroOf(p) }) : null;
   const plans = [{ name: light ? "プランA" : "", plan }, ...(light ? [{ name: "プランB", plan: light }] : [])].filter((x) => x.plan.reach);
 
   return (

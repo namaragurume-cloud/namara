@@ -4,12 +4,24 @@ import { fmtReach } from "@/lib/ops/reach";
 import { cn } from "@/lib/utils";
 
 /** マイクロインフルエンサー（フォロワー1万人未満）の定額プランを選ぶ（発信者は指定しない） */
-export function MicroPicker({ value, perPerson }: { value?: number; perPerson?: Pick<ReachEstimate, "value"> }) {
+export function MicroPicker({
+  value,
+  perPerson,
+  name = "microPeople",
+  legend = "マイクロインフルエンサー（フォロワー1万人未満）",
+  hint = "人数だけ選びます（発信者はこちらで調整）。料金はホームページの料金表と同じ定額です（税別）。",
+}: {
+  value?: number;
+  perPerson?: Pick<ReachEstimate, "value">;
+  name?: string;
+  legend?: string;
+  hint?: string;
+}) {
   const opts = [{ people: 0, amount: 0, recommended: false }, ...microOptions];
   return (
     <fieldset>
-      <legend className="text-sm font-bold">マイクロインフルエンサー（フォロワー1万人未満）</legend>
-      <p className="text-xs text-muted">人数だけ選びます（発信者はこちらで調整）。料金はホームページの料金表と同じ定額です（税別）。</p>
+      <legend className="text-sm font-bold">{legend}</legend>
+      {hint && <p className="text-xs text-muted">{hint}</p>}
       <div className="mt-2 grid grid-cols-2 gap-1.5 sm:grid-cols-4">
         {opts.map((o) => (
           <label
@@ -18,7 +30,7 @@ export function MicroPicker({ value, perPerson }: { value?: number; perPerson?: 
           >
             <input
               type="radio"
-              name="microPeople"
+              name={name}
               value={o.people || ""}
               defaultChecked={(value ?? 0) === o.people}
               data-price={o.amount}

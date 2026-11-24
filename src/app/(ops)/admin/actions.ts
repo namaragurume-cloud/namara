@@ -7,7 +7,7 @@ import { blobs, db, resetDemo } from "@/lib/ops/db";
 import { iconKey } from "@/lib/ops/creator-profile";
 import { deleteInbox, inboxData } from "@/lib/ops/inbox";
 
-import { microOption } from "@/lib/ops/proposal";
+import { lightMicroOf, microOption } from "@/lib/ops/proposal";
 import { isOnSite, syncFollowersFromSite } from "@/lib/ops/follower-sync";
 import { isDemo } from "@/lib/ops/demo-flag";
 import type { BulkResult } from "@/lib/ops/service";
@@ -928,16 +928,26 @@ export async function saveProposalCreators(id: string, fd: FormData) {
     microPeople,
     request: optStr(fd, "request"),
     // ライトプランは、今の発信者に含まれる人だけ残す
-    text: p.text?.lightPlan ? { ...p.text, lightPlan: lightOf(p.text.lightPlan.creatorIds.filter((x) => creatorIds.includes(x)), creatorIds, p.text.lightPlan.reason) } : p.text,
+    text: p.text?.lightPlan
+      ? {
+          ...p.text,
+          lightPlan: lightOf(p.text.lightPlan.creatorIds.filter((x) => creatorIds.includes(x)), creatorIds, p.text.lightPlan.reason, lightMicroOf(p), microPeople ?? 0),
+        }
+      : p.text,
     updatedAt: nowIso(),
   }));
   back(`/admin/proposals/${id}`, "プラン・発信者を保存しました（料金表も更新されています）");
 }
 
-/** ライトプランは「全員より少ない1人以上」のときだけ有効 */
-function lightOf(ids: string[], all: string[], reason?: string) {
+/**
+ * プランB：指定アカウント（プランAの中から）とマイクロの人数。
+ * 何も入っていない、またはプランAとまったく同じときは載せない
+ */
+function lightOf(ids: string[], all: string[], reason: string | undefined, microPeople: number, microA: number) {
   const list = ids.filter((x) => all.includes(x));
-  return list.length > 0 && list.length < all.length ? { creatorIds: list, reason } : undefined;
+  if (list.length === 0 && !microPeople) return undefined;
+  if (list.length === all.length && microPeople === microA) return undefined;
+  return { creatorIds: list, reason, microPeople };
 }
 
 export async function saveProposalText(id: string, fd: FormData) {
@@ -949,11 +959,19 @@ export async function saveProposalText(id: string, fd: FormData) {
     ...x,
     text: {
       title: optStr(fd, "title"),
-      lightPlan: str(fd, "useLight") === "on" ? lightOf(lightIds, p.creatorIds, optStr(fd, "lightReason")) : undefined,
+      lightPlan:
+        str(fd, "useLight") === "on"
+          ? lightOf(lightIds, p.creatorIds, optStr(fd, "lightReason"), microOption(Number(str(fd, "lightMicro")))?.people ?? 0, p.microPeople ?? 0)
+          : undefined,
     },
     updatedAt: nowIso(),
   }));
-  back(`/admin/proposals/${id}`, "料金表を保存しました");
+  back(
+    `/admin/proposals/${id}`,
+    str(fd, "useLight") === "on" && !lightOf(lightIds, p.creatorIds, undefined, microOption(Number(str(fd, "lightMicro")))?.people ?? 0, p.microPeople ?? 0)
+      ? "!料金表を保存しました。プランBは、プランAと同じか何も選ばれていないため載せていません"
+      : "料金表を保存しました",
+  );
 }
 
 export async function sendProposal(id: string, manual: boolean) {
