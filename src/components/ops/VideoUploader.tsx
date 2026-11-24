@@ -39,6 +39,16 @@ export function VideoUploader({
       if (!file.type.startsWith("video/")) throw new Error("動画ファイルを選んでください");
       let res: Response;
       if (mode === "blob") {
+        // 先に送れるかを確認（送れない理由をわかる言葉で出すため）
+        setBusy("確認しています…");
+        const check = (await fetch("/api/ops/video/check", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ assignmentId, token, size: file.size }),
+        })
+          .then((r) => r.json())
+          .catch(() => null)) as { ok?: boolean; message?: string; detail?: string } | null;
+        if (check && !check.ok) throw new Error(`${check.message ?? "送れませんでした"}${check.detail ? `（詳細：${check.detail}）` : ""}`);
         const ext = (file.name.split(".").pop() ?? "mp4").replace(/[^a-z0-9]/gi, "").slice(0, 5) || "mp4";
         const opts = {
           access: blob?.access ?? "public",
@@ -48,7 +58,17 @@ export function VideoUploader({
           onUploadProgress: (p: { percentage: number }) => setBusy(`動画を送信中… ${Math.floor(p.percentage)}%`),
         } as const;
         const path = `videos/${assignmentId}/${Date.now()}.${ext}`;
-        const uploaded = blob?.auth === "oidc" ? await uploadPresigned(path, file, opts) : await upload(path, file, opts);
+        let uploaded: { url: string };
+        try {
+          uploaded = blob?.auth === "oidc" ? await uploadPresigned(path, file, opts) : await upload(path, file, opts);
+        } catch (e) {
+          const raw = e instanceof Error ? e.message : String(e);
+          throw new Error(
+            /network|fetch|abort/i.test(raw)
+              ? `通信が切れて送れませんでした。Wi-Fiにつないで、送り終わるまで画面を閉じずにもう一度お試しください（詳細：${raw}）`
+              : `動画を送れませんでした。時間をおいてもう一度お試しください。続く場合はこの画面のスクリーンショットを担当者に送ってください（詳細：${raw}）`,
+          );
+        }
         setBusy("登録しています…");
         res = await fetch("/api/ops/video/complete", {
           method: "POST",
@@ -85,7 +105,7 @@ export function VideoUploader({
         {busy ?? label}
       </label>
       {busy && <p className="text-xs text-muted">送信が終わるまで、この画面を閉じないでください。</p>}
-      {error && <p className="text-sm text-rose-700">{error}</p>}
+      {error && <p className="whitespace-pre-wrap break-words text-sm text-rose-700">{error}</p>}
     </div>
   );
 }
