@@ -1,4 +1,5 @@
 import "server-only";
+import { isPosted } from "./posted";
 import { db } from "./db";
 import { fmtDate, fmtPostDates } from "./dates";
 import { sendToCreator, sendToRestaurant, type SendResult } from "./notify";
@@ -103,7 +104,7 @@ export async function cleanupVideos(today: string): Promise<number> {
   for (const a of await db.list("assignments")) {
     const files = (a.videos ?? []).filter((v) => !v.fileDeletedAt);
     if (!files.length) continue;
-    const posted = Boolean(a.postUrl || a.insight) || Boolean(a.plannedPostDate && a.plannedPostDate < addDaysIso(today, -7));
+    const posted = isPosted(a) || Boolean(a.plannedPostDate && a.plannedPostDate < addDaysIso(today, -7));
     if (!posted) continue;
     for (const v of files) await deleteVideoFile(v);
     await db.update("assignments", a.id, (x) => ({ ...x, videos: (x.videos ?? []).map((v) => (v.fileDeletedAt ? v : { ...v, fileDeletedAt: nowIso() })) }));

@@ -1,3 +1,4 @@
+import { isPosted } from "./posted";
 import { fmtDate, fmtSlot } from "./dates";
 import { isComplete, missingLabels } from "./insight-fields";
 import { findSlot } from "./slots";
@@ -69,10 +70,10 @@ export function progressOf(a: Assignment, c: Campaign, today: string): Progress 
     return { steps: build("shoot"), status: `撮影 ${fmtSlot(slot)}`, tone: "blue", next: { who: "creator", text: `${fmtSlot(slot)}に撮影` }, actionNeeded: false };
   }
   const postDate = a.plannedPostDate;
-  const posted = Boolean(a.insight || a.postUrl) || Boolean(postDate && postDate <= today);
+  const posted = isPosted(a) || Boolean(postDate && postDate <= today);
   // 投稿前の動画チェック（投稿が確認できたものは飛ばす）
   const vs = videoStage(a, c);
-  if (withVideo && vs !== "approved" && !(a.insight || a.postUrl)) {
+  if (withVideo && vs !== "approved" && !isPosted(a)) {
     const comment = revisionComment(latestVideo(a));
     const map = {
       waiting: { status: "動画の提出待ち", tone: "amber", next: { who: "creator", text: "撮影した動画を送る" }, action: true },

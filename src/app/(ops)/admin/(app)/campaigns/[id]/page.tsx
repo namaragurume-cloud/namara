@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { CheckAll, CopyButton, SubmitButton } from "@/components/ops/client";
 import { AdminShotDrop } from "@/components/ops/AdminShotDrop";
+import { OpenHashTarget } from "@/components/ops/OpenHashTarget";
 import { TodayNotice } from "../../TodayNotice";
 import { channelLabel, phaseTone } from "@/components/ops/phase";
 import { ShopLinks } from "@/components/ops/ShopLinks";
@@ -34,6 +35,7 @@ import { fieldLabel, isComplete, platformLabel } from "@/lib/ops/insight-fields"
 import { buildReport, pct, pct1 } from "@/lib/ops/report";
 import { isAiConfigured } from "@/lib/ops/vision";
 import type { Shot } from "@/lib/ops/types";
+import { isPosted } from "@/lib/ops/posted";
 import { describeFlex, isFlex, slotsForCampaign } from "@/lib/ops/slots";
 import { videoEnabled, videoStage, videoStageLabel } from "@/lib/ops/video-state";
 import {
@@ -49,6 +51,8 @@ import {
   markPostDateRequestSentAction,
   confirmOfflineAction,
   markConfirmedAction,
+  markPostedAction,
+  markPostedBulkAction,
   markShopCheckSentAction,
   recordShopCheckAction,
   shopCheckAction,
@@ -69,19 +73,21 @@ import {
 
 export const metadata = { title: "案件" };
 
+/** 手順の欄。終わった手順は折りたたんで表示（見出しを押すと開く） */
 function Step({ n, title, done, children, actions }: { n: number; title: string; done?: boolean; children: React.ReactNode; actions?: React.ReactNode }) {
   return (
-    <Card
-      title={
-        <span className="flex items-center gap-2">
-          <span className={`num flex size-7 items-center justify-center rounded-full text-sm ${done ? "bg-emerald-600 text-white" : "bg-ink text-white"}`}>{done ? "✓" : n}</span>
-          {title}
-        </span>
-      }
-      actions={actions}
-    >
-      {children}
-    </Card>
+    <details open={!done} className="group rounded-2xl border border-line bg-white shadow-sm">
+      <summary className="flex cursor-pointer list-none items-center gap-2 p-4 md:p-6 [&::-webkit-details-marker]:hidden">
+        <span className={`num flex size-7 shrink-0 items-center justify-center rounded-full text-sm ${done ? "bg-emerald-600 text-white" : "bg-ink text-white"}`}>{done ? "✓" : n}</span>
+        <h2 className="min-w-0 flex-1 text-base font-bold md:text-lg">{title}</h2>
+        {done && <span className="text-xs text-muted group-open:hidden">完了・押すと開く</span>}
+        <span aria-hidden className="text-muted transition-transform group-open:rotate-180">⌄</span>
+      </summary>
+      <div className="px-4 pb-4 md:px-6 md:pb-6">
+        {actions && <div className="mb-4 flex flex-wrap justify-end gap-2">{actions}</div>}
+        {children}
+      </div>
+    </details>
   );
 }
 
@@ -117,6 +123,8 @@ export default async function CampaignPage({ params, searchParams }: { params: P
   const phase = phaseOf(b, today);
   const creators = (await db.list("creators")).filter((x) => x.active).sort((x, y) => (y.followers ?? 0) - (x.followers ?? 0));
   const assignedIds = new Set(rows.map((r) => r.creator.id));
+  // 投稿日を過ぎて、まだ投稿の報告がない人
+  const notPostedDue = rows.filter((r) => r.a.status === "accepted" && r.a.confirmedNotifiedAt && r.a.plannedPostDate && r.a.plannedPostDate < jstDate() && !isPosted(r.a));
   const remindIds = new Set(insightRemindTargets(rows.map((r) => r.a)).map((a) => a.id));
   const remindTargets = rows.filter((r) => remindIds.has(r.a.id));
   const shotsBy = new Map<string, Shot[]>();
@@ -173,6 +181,7 @@ export default async function CampaignPage({ params, searchParams }: { params: P
   return (
     <>
       <Flash text={flash} />
+      <OpenHashTarget />
       <div className="flex flex-wrap items-start gap-3">
         <div className="min-w-0 flex-1">
           <p className="text-sm text-muted">
@@ -870,8 +879,13 @@ export default async function CampaignPage({ params, searchParams }: { params: P
                           <a href={r.a.postUrl} target="_blank" rel="noopener" className="text-brand underline">
                             見る
                           </a>
+                        ) : isPosted(r.a) ? (
+                          <Badge tone="green">{r.a.postedAt ? "確認済み" : "投稿済み"}</Badge>
                         ) : (
-                          "-"
+                          <form action={markPostedAction.bind(null, c.id, r.a.id)} className="flex min-w-44 flex-wrap items-center gap-1">
+                            <input name="postUrl" type="url" placeholder="URL（任意）" aria-label={`${r.creator.name}さんの投稿URL`} className={`${inputClass} !w-32 !py-1 text-xs`} />
+                            <button className="text-xs font-bold text-brand underline">投稿を確認した</button>
+                          </form>
                         )}
                       </td>
                       <td className="px-2 py-2">
@@ -922,6 +936,17 @@ export default async function CampaignPage({ params, searchParams }: { params: P
               </div>
             </div>
             <div className="mt-3 flex flex-wrap gap-2">
+              {notPostedDue.length > 0 && (
+                <form action={markPostedBulkAction.bind(null, c.id)}>
+                  <SubmitButton
+                    variant="outline"
+                    size="sm"
+                    confirm={`投稿日を過ぎて投稿の報告がない${notPostedDue.length}名（${notPostedDue.map((r) => r.creator.name).join("、")}）を、まとめて「投稿済み」にします。投稿を確認できていますか？`}
+                  >
+                    投稿日を過ぎた{notPostedDue.length}名をまとめて投稿済みにする
+                  </SubmitButton>
+                </form>
+              )}
               <form action={insightRequestAction.bind(null, c.id)}>
                 <SubmitButton variant="outline" size="sm" confirm="投稿予定日を過ぎていて、まだ依頼していない人に今すぐ送ります。よろしいですか？">
                   月末を待たずに今すぐ提出をお願いする
