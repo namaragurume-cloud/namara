@@ -64,6 +64,7 @@ export async function savePostUrl(token: string, id: string, fd: FormData) {
   const { a } = await load(token, id);
   const url = String(fd.get("postUrl") ?? "").trim();
   if (url && !z.url().safeParse(url).success) back(token, id, "!URLの形式が正しくありません");
+  if (!url && !a.postDateByCreator) back(token, id, "!投稿のURLを貼ってください");
   let postDate = a.plannedPostDate;
   if (a.postDateByCreator) {
     const d = String(fd.get("postDate") ?? "");
@@ -72,7 +73,7 @@ export async function savePostUrl(token: string, id: string, fd: FormData) {
     postDate = d;
   }
   await db.update("assignments", a.id, (x) => ({ ...x, postUrl: url || undefined, plannedPostDate: postDate }));
-  back(token, id, a.postDateByCreator ? "投稿日を保存しました" : "投稿URLを保存しました");
+  back(token, id, a.postDateByCreator ? "投稿日を保存しました" : "投稿の報告ありがとうございます！お店にも「投稿済み」と伝わりました。");
 }
 
 /** 投稿日の選び直し（担当者からお願いがあったとき） */

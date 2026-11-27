@@ -5,6 +5,7 @@ import { z } from "zod";
 import { checkPassword, endSession, requireAdmin, startSession } from "@/lib/ops/auth";
 import { blobs, db, resetDemo } from "@/lib/ops/db";
 import { iconKey } from "@/lib/ops/creator-profile";
+import { isPosted } from "@/lib/ops/posted";
 import { deleteInbox, inboxData } from "@/lib/ops/inbox";
 
 import { lightMicroOf, microOption } from "@/lib/ops/proposal";
@@ -1093,4 +1094,26 @@ export async function inboxDeleteAction(id: string) {
   await requireAdmin();
   await deleteInbox(id);
   back("/admin/inbox", "画像を削除しました");
+}
+
+/* ---------- 投稿の確認 ---------- */
+
+/** あなたが投稿を確認した（URLは任意） */
+export async function markPostedAction(campaignId: string, assignmentId: string, fd: FormData) {
+  await requireAdmin();
+  const url = str(fd, "postUrl");
+  if (url && !z.url().safeParse(url).success) back(`/admin/campaigns/${campaignId}`, "!URLの形式が正しくありません");
+  await db.update("assignments", assignmentId, (x) => ({ ...x, postUrl: url || x.postUrl, postedAt: x.postedAt ?? nowIso() }));
+  back(`/admin/campaigns/${campaignId}`, "投稿済みにしました");
+}
+
+/** 投稿日を過ぎて報告がない人を、まとめて投稿済みにする */
+export async function markPostedBulkAction(campaignId: string) {
+  await requireAdmin();
+  const today = jstDate();
+  const list = (await db.list("assignments")).filter(
+    (a) => a.campaignId === campaignId && a.status === "accepted" && a.confirmedNotifiedAt && a.plannedPostDate && a.plannedPostDate < today && !isPosted(a),
+  );
+  for (const a of list) await db.update("assignments", a.id, (x) => ({ ...x, postedAt: x.postedAt ?? nowIso() }));
+  back(`/admin/campaigns/${campaignId}`, `${list.length}名を投稿済みにしました`);
 }

@@ -1,5 +1,6 @@
 import "server-only";
 import { syncFollowersFromSite } from "./follower-sync";
+import { isPosted } from "./posted";
 import { addDays, fmtDate, fmtDateLong, fmtNum, fmtParty, fmtPostDates, fmtSlot, isLastDayOfMonth, jstDate } from "./dates";
 import { db } from "./db";
 import { sendToCreator, sendToRestaurant, type SendResult } from "./notify";
@@ -727,6 +728,23 @@ export async function runReminders(today = jstDate()): Promise<BulkResult> {
     }
   }
 
+  // 投稿予定日の翌日以降、投稿URLが届いていなければ1回お願い（動画チェックありはOKになっている人だけ）
+  for (const a of ctx.assignments) {
+    const c = ctx.campaigns.get(a.campaignId);
+    const creator = ctx.creators.get(a.creatorId);
+    if (!c || !creator || c.reportSentAt || a.status !== "accepted" || !a.confirmedNotifiedAt) continue;
+    if (!a.plannedPostDate || a.plannedPostDate >= today || isPosted(a) || a.postUrlRemindedAt) continue;
+    if (videoEnabled(c) && videoStage(a, c) !== "approved") continue;
+    const result = await sendToCreator(
+      creator,
+      await msg("postUrlRequest", { 発信者名: creator.name, 店舗名: ctx.restaurants.get(c.restaurantId)?.name ?? c.title, URL: assignmentUrl(creator, a) }),
+      `投稿URLのお願い：${c.title}`,
+    );
+    // 送れなかった場合も、毎日記録が増えないよう1回で止める
+    await db.update("assignments", a.id, (x) => ({ ...x, postUrlRemindedAt: nowIso() }));
+    out.push({ name: creator.name, result });
+  }
+
   // 動画チェックあり：撮影日の翌日以降、まだ動画がなければ提出をお願い（1回）
   for (const a of ctx.assignments) {
     const c = ctx.campaigns.get(a.campaignId);
@@ -734,7 +752,7 @@ export async function runReminders(today = jstDate()): Promise<BulkResult> {
     if (!c || !creator || c.reportSentAt || !videoEnabled(c)) continue;
     const slot = slotById(c, a.confirmedSlotId);
     if (a.status !== "accepted" || !a.confirmedNotifiedAt || !slot || slot.date >= today) continue;
-    if (a.videos?.length || a.videoRequestedAt || a.postUrl || a.insight) continue;
+    if (a.videos?.length || a.videoRequestedAt || isPosted(a)) continue;
     const result = await sendToCreator(
       creator,
       await msg("videoRequest", {
@@ -802,7 +820,7 @@ export async function runTodayNotices(today = jstDate(), opts: { campaignId?: st
   });
   const tomorrow = addDays(today, 1);
   const shootOn = (a: Assignment, day: string) => slotById(ctx.campaigns.get(a.campaignId)!, a.confirmedSlotId)!.date === day;
-  const postOn = (a: Assignment, day: string) => a.plannedPostDate === day && !a.postUrl && !a.insight;
+  const postOn = (a: Assignment, day: string) => a.plannedPostDate === day && !isPosted(a);
   const isShoot = (a: Assignment) => shootOn(a, today);
   const isPost = (a: Assignment) => postOn(a, today);
   const creatorName = (a: Assignment) => ctx.creators.get(a.creatorId)?.name ?? "";

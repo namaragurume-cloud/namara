@@ -4,6 +4,8 @@ import { analyzeAssignment, listShots, needsInsight, saveShot, ShotError } from 
 import { lineGetContent, lineReply, verifyLineSignature } from "@/lib/ops/line";
 import { text as tmpl } from "@/lib/ops/templates";
 import { creatorPortalUrl } from "@/lib/ops/urls";
+import { jstDate } from "@/lib/ops/dates";
+import { isPosted } from "@/lib/ops/posted";
 import { classifyImage, isAiConfigured } from "@/lib/ops/vision";
 import { putInbox } from "@/lib/ops/inbox";
 
@@ -87,6 +89,12 @@ async function handle(ev: LineEvent, received: Set<string>) {
     return;
   }
   if (ev.type !== "message" || ev.message?.type !== "text") return;
+  // 投稿のURL（Instagram・TikTok）が送られてきたら、その人の投稿に記録する
+  const postUrl = (ev.message.text ?? "").match(/https?:\/\/(?:www\.|vt\.|vm\.|m\.)?(?:instagram\.com|tiktok\.com)\/\S+/i)?.[0];
+  if (postUrl) {
+    await handlePostUrl(ev.replyToken!, userId, postUrl.replace(/[)）」』。、]+$/, ""));
+    return;
+  }
   const text = (ev.message.text ?? "").trim().toUpperCase();
   const code = text.match(/^(?:連携[\s:：]*)?([A-Z0-9]{6})$/)?.[1];
   if (!code) return; // 通常のメッセージは担当者がLINEの管理画面で対応
@@ -115,6 +123,32 @@ async function handle(ev: LineEvent, received: Set<string>) {
 }
 
 /** インサイトのスクショをLINEで受け取る */
+/** 公式LINEに届いた投稿URLを、その人の「投稿待ち」の依頼に記録する（1件に決められるときだけ） */
+async function handlePostUrl(replyToken: string, userId: string, url: string) {
+  const creator = (await db.list("creators")).find((c) => c.lineUserId === userId);
+  if (!creator) return;
+  const [assignments, campaigns, restaurants] = await Promise.all([db.list("assignments"), db.list("campaigns"), db.list("restaurants")]);
+  const open = new Map(campaigns.filter((c) => !c.reportSentAt).map((c) => [c.id, c]));
+  const today = jstDate();
+  // まだ投稿の報告がないもの（インサイトが届いて投稿済み扱いのものは後回し）
+  const noUrl = assignments.filter((a) => a.creatorId === creator.id && open.has(a.campaignId) && a.status === "accepted" && a.confirmedNotifiedAt && !a.postUrl);
+  const notPosted = noUrl.filter((a) => !isPosted(a));
+  const waiting = notPosted.length ? notPosted : noUrl;
+  // 投稿予定日が来ている（または未定の）ものを優先
+  const due = waiting.filter((a) => !a.plannedPostDate || a.plannedPostDate <= today);
+  const target = due.length === 1 ? due[0] : waiting.length === 1 ? waiting[0] : undefined;
+  if (!target) {
+    if (waiting.length > 1) {
+      await lineReply(replyToken, `${creator.name}さん、URLありがとうございます！投稿をお願いしている案件が複数あるため、どの投稿か分かるように、それぞれのページから送ってください。\n${creatorPortalUrl(creator)}`).catch(() => {});
+    }
+    return; // 投稿待ちがなければ、担当者がチャットで確認
+  }
+  await db.update("assignments", target.id, (x) => ({ ...x, postUrl: url }));
+  const c = open.get(target.campaignId)!;
+  const shop = restaurants.find((r) => r.id === c.restaurantId)?.name ?? c.title;
+  await lineReply(replyToken, await tmpl("postUrlReceived", { 発信者名: creator.name, 店舗名: shop })).catch(() => {});
+}
+
 async function handleImage(ev: LineEvent, userId: string, received: Set<string>) {
   const replyToken = ev.replyToken!;
   const creator = (await db.list("creators")).find((c) => c.lineUserId === userId && c.active);

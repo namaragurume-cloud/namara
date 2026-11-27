@@ -2,6 +2,7 @@ import { CalendarClock, Camera, Clapperboard } from "lucide-react";
 import { addDays, fmtDate, fmtParty, fmtSlot } from "@/lib/ops/dates";
 import { findSlot } from "@/lib/ops/slots";
 import type { Assignment, Campaign, Creator, Slot } from "@/lib/ops/types";
+import { isPosted } from "@/lib/ops/posted";
 import { cn } from "@/lib/utils";
 import { ShopCalendar } from "./ShopCalendar";
 
@@ -23,7 +24,7 @@ function shootState(slot: Slot, today: string): ShootState {
 }
 
 function postState(a: Assignment, today: string): PostState {
-  if (a.postUrl || a.insight) return { label: "投稿済み", tone: "done" };
+  if (isPosted(a)) return { label: "投稿済み", tone: "done" };
   const d = a.plannedPostDate;
   if (!d) return { label: "投稿日調整中", tone: "plan" };
   if (d === today) return { label: "本日投稿予定", tone: "today" };
@@ -66,12 +67,12 @@ export function RestaurantLive({ campaign: c, rows: all, today, updatedAt }: { c
   const events = [
     ...rows.filter((r) => r.slot.date === today || r.slot.date === tomorrow).map((r) => ({ key: `s${r.a.id}`, day: r.slot.date, time: r.slot.start, kind: "shoot" as const, r })),
     ...rows
-      .filter((r) => !r.a.postUrl && !r.a.insight && (r.a.plannedPostDate === today || r.a.plannedPostDate === tomorrow))
+      .filter((r) => !isPosted(r.a) && (r.a.plannedPostDate === today || r.a.plannedPostDate === tomorrow))
       .map((r) => ({ key: `p${r.a.id}`, day: r.a.plannedPostDate!, time: "", kind: "post" as const, r })),
   ].sort((x, y) => `${x.day}${x.time}`.localeCompare(`${y.day}${y.time}`));
 
   const shot = rows.filter((r) => r.slot.date < today).length;
-  const posted = rows.filter((r) => r.a.postUrl || r.a.insight).length;
+  const posted = rows.filter((r) => isPosted(r.a)).length;
 
   return (
     <section className="space-y-4 print:hidden">

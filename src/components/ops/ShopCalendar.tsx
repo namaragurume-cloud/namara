@@ -1,6 +1,7 @@
 import { Camera, Clapperboard } from "lucide-react";
 import { addDays, fmtDate, fmtParty } from "@/lib/ops/dates";
 import type { Assignment, Creator, Slot } from "@/lib/ops/types";
+import { isPosted } from "@/lib/ops/posted";
 import { cn } from "@/lib/utils";
 
 /**
@@ -13,7 +14,7 @@ type Row = { a: Assignment; creator: Creator; slot: Slot };
 
 const WEEK = ["日", "月", "火", "水", "木", "金", "土"];
 const party = (a: Assignment) => a.partySize ?? 1;
-const posted = (a: Assignment) => Boolean(a.postUrl || a.insight);
+const posted = (a: Assignment) => isPosted(a);
 const dow = (ymd: string) => new Date(`${ymd}T00:00:00Z`).getUTCDay();
 
 function monthsBetween(from: string, to: string): string[] {

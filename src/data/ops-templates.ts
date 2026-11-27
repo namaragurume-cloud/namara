@@ -33,6 +33,8 @@ export const TEMPLATE_KEYS = [
   "postDateRequest",
   "shootReminder",
   "creatorToday",
+  "postUrlRequest",
+  "postUrlReceived",
   "insightRequest",
   "insightMissing",
   "insightComplete",
@@ -315,6 +317,28 @@ export const templateDefs: Record<TemplateKey, TemplateDef> = {
       一覧: "・焼肉 たいようさんの撮影：18:00〜19:00（2名）\n　住所：札幌市中央区南5条西3丁目\n　https://…/m/…",
       ...SIGN_VAR,
     },
+  },
+  postUrlRequest: {
+    title: "投稿URLの提出のお願い",
+    when: "投稿予定日の翌日の朝、投稿URLが届いていない人に1回（自動）",
+    to: "発信者",
+    subject: "【投稿URLのお願い】{店舗名}",
+    body: `{発信者名}さん
+
+{店舗名}さんのPR投稿、ありがとうございます！
+投稿のURLがまだ届いていないため、下のページから送っていただけると助かります🙏
+{URL}
+
+このトークに投稿のURLを貼って送るだけでもOKです。
+{署名}`,
+    vars: { 発信者名: "はなこ", 店舗名: "焼肉 たいよう", URL: "https://…/m/…", ...SIGN_VAR },
+  },
+  postUrlReceived: {
+    title: "投稿URLを受け取ったとき",
+    when: "発信者が公式LINEに投稿のURLを送ったとき（自動）",
+    to: "発信者",
+    body: `{発信者名}さん、{店舗名}さんの投稿URLを受け取りました。ありがとうございます！`,
+    vars: { 発信者名: "はなこ", 店舗名: "焼肉 たいよう" },
   },
   shootReminder: {
     title: "撮影前日のリマインド",

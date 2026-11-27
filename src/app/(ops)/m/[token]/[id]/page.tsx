@@ -35,6 +35,10 @@ export default async function AssignmentPage({ params, searchParams }: { params:
   const locked = Boolean(a.confirmedNotifiedAt);
   const closed = Boolean(c.reportSentAt);
   const confirmed = a.status === "accepted" && a.confirmedSlotId && locked;
+  // 投稿の報告：撮影日を過ぎて、動画チェックがある案件はOKになってから（投稿日を本人が入力する投稿は常に）
+  const shotDate = findSlot(c, a.confirmedSlotId)?.date;
+  const showPostReport = Boolean(a.postDateByCreator || a.postUrl || (shotDate && shotDate <= today && (!videoEnabled(c) || videoStage(a, c) === "approved")));
+  const postDue = !a.postUrl && Boolean(a.postDateByCreator || (a.plannedPostDate && a.plannedPostDate <= today));
   const i = a.insight;
   const vStage = videoStage(a, c);
   const shots = confirmed ? await listShots(a.id) : [];
@@ -279,6 +283,46 @@ export default async function AssignmentPage({ params, searchParams }: { params:
         </Card>
       )}
 
+      {confirmed && !closed && showPostReport && (
+        <Card
+          title="投稿の報告"
+          actions={a.postUrl ? <Badge tone="green">報告済み</Badge> : postDue ? <Badge tone="red">未報告</Badge> : undefined}
+          className={!a.postUrl && postDue ? "border-rose-300" : undefined}
+        >
+          {a.postUrl ? (
+            <p className="mb-2 text-sm">
+              投稿のURL：
+              <a href={a.postUrl} target="_blank" rel="noopener" className="break-all text-brand underline">
+                {a.postUrl}
+              </a>
+            </p>
+          ) : (
+            <p className={`mb-2 text-sm ${postDue ? "font-bold text-rose-700" : ""}`}>
+              {a.postDateByCreator
+                ? "投稿した日と、投稿のURLを入れて「報告する」を押してください。"
+                : "投稿したら、投稿のURLを貼って「報告する」を押してください（お店にも「投稿済み」と伝わります）。公式LINEのトークにURLを送るだけでもOKです。"}
+            </p>
+          )}
+          <form action={savePostUrl.bind(null, token, a.id)} className="flex flex-wrap gap-2 sm:flex-nowrap">
+            {a.postDateByCreator && (
+              <input type="date" name="postDate" required max={jstDate()} defaultValue={a.plannedPostDate} aria-label="投稿した日" className={`${inputClass} sm:w-44`} />
+            )}
+            <input
+              name="postUrl"
+              type="url"
+              required={!a.postDateByCreator}
+              defaultValue={a.postUrl}
+              placeholder="投稿のURL https://www.instagram.com/…"
+              aria-label="投稿のURL"
+              className={inputClass}
+            />
+            <SubmitButton size="sm" className="shrink-0">
+              {a.postUrl ? "URLを直す" : "報告する"}
+            </SubmitButton>
+          </form>
+        </Card>
+      )}
+
       {confirmed && (
         <Card title="投稿のインサイト" actions={i && (isComplete(i) ? <Badge tone="green">そろいました</Badge> : <Badge tone="red">足りない項目あり</Badge>)}>
           {!closed && (
@@ -305,26 +349,6 @@ export default async function AssignmentPage({ params, searchParams }: { params:
             </div>
           ) : (
             shots.length > 0 && <p className="mt-3 text-sm text-muted">{isAiConfigured() ? "読み取りが終わるとここに数字が表示されます。" : "画像を受け取りました。担当者が確認します。"}</p>
-          )}
-          {!closed && (
-            <>
-            {a.postDateByCreator ? (
-              <p className={`mt-4 text-xs ${a.plannedPostDate ? "text-muted" : "font-bold text-rose-700"}`}>
-                {a.plannedPostDate ? "投稿した日（変更もできます）" : "投稿した日を入力して「保存」を押してください（投稿のURLは任意です）"}
-              </p>
-            ) : (
-              <p className="mt-4 text-xs text-muted">投稿したらURLを貼っておくと、お店にもすぐ「投稿済み」と伝わります（任意）。</p>
-            )}
-            <form action={savePostUrl.bind(null, token, a.id)} className="mt-1 flex flex-wrap gap-2 sm:flex-nowrap">
-              {a.postDateByCreator && (
-                <input type="date" name="postDate" required max={jstDate()} defaultValue={a.plannedPostDate} aria-label="投稿した日" className={`${inputClass} sm:w-44`} />
-              )}
-              <input name="postUrl" type="url" defaultValue={a.postUrl} placeholder="投稿のURL（任意）https://..." className={inputClass} />
-              <SubmitButton variant="outline" size="sm" className="shrink-0">
-                保存
-              </SubmitButton>
-            </form>
-            </>
           )}
         </Card>
       )}

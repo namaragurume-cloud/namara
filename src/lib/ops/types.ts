@@ -267,6 +267,10 @@ export type Assignment = {
   shootDayNotifiedOn?: string;
   postDayNotifiedOn?: string;
   postUrl?: string;
+  /** 投稿を確認した日時（あなたが確認・発信者が「投稿しました」と報告。URLがなくても投稿済みにする） */
+  postedAt?: string;
+  /** 投稿日の翌日に、投稿URLの提出をお願いした日時（1回だけ） */
+  postUrlRemindedAt?: string;
   insight?: Insight;
   insightRequestedAt?: string;
   insightRemindedAt?: string;
