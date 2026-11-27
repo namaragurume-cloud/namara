@@ -19,7 +19,7 @@ import { slotLabel } from "@/lib/ops/service";
 import { findSlot, isFlex } from "@/lib/ops/slots";
 import type { DistKey, MetricKey, Platform } from "@/lib/ops/types";
 import { isAiConfigured } from "@/lib/ops/vision";
-import { rescheduleAction, markVideoSentAction, notifyMissingAction, ownerVideoAction, saveAssignment, saveInsightManual, shopVideoAsAdmin } from "../../../actions";
+import { rescheduleAction, withdrawAction, markVideoSentAction, notifyMissingAction, ownerVideoAction, saveAssignment, saveInsightManual, shopVideoAsAdmin } from "../../../actions";
 
 export const metadata = { title: "依頼の詳細" };
 
@@ -65,6 +65,26 @@ export default async function AssignmentPage({ params, searchParams }: { params:
             </SubmitButton>
           </form>
         </Card>
+      )}
+      {a.status === "accepted" && !c.reportSentAt && (
+        <Card title="この案件から外す（体調不良などで撮影できなかったとき）">
+          <p className="mb-3 text-xs leading-relaxed text-muted">見送りとして扱い、お店のページ・集計・リマインドから外れます。あとで「もう一度依頼する」もできます。</p>
+          <form action={withdrawAction.bind(null, c.id, a.id)} className="flex flex-wrap items-center gap-2">
+            <input name="withdrawReason" placeholder="理由（例：体調不良のため）" className={`${inputClass} min-w-48 flex-1`} />
+            <label className="flex items-center gap-1 text-sm">
+              <input type="checkbox" name="withdrawNotify" className="accent-[var(--brand)]" />
+              本人に連絡する
+            </label>
+            <SubmitButton variant="danger" size="sm" confirm={`${creator.name}さんをこの案件から外します。よろしいですか？`}>
+              この案件から外す
+            </SubmitButton>
+          </form>
+        </Card>
+      )}
+      {a.withdrawnAt && (
+        <p className="rounded-xl bg-rose-50 px-4 py-2 text-sm text-rose-800">
+          この案件から外しました：{a.withdrawReason ?? "理由なし"}（{fmtDateTime(a.withdrawnAt)}）
+        </p>
       )}
       <form action={saveAssignment} className="space-y-6">
         <input type="hidden" name="id" value={a.id} />
