@@ -19,6 +19,7 @@ import {
   markConfirmedManually,
   markSentManually,
   runDaily,
+  withdrawAssignment,
   answerShopCheck,
   sendShopCheck,
   sendBroadcast,
@@ -454,6 +455,22 @@ export async function markSentAction(campaignId: string, assignmentId: string) {
   await requireAdmin();
   await markSentManually(assignmentId);
   back(`/admin/campaigns/${campaignId}`, "送信済みにしました");
+}
+
+/** 体調不良などで撮影できなかった人を、この案件から外す */
+export async function withdrawAction(campaignId: string, assignmentId: string, fd: FormData) {
+  await requireAdmin();
+  const reason = (str(fd, `withdrawReason_${assignmentId}`) || str(fd, "withdrawReason")).slice(0, 200) || undefined;
+  const notify = str(fd, `withdrawNotify_${assignmentId}`) === "on" || str(fd, "withdrawNotify") === "on";
+  const a = await db.get("assignments", assignmentId);
+  const name = a ? ((await db.get("creators", a.creatorId))?.name ?? "") : "";
+  const r = await withdrawAssignment(assignmentId, reason, notify);
+  back(
+    `/admin/campaigns/${campaignId}`,
+    r && !r.ok
+      ? `!${name}さんをこの案件から外しました。ただし本人への連絡は自動で送れませんでした（${r.error}）`
+      : `${name}さんをこの案件から外しました${notify ? "（本人に連絡しました）" : "（本人への連絡はしていません）"}`,
+  );
 }
 
 export async function removeAssignment(campaignId: string, assignmentId: string) {

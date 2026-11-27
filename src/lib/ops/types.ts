@@ -231,6 +231,11 @@ export type Assignment = {
   partySize?: number;
   /** 来店メモ（お店に表示。例：お子様連れ・ベビーカーあり） */
   partyNote?: string;
+  /** 体調不良などで、あなたがこの案件から外した日時と理由（見送りとして扱う） */
+  withdrawnAt?: string;
+  withdrawReason?: string;
+  /** 外す前の撮影日時（記録用） */
+  withdrawnSlotId?: string;
   /** お店に確認中の撮影日時・投稿日（まだ発信者には連絡していない） */
   tentativeSlotId?: string;
   tentativePostDate?: string;

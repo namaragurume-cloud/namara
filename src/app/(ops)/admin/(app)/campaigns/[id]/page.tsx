@@ -59,6 +59,7 @@ import {
   shootBriefAction,
   markSentAction,
   removeAssignment,
+  withdrawAction,
   reRequestAction,
   readjustAction,
   markRescheduleSentAction,
@@ -510,6 +511,29 @@ export default async function CampaignPage({ params, searchParams }: { params: P
                           <a href="#readjust" className="mt-0.5 block text-xs text-amber-800 underline">
                             日程を選び直してもらう
                           </a>
+                          <details className="mt-1 text-xs">
+                            <summary className="cursor-pointer text-rose-700 underline">この案件から外す</summary>
+                            <div className="mt-1 space-y-1 rounded-lg border border-rose-200 bg-rose-50 p-2">
+                              <input
+                                name={`withdrawReason_${r.a.id}`}
+                                placeholder="理由（例：体調不良のため）"
+                                aria-label={`${r.creator.name}さんを外す理由`}
+                                className={`${inputClass} !py-1 text-xs`}
+                              />
+                              <label className="flex items-center gap-1">
+                                <input type="checkbox" name={`withdrawNotify_${r.a.id}`} className="accent-[var(--brand)]" />
+                                本人に連絡する
+                              </label>
+                              <SubmitButton
+                                variant="danger"
+                                size="sm"
+                                formAction={withdrawAction.bind(null, c.id, r.a.id)}
+                                confirm={`${r.creator.name}さんをこの案件から外します（見送りとして扱い、お店のページや集計からも外れます）。よろしいですか？`}
+                              >
+                                外す
+                              </SubmitButton>
+                            </div>
+                          </details>
                         </td>
                       </tr>
                     );
@@ -658,7 +682,14 @@ export default async function CampaignPage({ params, searchParams }: { params: P
                     <li key={r.a.id}>
                       <span>
                         {r.creator.name}
-                        {r.a.note && <span className="ml-2 text-xs text-muted">💬 {r.a.note}</span>}
+                        {r.a.withdrawnAt ? (
+                          <span className="ml-2 text-xs font-bold text-rose-700">
+                            外した：{r.a.withdrawReason ?? "理由なし"}（{fmtDateTime(r.a.withdrawnAt)}
+                            {r.a.withdrawnSlotId ? `・撮影予定 ${slotLabel(c, r.a.withdrawnSlotId)}` : ""}）
+                          </span>
+                        ) : (
+                          r.a.note && <span className="ml-2 text-xs text-muted">💬 {r.a.note}</span>
+                        )}
                       </span>
                       <form action={reRequestAction.bind(null, c.id, r.creator.id)} className="mt-1 flex gap-2">
                         <input name="note" placeholder="ひとこと（例：候補日を追加しました）" className={`${inputClass} py-1.5 text-xs`} />

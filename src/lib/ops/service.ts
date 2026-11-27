@@ -480,6 +480,37 @@ export async function rechoosePostDate(a: Assignment, date: string): Promise<voi
   }));
 }
 
+/**
+ * 体調不良などで撮影できなかった人を、この案件から外す（見送りとして扱う。もう一度依頼もできる）。
+ * お店に日程を共有済みなら「お店に再共有」の対象になる。
+ */
+export async function withdrawAssignment(assignmentId: string, reason: string | undefined, notify: boolean): Promise<SendResult | null> {
+  const a = await db.get("assignments", assignmentId);
+  if (!a) throw new Error("依頼が見つかりません");
+  const wasConfirmed = Boolean(a.confirmedNotifiedAt);
+  await db.update("assignments", a.id, (x) => ({
+    ...x,
+    status: "declined" as const,
+    withdrawnAt: nowIso(),
+    withdrawReason: reason,
+    withdrawnSlotId: x.confirmedSlotId ?? x.tentativeSlotId,
+    confirmedSlotId: undefined,
+    confirmedNotifiedAt: undefined,
+    tentativeSlotId: undefined,
+    rescheduleRequestedAt: undefined,
+    postDateRequestedAt: undefined,
+    scheduleChangedAt: wasConfirmed ? nowIso() : x.scheduleChangedAt,
+  }));
+  if (!notify) return null;
+  const b = (await loadBundle(a.campaignId))!;
+  const creator = b.rows.find((r) => r.a.id === a.id)!.creator;
+  return sendToCreator(
+    creator,
+    await msg("withdrawn", { 発信者名: creator.name, 店舗名: b.restaurant?.name ?? b.campaign.title, 理由: reason }),
+    `参加取り消し：${b.campaign.title}`,
+  );
+}
+
 /** 手動で確定連絡をしたことにする */
 export async function markConfirmedManually(assignmentId: string): Promise<void> {
   await db.update("assignments", assignmentId, (x) => ({

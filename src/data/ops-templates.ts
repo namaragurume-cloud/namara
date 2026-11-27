@@ -30,6 +30,7 @@ export const TEMPLATE_KEYS = [
   "shootBrief",
   "scheduleChanged",
   "rescheduleRequest",
+  "withdrawn",
   "postDateRequest",
   "shootReminder",
   "creatorToday",
@@ -268,6 +269,20 @@ export const templateDefs: Record<TemplateKey, TemplateDef> = {
       投稿日: "12/12(土)・12/13(日)・12/14(月)",
       ...SIGN_VAR,
     },
+  },
+  withdrawn: {
+    title: "案件から外したときの連絡",
+    when: "案件ページで「この案件から外す」を「本人に連絡する」付きで押したとき",
+    to: "発信者",
+    subject: "【参加取り消しのご連絡】{店舗名}",
+    body: `{発信者名}さん
+
+{店舗名}さんの案件について、今回の撮影・投稿は取り消しとさせていただきます。
+■ 理由：{理由}
+
+ご連絡ありがとうございました。またの機会にどうぞよろしくお願いいたします。
+{署名}`,
+    vars: { 発信者名: "はなこ", 店舗名: "焼肉 たいよう", 理由: "体調不良のため", ...SIGN_VAR },
   },
   rescheduleRequest: {
     title: "日程の再調整のお願い",
