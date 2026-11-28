@@ -637,7 +637,12 @@ export default async function CampaignPage({ params, searchParams }: { params: P
                 ))}
               </ul>
               <div className="flex flex-wrap items-center gap-2">
-                <input name="reason" placeholder="理由（例：お店の都合により）" className={`${inputClass} min-w-48 flex-1`} />
+                <textarea
+                  name="reason"
+                  rows={3}
+                  placeholder="理由・メッセージ（改行できます。例：お店の都合により）"
+                  className={`${inputClass} min-w-48 flex-1`}
+                />
                 <SubmitButton variant="outline" size="sm" confirm="チェックした人に、日程の再調整をお願いします。よろしいですか？">
                   チェックした人に再調整をお願いする
                 </SubmitButton>
@@ -702,7 +707,7 @@ export default async function CampaignPage({ params, searchParams }: { params: P
                         )}
                       </span>
                       <form action={reRequestAction.bind(null, c.id, r.creator.id)} className="mt-1 flex gap-2">
-                        <input name="note" placeholder="ひとこと（例：候補日を追加しました）" className={`${inputClass} py-1.5 text-xs`} />
+                        <textarea name="note" rows={2} placeholder="ひとこと（改行できます。例：候補日を追加しました）" className={`${inputClass} py-1.5 text-xs`} />
                         <SubmitButton variant="outline" size="sm" className="shrink-0" confirm={`${r.creator.name}さんにもう一度依頼します。よろしいですか？`}>
                           もう一度依頼する
                         </SubmitButton>
