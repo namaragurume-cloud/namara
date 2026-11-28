@@ -395,13 +395,14 @@ export function confirmOrChangeMsg(b: Bundle, creator: Creator, a: Assignment) {
  * 日程の再調整をお願いする：その人の回答画面をもう一度開き、撮影日時を選び直してもらう。
  * 今の日程は「変更前」として残し、選び直した後に確定すると「日程変更」の連絡が届く。
  */
-export async function requestReschedule(assignmentId: string, reason?: string): Promise<SendResult> {
+export async function requestReschedule(assignmentId: string, reason?: string, opts: { reshoot?: boolean } = {}): Promise<SendResult> {
   const a = await db.get("assignments", assignmentId);
   if (!a || a.status !== "accepted") throw new Error("参加が決まっている依頼だけ再調整をお願いできます");
   const b = (await loadBundle(a.campaignId))!;
   const creator = b.rows.find((r) => r.a.id === a.id)!.creator;
   const prevSlot = a.confirmedSlotId ?? a.previousSlotId;
   const prevPost = a.confirmedNotifiedAt ? a.plannedPostDate : a.previousPostDate ?? a.plannedPostDate;
+  const now = nowIso();
   const updated = (await db.update("assignments", a.id, (x) => ({
     ...x,
     status: "sent" as const,
@@ -411,10 +412,28 @@ export async function requestReschedule(assignmentId: string, reason?: string): 
     previousSlotId: prevSlot,
     previousPostDate: prevPost,
     respondedAt: undefined,
-    rescheduleRequestedAt: nowIso(),
+    rescheduleRequestedAt: now,
     rescheduleReason: reason,
+    // 撮り直し：新しい撮影・投稿としてやり直す（動画・投稿の報告・リマインドをリセット）
+    ...(opts.reshoot
+      ? {
+          reshootAt: now,
+          reshootReason: reason,
+          previousPostUrl: x.postUrl ?? x.previousPostUrl,
+          postUrl: undefined,
+          postedAt: undefined,
+          postUrlRemindedAt: undefined,
+          shootRemindedAt: undefined,
+          shootDayNotifiedOn: undefined,
+          postDayNotifiedOn: undefined,
+          videoRequestedAt: undefined,
+          videoShopRemindedAt: undefined,
+          briefSentAt: undefined,
+          briefFailedAt: undefined,
+        }
+      : {}),
   })))!;
-  const result = await sendToCreator(creator, await rescheduleRequestMsg(b, creator, updated), `日程の再調整のお願い：${b.campaign.title}`);
+  const result = await sendToCreator(creator, await rescheduleRequestMsg(b, creator, updated), `${opts.reshoot ? "再撮影のお願い" : "日程の再調整のお願い"}：${b.campaign.title}`);
   await db.update("assignments", a.id, (x) => ({ ...x, rescheduleFailedAt: result.ok ? undefined : nowIso() }));
   return result;
 }
@@ -422,7 +441,9 @@ export async function requestReschedule(assignmentId: string, reason?: string): 
 /** 日程の再調整のお願いの文面（手動で送るときにも使う） */
 export function rescheduleRequestMsg(b: Bundle, creator: Creator, a: Assignment) {
   const today = jstDate();
-  return msg("rescheduleRequest", {
+  // 撮り直しのお願い中なら、文面を「再撮影のお願い」に
+  const reshoot = Boolean(a.reshootAt && a.reshootAt === a.rescheduleRequestedAt);
+  return msg(reshoot ? "reshootRequest" : "rescheduleRequest", {
     発信者名: creator.name,
     店舗名: b.restaurant?.name ?? "",
     理由: a.rescheduleReason,

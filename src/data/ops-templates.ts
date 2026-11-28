@@ -30,6 +30,7 @@ export const TEMPLATE_KEYS = [
   "shootBrief",
   "scheduleChanged",
   "rescheduleRequest",
+  "reshootRequest",
   "withdrawn",
   "postDateRequest",
   "shootReminder",
@@ -283,6 +284,36 @@ export const templateDefs: Record<TemplateKey, TemplateDef> = {
 ご連絡ありがとうございました。またの機会にどうぞよろしくお願いいたします。
 {署名}`,
     vars: { 発信者名: "はなこ", 店舗名: "焼肉 たいよう", 理由: "体調不良のため", ...SIGN_VAR },
+  },
+  reshootRequest: {
+    title: "撮り直し（再撮影）のお願い",
+    when: "案件ページの日程の再調整で「撮り直し（再撮影）」を選んで送ったとき",
+    to: "発信者",
+    subject: "【再撮影のお願い】{店舗名}",
+    body: `{発信者名}さん
+
+先日は{店舗名}さんの撮影ありがとうございました！
+お手数ですが、もう一度撮影（撮り直し）をお願いしたく連絡しました。
+■ 理由：{理由}
+■ 前回の撮影日時：{変更前の撮影日時}
+
+下のページから、撮影できる日時と投稿日を選んでください（回答期限：{回答期限}）。
+{URL}
+
+■ 撮影候補日
+{撮影候補日}
+
+{署名}`,
+    vars: {
+      発信者名: "はなこ",
+      店舗名: "焼肉 たいよう",
+      理由: "お店のメニューが変わったため",
+      変更前の撮影日時: "12/5(金) 18:00〜20:00",
+      回答期限: "2026年12月10日(木)",
+      URL: "https://…/m/…",
+      撮影候補日: "・12/12(土) 18:00〜20:00\n・12/13(日) 18:00〜20:00",
+      ...SIGN_VAR,
+    },
   },
   rescheduleRequest: {
     title: "日程の再調整のお願い",
