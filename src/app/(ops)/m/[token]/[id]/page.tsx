@@ -35,6 +35,7 @@ export default async function AssignmentPage({ params, searchParams }: { params:
   const locked = Boolean(a.confirmedNotifiedAt);
   const closed = Boolean(c.reportSentAt);
   const confirmed = a.status === "accepted" && a.confirmedSlotId && locked;
+  const reshootPending = Boolean(a.reshootAt && a.reshootAt === a.rescheduleRequestedAt);
   // 投稿の報告：撮影日を過ぎて、動画チェックがある案件はOKになってから（投稿日を本人が入力する投稿は常に）
   const shotDate = findSlot(c, a.confirmedSlotId)?.date;
   const showPostReport = Boolean(a.postDateByCreator || a.postUrl || (shotDate && shotDate <= today && (!videoEnabled(c) || videoStage(a, c) === "approved")));
@@ -70,10 +71,10 @@ export default async function AssignmentPage({ params, searchParams }: { params:
 
       {a.rescheduleRequestedAt && a.status === "sent" && (
         <div className="rounded-2xl border border-amber-300 bg-amber-50 p-4 text-sm leading-relaxed">
-          <p className="font-bold text-amber-900">撮影日時の再調整をお願いしています</p>
+          <p className="font-bold text-amber-900">{reshootPending ? "撮り直し（再撮影）をお願いしています" : "撮影日時の再調整をお願いしています"}</p>
           {a.rescheduleReason && <p className="mt-1">理由：{a.rescheduleReason}</p>}
           {a.previousSlotId && <p className="mt-1">これまでの撮影日時：{slotLabel(c, a.previousSlotId)}</p>}
-          <p className="mt-1">お手数ですが、下の「ご回答」から参加できる日時を選び直してください。</p>
+          <p className="mt-1">お手数ですが、下の「ご回答」から{reshootPending ? "もう一度撮影できる日時と投稿日を選んでください" : "参加できる日時を選び直してください"}。</p>
         </div>
       )}
 

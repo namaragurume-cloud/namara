@@ -124,6 +124,8 @@ export default async function CampaignPage({ params, searchParams }: { params: P
   const phase = phaseOf(b, today);
   const creators = (await db.list("creators")).filter((x) => x.active).sort((x, y) => (y.followers ?? 0) - (x.followers ?? 0));
   const assignedIds = new Set(rows.map((r) => r.creator.id));
+  // 撮影日時を選び直してもらえる候補日が、今日以降に残っているか
+  const hasFutureCandidates = isFlex(c) ? c.flex!.to >= jstDate() : c.slots.some((s) => s.date >= jstDate());
   // 投稿日を過ぎて、まだ投稿の報告がない人
   const notPostedDue = rows.filter((r) => r.a.status === "accepted" && r.a.confirmedNotifiedAt && r.a.plannedPostDate && r.a.plannedPostDate < jstDate() && !isPosted(r.a));
   const remindIds = new Set(insightRemindTargets(rows.map((r) => r.a)).map((a) => a.id));
@@ -577,14 +579,22 @@ export default async function CampaignPage({ params, searchParams }: { params: P
                 {[
                   ["shoot", "撮影日時", true],
                   ["post", "投稿日", false],
+                  ["reshoot", "撮り直し（再撮影）", false],
                 ].map(([v, label, on]) => (
                   <label key={String(v)} className="flex items-center gap-1.5 rounded-full border border-line bg-white px-3 py-1 font-bold has-[:checked]:border-brand has-[:checked]:bg-brand/5 has-[:checked]:text-brand">
                     <input type="checkbox" name="what" value={String(v)} defaultChecked={Boolean(on)} className="size-4 accent-[var(--brand)]" />
                     {label}
                   </label>
                 ))}
-                <span className="text-xs text-muted">撮影日時にチェック：回答画面がもう一度開き、撮影日時と投稿日を選び直してもらいます／投稿日だけ：撮影日時はそのままです</span>
+                <span className="text-xs text-muted">
+                  撮影日時：回答画面がもう一度開き、撮影日時と投稿日を選び直してもらいます／投稿日だけ：撮影日時はそのままです／撮り直し：撮影が済んだ人に、もう一度撮影してもらいます（撮影日時・投稿日を選び直し、動画チェックや投稿の報告もやり直し）
+                </span>
               </div>
+              {!hasFutureCandidates && (
+                <p className="rounded-lg bg-rose-50 px-3 py-2 text-xs font-bold text-rose-800">
+                  撮影候補日がすべて過ぎています。撮影日時の調整・撮り直しをお願いする前に、上の「内容・候補日を編集」で新しい撮影候補日（と投稿日）を追加してください。
+                </p>
+              )}
               <div className="flex justify-end">
                 <CheckAll formId="readjust-to" name="readjustTo" />
               </div>
@@ -656,7 +666,7 @@ export default async function CampaignPage({ params, searchParams }: { params: P
                       {r.a.reRequestedAt && <span className="text-xs font-bold text-amber-800">再依頼</span>}
                       {r.a.rescheduleRequestedAt && (
                         <span className="text-xs font-bold text-amber-800">
-                          再調整中（前：{slotLabel(c, r.a.previousSlotId)}
+                          {r.a.reshootAt && r.a.reshootAt === r.a.rescheduleRequestedAt ? "撮り直しの日程調整中" : "再調整中"}（前：{slotLabel(c, r.a.previousSlotId)}
                           {r.a.rescheduleReason ? `／${r.a.rescheduleReason}` : ""}）
                         </span>
                       )}

@@ -13,10 +13,12 @@ export function videoEnabled(c: Pick<Campaign, "videoCheck">): boolean {
 
 export const latestVideo = (a: Pick<Assignment, "videos">): VideoVersion | undefined => a.videos?.at(-1);
 
-export function videoStage(a: Pick<Assignment, "videos">, c: Pick<Campaign, "videoCheck">): VideoStage {
+export function videoStage(a: Pick<Assignment, "videos" | "reshootAt">, c: Pick<Campaign, "videoCheck">): VideoStage {
   if (!videoEnabled(c)) return "off";
   const v = latestVideo(a);
   if (!v) return "waiting";
+  // 撮り直しをお願いしたあとは、新しい動画が届くまで「提出待ち」
+  if (a.reshootAt && v.uploadedAt < a.reshootAt) return "waiting";
   if (c.videoCheck === "owner_first" && !v.owner) return "owner_review";
   if (v.owner?.status === "ng") return "revise";
   if (!v.shop) return "shop_review";

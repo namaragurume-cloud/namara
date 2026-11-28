@@ -585,7 +585,8 @@ export async function readjustAction(campaignId: string, fd: FormData) {
   const to = `/admin/campaigns/${campaignId}#readjust`;
   const what = new Set(fd.getAll("what").map(String));
   const ids = fd.getAll("readjustTo").map(String).filter(Boolean);
-  if (!what.has("shoot") && !what.has("post")) back(to, "!「撮影日時」か「投稿日」のどちらを調整するか選んでください");
+  const reshoot = what.has("reshoot");
+  if (!reshoot && !what.has("shoot") && !what.has("post")) back(to, "!「撮影日時」「投稿日」「撮り直し」のどれを調整するか選んでください");
   if (ids.length === 0) back(to, "!再調整をお願いする人を選んでください");
   const reason = str(fd, "reason") || undefined;
   const result: BulkResult = [];
@@ -593,12 +594,15 @@ export async function readjustAction(campaignId: string, fd: FormData) {
     const a = await db.get("assignments", id);
     const name = a ? ((await db.get("creators", a.creatorId))?.name ?? "") : "";
     try {
-      result.push({ name, result: what.has("shoot") ? await requestReschedule(id, reason) : await requestPostDateChange(id, reason) });
+      result.push({
+        name,
+        result: reshoot ? await requestReschedule(id, reason, { reshoot: true }) : what.has("shoot") ? await requestReschedule(id, reason) : await requestPostDateChange(id, reason),
+      });
     } catch (e) {
       result.push({ name, result: { ok: false, channel: "manual", error: e instanceof Error ? e.message : String(e) } });
     }
   }
-  back(to, summarize(what.has("shoot") ? "日程（撮影日時・投稿日）の再調整のお願い" : "投稿日の再調整のお願い", result));
+  back(to, summarize(reshoot ? "撮り直し（再撮影）のお願い" : what.has("shoot") ? "日程（撮影日時・投稿日）の再調整のお願い" : "投稿日の再調整のお願い", result));
 }
 
 /** 日程の再調整のお願いを自分で送った（コピーして送った） */

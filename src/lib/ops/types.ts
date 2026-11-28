@@ -231,6 +231,11 @@ export type Assignment = {
   partySize?: number;
   /** 来店メモ（お店に表示。例：お子様連れ・ベビーカーあり） */
   partyNote?: string;
+  /** 撮り直し（再撮影）をお願いした日時と理由。これより前に送られた動画は「前回の撮影分」として扱う */
+  reshootAt?: string;
+  reshootReason?: string;
+  /** 撮り直し前の投稿URL（記録用） */
+  previousPostUrl?: string;
   /** 体調不良などで、あなたがこの案件から外した日時と理由（見送りとして扱う） */
   withdrawnAt?: string;
   withdrawReason?: string;
