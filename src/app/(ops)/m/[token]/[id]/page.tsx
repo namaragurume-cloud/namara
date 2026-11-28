@@ -72,7 +72,7 @@ export default async function AssignmentPage({ params, searchParams }: { params:
       {a.rescheduleRequestedAt && a.status === "sent" && (
         <div className="rounded-2xl border border-amber-300 bg-amber-50 p-4 text-sm leading-relaxed">
           <p className="font-bold text-amber-900">{reshootPending ? "撮り直し（再撮影）をお願いしています" : "撮影日時の再調整をお願いしています"}</p>
-          {a.rescheduleReason && <p className="mt-1">理由：{a.rescheduleReason}</p>}
+          {a.rescheduleReason && <p className="mt-1 whitespace-pre-wrap">理由：{a.rescheduleReason}</p>}
           {a.previousSlotId && <p className="mt-1">これまでの撮影日時：{slotLabel(c, a.previousSlotId)}</p>}
           <p className="mt-1">お手数ですが、下の「ご回答」から{reshootPending ? "もう一度撮影できる日時と投稿日を選んでください" : "参加できる日時を選び直してください"}。</p>
         </div>
@@ -93,7 +93,7 @@ export default async function AssignmentPage({ params, searchParams }: { params:
       {confirmed && a.postDateRequestedAt && !closed && (
         <div className="rounded-2xl border border-sky-300 bg-sky-50 p-4 text-sm">
           <p className="font-bold text-sky-900">投稿日の再調整のお願い</p>
-          {a.postDateRequestReason && <p className="mt-1">理由：{a.postDateRequestReason}</p>}
+          {a.postDateRequestReason && <p className="mt-1 whitespace-pre-wrap">理由：{a.postDateRequestReason}</p>}
           <p className="mt-1">現在の投稿日：{a.plannedPostDate ? fmtDateLong(a.plannedPostDate) : "未定"}</p>
           <p className="mt-1">お手数ですが、下のカレンダーから投稿日を選び直してください。撮影日時は変わりません。</p>
           <form action={rechoosePostDateAction.bind(null, token, a.id)} className="mt-3 space-y-3">

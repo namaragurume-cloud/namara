@@ -146,7 +146,7 @@ export type BulkResult = { name: string; result: SendResult }[];
 
 export function prRequestMsg(b: Bundle, creator: Creator, a: Assignment) {
   return msg(a.reRequestedAt ? "prRequestAgain" : "prRequest", {
-    ひとこと: a.reRequestNote,
+    ひとこと: a.reRequestNote?.replace(/\r\n?/g, "\n"),
     発信者名: creator.name,
     店舗名: b.restaurant?.name ?? "",
     案件名: b.campaign.title,
@@ -261,6 +261,13 @@ export async function recordResponse(
 /* ------------------------------------------------------------------ */
 /* 日程確定 → 発信者へ通知 / 飲食店へ共有                                  */
 /* ------------------------------------------------------------------ */
+
+/** 理由・メッセージ：改行を保ち、長いときや複数行のときは「■ 理由：」の次の行から書く */
+export function reasonVar(r?: string): string | undefined {
+  const t = r?.replace(/\r\n?/g, "\n").trim();
+  if (!t) return undefined;
+  return t.includes("\n") || t.length > 30 ? `\n${t}` : t;
+}
 
 /** あなたからのひとこと（前後に空行を入れて本文に差し込む） */
 const noteVar = (a: Assignment) => (a.confirmNote?.trim() ? `\n${a.confirmNote.trim()}\n` : undefined);
@@ -446,7 +453,7 @@ export function rescheduleRequestMsg(b: Bundle, creator: Creator, a: Assignment)
   return msg(reshoot ? "reshootRequest" : "rescheduleRequest", {
     発信者名: creator.name,
     店舗名: b.restaurant?.name ?? "",
-    理由: a.rescheduleReason,
+    理由: reasonVar(a.rescheduleReason),
     変更前の撮影日時: a.previousSlotId ? slotLabel(b.campaign, a.previousSlotId) : undefined,
     回答期限: b.campaign.replyDeadline >= today ? fmtDateLong(b.campaign.replyDeadline) : "なるべくお早めに",
     URL: assignmentUrl(creator, a),
@@ -477,7 +484,7 @@ export function postDateRequestMsg(b: Bundle, creator: Creator, a: Assignment) {
   return msg("postDateRequest", {
     発信者名: creator.name,
     店舗名: b.restaurant?.name ?? "",
-    理由: a.postDateRequestReason,
+    理由: reasonVar(a.postDateRequestReason),
     現在の投稿日: a.plannedPostDate ? fmtDateLong(a.plannedPostDate) : "未定",
     URL: assignmentUrl(creator, a),
     投稿日: choices.length ? choices.map((d) => fmtDate(d)).join("・") : undefined,
@@ -527,7 +534,7 @@ export async function withdrawAssignment(assignmentId: string, reason: string | 
   const creator = b.rows.find((r) => r.a.id === a.id)!.creator;
   return sendToCreator(
     creator,
-    await msg("withdrawn", { 発信者名: creator.name, 店舗名: b.restaurant?.name ?? b.campaign.title, 理由: reason }),
+    await msg("withdrawn", { 発信者名: creator.name, 店舗名: b.restaurant?.name ?? b.campaign.title, 理由: reasonVar(reason) }),
     `参加取り消し：${b.campaign.title}`,
   );
 }

@@ -59,7 +59,7 @@ export default async function AssignmentPage({ params, searchParams }: { params:
             {a.confirmedNotifiedAt ? `（今の撮影日時：${slotLabel(c, a.confirmedSlotId)}）` : ""}
           </p>
           <form action={rescheduleAction.bind(null, c.id, a.id)} className="flex flex-wrap gap-2">
-            <input name="reason" placeholder="理由（例：お店の都合により）" className={`${inputClass} min-w-48 flex-1`} />
+            <textarea name="reason" rows={3} placeholder="理由・メッセージ（改行できます。例：お店の都合により）" className={`${inputClass} min-w-48 flex-1`} />
             <SubmitButton variant="outline" size="sm" confirm={`${creator.name}さんに日程の選び直しをお願いします。よろしいですか？`}>
               日程の再調整をお願いする
             </SubmitButton>
